@@ -4525,6 +4525,40 @@ bytes DIB_bytes(LPBITMAPINFOHEADER dib) {
 
 void display_on_page(work_page page, LPBITMAPINFOHEADER dib, DWORD SizeImage) { //, draw_surface mask_surface) {
 	if (dib == NULL) return; // e.g. file was deleted while this was running -- warn??
+#ifdef __EMSCRIPTEN__
+	// WASM port: GetDIBits is unimplemented and DibMapToPalette would remap indices off our
+	// palette. Decode the 8-bit DIB straight into the page as raw palette indices, top-down
+	// (matching Windows GetDIBits with negated biHeight). Handles BI_RGB and BI_RLE8; the
+	// present step maps these indices through the DAT palette LUT.
+	if (dib->biBitCount <= 8) {
+		int w = dib->biWidth, h = dib->biHeight;
+		int pitch = w; if (pitch & 3) pitch += 4 - (pitch & 3);
+		bytes src = DIB_bytes(dib);
+		if (page == NULL || src == NULL || w <= 0 || h <= 0) return;
+		memset(page, 0, (size_t) pitch * h);
+		if (dib->biCompression == BI_RLE8) {
+			int x = 0, row = 0; DWORD i = 0;
+			while (i + 1 < SizeImage && row < h) {
+				unsigned char cnt = src[i++], val = src[i++];
+				bytes dst = page + (size_t)(h - 1 - row) * pitch; // bottom-up DIB -> top-down page
+				if (cnt > 0) {                       // encoded run
+					for (int k = 0; k < cnt && x < w; k++) dst[x++] = val;
+				} else if (val == 0) { x = 0; row++; } // end of line
+				  else if (val == 1) { break; }        // end of bitmap
+				  else if (val == 2) {                  // delta
+					if (i + 1 < SizeImage) { x += src[i++]; row += src[i++]; }
+				} else {                                // absolute run of `val` literals
+					for (int k = 0; k < val && i < SizeImage; k++) { if (x < w) dst[x++] = src[i]; i++; }
+					if (val & 1) i++;                    // padded to word boundary
+				};
+			};
+		} else { // BI_RGB (uncompressed), rows bottom-up padded to 4 bytes
+			for (int y = 0; y < h; y++)
+				memcpy(page + (size_t) y * pitch, src + (size_t)(h - 1 - y) * pitch, w);
+		};
+		return;
+	};
+#endif
    if (dib->biCompression == BI_RLE8) {
        // for some reason the GDI screws up on RLE8 and RLE4 and 1 bit files
        DibMapToPalette(dib,tt_main_window->return_palette_handle());
@@ -9786,6 +9820,12 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 	// new on 021101 - here because used if loading a city below - 
 	// on 240901 moved here since can be used when initializing (e.g. backgrounds from files)
 	tt_missing_builtin_picture_file_extension = ini_entry("FileExtensions","MissingBuiltinPictureFileExtension",FALSE); // new on 121001
+#ifdef __EMSCRIPTEN__
+	// No DirectX Transform / GDI+ COM in the WASM port. Force the classic DibOpenFile/BMP
+	// loader path in retrieve_image (it's gated on this flag || !file_is_BMP), which is
+	// backed by our CreateFile/ReadFile FS shim + DibReadBitmapInfo.
+	tt_using_directx_transform_or_gdiplus = FALSE;
+#endif
 	tt_desired_bits_per_pixel = ini_int("Switches","DesiredFullScreenBitsPerPixel",FALSE,tt_desired_bits_per_pixel);
 	tt_number_output_base = ini_int("Switches","DefaultNumberDisplayBase",FALSE,tt_number_output_base);
 	if (tt_number_output_base < 2 || tt_number_output_base > 36) {

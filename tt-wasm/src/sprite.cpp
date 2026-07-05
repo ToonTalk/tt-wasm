@@ -6425,7 +6425,7 @@ draw_surface TTImage::load_image_internal(boolean palette_ok) { // removed bytes
 		start_time = timeGetTime();
 	};
 #endif
-#if TT_GDIPLUS||TT_DIRECTX_TRANSFORM // TT_DIRECTX_TRANSFORM added on 291001
+#if (TT_GDIPLUS||TT_DIRECTX_TRANSFORM) && !defined(__EMSCRIPTEN__) // WASM port has no GDI+/DirectX-Transform; skip so the retrieve_image/DibOpenFile fallback below loads the BMP
 	if (tt_builtin_picture_directory != NULL) {
 		if (!compute_full_file_name()) {
 			if (return_file_name() != NULL) {

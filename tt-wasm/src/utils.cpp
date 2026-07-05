@@ -3311,12 +3311,21 @@ string expand_question_mark(string directory) { // new on 191204 -- so UserFiles
 };
 
 string add_final_slash_if_needed(string directory) {
-	if (directory == NULL) return(directory); 
+	if (directory == NULL) return(directory);
+#ifdef __EMSCRIPTEN__
+	// Emscripten MEMFS uses '/' separators and treats '\\' as a literal filename char, so
+	// std::ifstream (e.g. the loose-.tts loader in load_sprite_file) needs forward slashes.
+	// Accept either existing separator; append '/' when neither is present.
+	if (directory[strlen(directory)-1] != '\\' && directory[strlen(directory)-1] != '/') {
+		directory = append_strings(directory,"/");
+	};
+#else
 	if (directory[strlen(directory)-1] != '\\') { // needs to end in a slash
 		string temp = append_strings(directory,"\\");
 //		delete [] directory; // commented out on 160103
 		directory = temp;
 	};
+#endif
 	if (directory[0] == '?') { // new on 191204 to expand the MainDir
 		return(expand_question_mark(directory));
 	};

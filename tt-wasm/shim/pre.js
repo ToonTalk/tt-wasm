@@ -69,6 +69,13 @@ Module['preRun'].push(function () {
     'StartToonTalk=StartTT',
     'ToonTalk32=TT',
     '',
+    '[FileExtensions]',
+    // Built-in sprite images (al01, houseas, ...) ship as loose BMPs in the picture dir;
+    // compute_full_file_name appends this extension to the bare image name -> .../al01.bmp,
+    // which routes retrieve_image down the DibOpenFile path. Without it the name has no
+    // extension, file_is_BMP is false, and no pixels load.
+    'MissingBuiltinPictureFileExtension=bmp',
+    '',
     '[Defaults]',
     'Version=3',
     'WindowSize=1',
@@ -84,4 +91,10 @@ Module['preRun'].push(function () {
   try { FS.mkdir('/toontalk'); } catch (e) {}
   try { FS.writeFile('/toontalk/ToonTalk.ini', ini); } catch (e) {}
   try { FS.writeFile('/ToonTalk.ini', ini); } catch (e) {}
+  // Dummy string-DLL files so load_string_library's existence check (local_file_exists ->
+  // CreateFile, common.cpp:132) passes. The strings themselves come from resstrings.js and
+  // LoadLibrary is faked to a non-null handle; only the file's *existence* is load-bearing.
+  // Country code is empty at load time so it tries "<cc>VER22.DLL" then "US"+"VER22.DLL" (warn=TRUE).
+  var stub = new Uint8Array([0x4D, 0x5A]); // "MZ" — content irrelevant, presence is what matters
+  ['VER22.DLL', 'USVER22.DLL'].forEach(function (n) { try { FS.writeFile('/toontalk/' + n, stub); } catch (e) {} });
 });

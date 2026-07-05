@@ -25,6 +25,9 @@
 #include <windows.h>
 #include <windowsx.h>
 #include "wingutil.h"
+#ifdef __EMSCRIPTEN__
+#include <stdio.h>
+#endif
 
 
 #if defined(WIN32) || defined(_WIN32)
@@ -128,7 +131,7 @@ PDIB DibOpenFile(LPSTR szFile)
 	 fh = CreateFile(szFile,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
 
 //    if (fh == -1)
-	 if (fh == INVALID_HANDLE_VALUE) 
+	 if (fh == INVALID_HANDLE_VALUE)
     {
         HRSRC h;
 

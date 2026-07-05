@@ -117,6 +117,32 @@ addToLibrary({
   GetFileAttributesA__deps: ['$UTF8ToString', '$TT_resolvePath'],
   GetFileAttributesA: function(namePtr) { if (!namePtr) return 0xFFFFFFFF; return TT_resolvePath(UTF8ToString(namePtr)) ? 0x80 : 0xFFFFFFFF; },
 
+  // Modern Win32 file API over the Emscripten FS. The BMP loader (DibOpenFile/DibReadBitmapInfo,
+  // wingutil.cpp) reads sprite pixels with CreateFile/ReadFile/CloseHandle — distinct from the
+  // OpenFile/_lread path used for the DATs — so these were stubbed and every sprite came up blank.
+  // Handle value = the FS fd; INVALID_HANDLE_VALUE = -1. GENERIC_WRITE=0x40000000.
+  CreateFileA__deps: ['$FS', '$UTF8ToString', '$TT_resolvePath'],
+  CreateFileA: function(namePtr, access, share, sa, disp, flags, tmpl) {
+    if (!namePtr) return -1;
+    var raw = UTF8ToString(namePtr), write = (access & 0x40000000) !== 0;
+    var path = write ? raw.replace(/\\/g, '/').replace(/\/+/g, '/') : TT_resolvePath(raw);
+    if (!path) return -1;
+    try { return FS.open(path, write ? 'w' : 'r').fd; } catch (e) { return -1; }
+  },
+  ReadFile__deps: ['$FS'],
+  ReadFile: function(fh, buf, toRead, nReadPtr, ovl) {
+    var s = FS.streams[fh]; var n = 0;
+    if (s) { try { n = FS.read(s, HEAPU8, buf, toRead); } catch (e) { n = 0; } }
+    if (nReadPtr) HEAP32[nReadPtr >> 2] = n;
+    return s ? 1 : 0;
+  },
+  CloseHandle__deps: ['$FS'],
+  CloseHandle: function(fh) { try { if (fh >= 3 && FS.streams[fh]) FS.close(FS.streams[fh]); } catch (e) {} return 1; },
+  GetFileSize__deps: ['$FS'],
+  GetFileSize: function(fh, hiPtr) { var s = FS.streams[fh], sz = 0; if (s) { try { sz = FS.stat(s.path).size; } catch (e) {} } if (hiPtr) HEAP32[hiPtr >> 2] = 0; return sz >>> 0; },
+  SetFilePointer__deps: ['$FS'],
+  SetFilePointer: function(fh, dist, hiPtr, method) { var s = FS.streams[fh]; if (!s) return 0xFFFFFFFF; try { FS.llseek(s, dist, method); } catch (e) {} return s.position >>> 0; },
+
   // --- non-NULL handles so window/GDI creation "succeeds" ---
   GetModuleHandleA: function() { return 1; },
   GetModuleHandleW: function() { return 1; },

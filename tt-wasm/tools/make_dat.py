@@ -25,11 +25,29 @@ DIB_BRUSH_COUNT = 14
 OUT_DIRS = [r"C:\Users\toont\dev\tt-wasm\assets\toontalk",
             r"C:\Users\toont\dev\tt-wasm\assets\toontalk\Java"]
 
+PICS_DIR = r"C:\Users\toont\dev\tt-wasm\assets\pics"
+
+def real_palette():
+    """The shipped 8-bit ToonTalk art all shares one 256-colour palette. Lift it from a BMP so
+    read_palette() installs the real colours (sprites carry raw indices into this palette)."""
+    for name in ("al01.bmp", "backwall.bmp", "ball.bmp"):
+        p = os.path.join(PICS_DIR, name)
+        if os.path.exists(p):
+            with open(p, 'rb') as f:
+                data = f.read(1078)
+            off = struct.unpack('<I', data[10:14])[0]          # bfOffBits
+            ncol = (off - 54) // 4
+            if ncol >= 256:
+                return data[54:54 + 256 * 4]                    # 256 BGRA quads
+    return None
+
 def dib_header():
     bih = struct.pack('<IiiHHIIiiII', 40, 1, 1, 1, 8, 0, 0, 0, 0, 256, 0)
-    pal = bytearray()
-    for i in range(256):
-        pal += bytes([i, i, i, 0])   # BGRA grayscale ramp
+    pal = real_palette()
+    if pal is None:                                             # fallback: grayscale ramp
+        pal = bytearray()
+        for i in range(256):
+            pal += bytes([i, i, i, 0])
     return bih + bytes(pal)
 
 def sprite_text(i):
