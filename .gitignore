@@ -1,0 +1,28 @@
+# === separately-versioned / huge trees (their own .git) ===
+emsdk
+toontalk-web
+
+# === large media not part of the port ===
+*.mp4
+
+# === generated build output (tt-wasm WASM port) ===
+tt-wasm/build/
+tt-wasm/obj/
+tt-wasm/logs/
+*.o
+
+# === legacy MSVC build artifacts under source/ ===
+[Dd]ebug/
+[Rr]elease/
+*.pch
+*.obj
+*.ncb
+*.pdb
+*.ilk
+*.idb
+*.aps
+*.opt
+*.suo
+*.plg
+*.exp
+*.tlog

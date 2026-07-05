@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ToonTalk — WASM</title>
+<style>
+  body { background: #1c1c22; margin: 0; height: 100vh; display: grid; place-items: center; font: 13px system-ui, sans-serif; }
+  #frame { text-align: center; }
+  canvas { image-rendering: pixelated; border: 1px solid #444; background: #000; }
+  #status { color: #9a9aa5; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <canvas id="ttcanvas" width="800" height="600"></canvas>
+  <div id="status">loading engine…</div>
+</div>
+<script>
+  var statusEl = document.getElementById('status');
+  var Module = {
+    print: function (t) { console.log(t); },
+    printErr: function (t) { console.warn(t); },
+    onRuntimeInitialized: function () { statusEl.textContent = 'engine running'; }
+  };
+  window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+</script>
+<script src="tt.js"></script>
+</body>
+</html>
