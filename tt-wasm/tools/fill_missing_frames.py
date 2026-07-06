@@ -1,71 +1,76 @@
 #!/usr/bin/env python3
-"""The M25 art set is partial: each animated sprite is missing some frames (e.g. HOUSEBT
-references hsbtop20 but only hsbtop05/hsbtop12 ship). A missing frame makes retrieve_image
-fall through to a non-BMP path and the sprite draws blank. Until the complete art is
-available, fill every referenced-but-missing frame by copying the closest PRESENT frame of
-the same sprite (longest shared prefix, then numerically nearest). Everything then renders;
-substitutes are reversible (delete the copies and re-stage when real art arrives).
+"""M25 (the 640x480 art) ships an INCOMPLETE frame set — many .tts-referenced animation frames
+are absent. Fill each gap with the best available real art, writing into assets/pics (the
+preloaded picture dir), in priority order:
 
-Writes copies into assets/pics/ (the preloaded picture dir). Reports the substitutions.
+  1. native M25 frame            (already copied by stage_assets.sh — nothing to do)
+  2. M22 frame upscaled 2x       (M22 is the same sprites/poses/palette at half resolution;
+                                  nearest-neighbour 2x ~ matches M25 size, correct pose)
+  3. nearest present frame       (substitute a same-sprite frame — correct size, wrong pose)
+
+All three share ONE palette (the shipped ToonTalk palette baked into m25.us1), and the engine
+renders BMP indices through that palette, so mixing native + upscaled + substitute is colour-safe.
+Reports the mix; substitutes are the placeholders to replace when complete art surfaces.
 """
 import os, re, glob, shutil
+from PIL import Image
 
-M25 = r"C:\Users\toont\dev\M25"
-PICS = r"C:\Users\toont\dev\tt-wasm\assets\pics"
+DEV = r"C:\Users\toont\dev"
+M25 = os.path.join(DEV, "M25")
+M22 = os.path.join(DEV, "M22")
+PICS = os.path.join(DEV, r"tt-wasm\assets\pics")
 
 def refs_of(tts_path):
     names = []
     with open(tts_path, 'r', errors='ignore') as f:
         for line in f:
             t = line.split()
-            # file-list lines: "name resid flag" — name non-numeric, resid integer
             if len(t) == 3 and t[1].isdigit() and not t[0][0].isdigit():
                 names.append(t[0].lower())
     return names
 
 def split_num(name):
     m = re.match(r'^(.*?)(\d+)$', name)
-    if m:
-        return m.group(1), int(m.group(2))
-    return name, -1
-
-def common_prefix_len(a, b):
-    n = 0
-    for x, y in zip(a, b):
-        if x != y:
-            break
-        n += 1
-    return n
+    return (m.group(1), int(m.group(2))) if m else (name, -1)
 
 def best_substitute(missing, present):
-    """Pick the present frame closest to `missing`: longest shared prefix, then nearest number."""
     mp, mn = split_num(missing)
     def score(p):
         pp, pn = split_num(p)
-        pref = common_prefix_len(missing, p)
-        numdist = abs(pn - mn) if (mn >= 0 and pn >= 0) else 9999
-        return (-pref, numdist, len(p))  # more prefix better, then nearer number
+        pref = sum(1 for x, y in zip(missing, p) if x == y)
+        return (-pref, abs(pn - mn) if (mn >= 0 and pn >= 0) else 9999, len(p))
     return min(present, key=score)
 
+def upscale_m22(name, dst):
+    """2x nearest-neighbour upscale of the M22 (half-res) frame, preserving palette indices."""
+    im = Image.open(os.path.join(M22, name.upper() + ".BMP"))
+    if im.mode != 'P':
+        im = im.convert('P')
+    im.resize((im.width * 2, im.height * 2), Image.NEAREST).save(dst, "BMP")
+
 def main():
-    made, families_empty = 0, []
+    native = 0; upscaled = 0; substituted = 0; unfillable = []
     for tts in sorted(glob.glob(os.path.join(M25, "*.TTS"))):
-        refs = refs_of(tts)
-        present = [r for r in refs if os.path.exists(os.path.join(PICS, r + ".bmp"))]
-        missing = [r for r in refs if not os.path.exists(os.path.join(PICS, r + ".bmp"))]
-        if not missing:
-            continue
-        if not present:
-            families_empty.append(os.path.basename(tts))
-            continue
-        for m in missing:
-            src = best_substitute(m, present)
-            shutil.copyfile(os.path.join(PICS, src + ".bmp"), os.path.join(PICS, m + ".bmp"))
-            made += 1
-        print(f"  {os.path.basename(tts):14s} filled {len(missing):2d} missing (had {len(present)} present)")
-    print(f"\nfilled {made} frames by substitution")
-    if families_empty:
-        print(f"NO present frames (cannot fill): {', '.join(families_empty)}")
+        refs = list(dict.fromkeys(refs_of(tts)))  # de-dup, keep order
+        present = [r for r in refs if os.path.exists(os.path.join(M25, r.upper() + ".BMP"))]
+        native += len(present)
+        for r in refs:
+            if r in present:
+                continue
+            dst = os.path.join(PICS, r + ".bmp")
+            if os.path.exists(os.path.join(M22, r.upper() + ".BMP")):
+                upscale_m22(r, dst); upscaled += 1
+            elif present:
+                shutil.copyfile(os.path.join(M25, best_substitute(r, present).upper() + ".BMP"), dst)
+                substituted += 1
+            else:
+                unfillable.append(r)
+    print("frame sources:")
+    print("  native M25 (640):      %d" % native)
+    print("  upscaled from M22 2x:  %d" % upscaled)
+    print("  substituted (placeholder): %d" % substituted)
+    if unfillable:
+        print("  unfillable (no art anywhere): %d  e.g. %s" % (len(unfillable), ", ".join(unfillable[:8])))
 
 if __name__ == '__main__':
     main()
