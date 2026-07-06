@@ -90,11 +90,11 @@ struct DDSurface : public IDirectDrawSurface {
 
     HRESULT QueryInterface(REFIID, void **ppv) { *ppv = this; AddRef(); return S_OK; }
     ULONG   AddRef() { return ++rc; }
-    /* Never self-delete: the engine's cache/deferred-deletion refcounting is balanced against
-     * real COM on Windows, but with synthetic zero-size art one path over-releases — a
-     * delete-on-zero here turns that into a dangling vtable call (wasm null-function trap).
-     * Leaking surfaces is safe headless; revisit with real teardown in the canvas phase. */
-    ULONG   Release() { if (rc) --rc; return rc; }
+    /* Free on zero (the `rc &&` short-circuit no-ops an over-release when rc is already 0, so it
+     * never double-decrements). Previously leaked to dodge an over-release crash seen only with
+     * the synthetic zero-size art; the fly-in/land scene composites a fresh surface per frame, so
+     * leaking there OOM-crashes the browser in ~10s — freeing is required. */
+    ULONG   Release() { if (rc && --rc == 0) { delete this; return 0; } return rc; }
 
     HRESULT AddAttachedSurface(LPDIRECTDRAWSURFACE s) {
         if (attachedBack) attachedBack->Release();
