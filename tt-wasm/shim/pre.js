@@ -35,6 +35,31 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_ctx.putImageData(TT_img, 0, 0);
 };
 
+// Mouse tracking for GetCursorPos (overrides.js). The engine polls the absolute cursor each
+// cycle (DirectInput is off), expecting engine screen pixels. Map the canvas mouse position
+// (accounting for CSS scaling) into TT_mouse_x/y. Default to centre until the first move.
+globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
+globalThis.TT_msgq = globalThis.TT_msgq || [];
+(function attachMouse() {
+  if (typeof document === 'undefined') return;
+  var c = document.getElementById('ttcanvas');
+  if (!c) { setTimeout(attachMouse, 100); return; }
+  var post = function (message, wParam, lParam) { globalThis.TT_msgq.push({ message: message, wParam: wParam | 0, lParam: lParam | 0 }); };
+  c.addEventListener('mousemove', function (e) {
+    var r = c.getBoundingClientRect();
+    var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
+    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
+    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
+  });
+  // Buttons -> WM_[LR]BUTTONDOWN/UP; position is read separately via GetCursorPos.
+  c.addEventListener('mousedown', function (e) { e.preventDefault(); c.focus && c.focus(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
+  c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });
+  c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
+  // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
+  var keyTgt = c.tabIndex >= 0 ? c : window; if (c.tabIndex < 0) c.tabIndex = 0;
+  window.addEventListener('keydown', function (e) { post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
+})();
+
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
 // directory subsystem (ini_entry -> GetPrivateProfileString) finds real values instead of NULL.
 // Paths are placeholders under /toontalk/ for now (asset wiring comes later); what matters for

@@ -9310,6 +9310,17 @@ int MainWindow::set_client_size(int width, int height) {
    return(1);
 };
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+// WASM message-pump bridge: DispatchMessageA (shim/overrides.js) forwards queued DOM mouse/key
+// events here. Route straight to the main window's WndProc — the global WndProc below resolves
+// pWindow from the HWND via GetPointer, which our synthetic window never registered.
+extern "C" EMSCRIPTEN_KEEPALIVE long tt_dispatch_to_wndproc(unsigned message, unsigned wParam, long lParam) {
+	if (tt_main_window) return (long) tt_main_window->WndProc((UINT) message, (WPARAM) wParam, (LPARAM) lParam);
+	return 0;
+}
+#endif
+
 LRESULT export_declaration WndProc(HWND window_handle, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	 // Pointer to the (C++ object that is the) window.
     if (premature_exit) return DefWindowProcG( window_handle, iMessage, wParam, lParam );

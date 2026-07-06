@@ -117,6 +117,46 @@ addToLibrary({
   GetFileAttributesA__deps: ['$UTF8ToString', '$TT_resolvePath'],
   GetFileAttributesA: function(namePtr) { if (!namePtr) return 0xFFFFFFFF; return TT_resolvePath(UTF8ToString(namePtr)) ? 0x80 : 0xFFFFFFFF; },
 
+  // Mouse position. DirectInput failed to init (tt_using_direct_input=FALSE), so the engine polls
+  // the absolute cursor via GetCursorPos each cycle (winmain.cpp:1358). pre.js's canvas mousemove
+  // handler keeps TT_mouse_x/y in engine screen pixels (0..w, 0..h); write them into the POINT.
+  GetCursorPos: function(ptr) {
+    if (ptr) { HEAP32[ptr >> 2] = (globalThis.TT_mouse_x | 0); HEAP32[(ptr >> 2) + 1] = (globalThis.TT_mouse_y | 0); }
+    return 1;
+  },
+  // Our window IS the canvas (origin 0,0), so screen<->client is identity (leave POINT unchanged).
+  ScreenToClient: function(hwnd, ptr) { return 1; },
+  ClientToScreen: function(hwnd, ptr) { return 1; },
+
+  // Windows message pump. pre.js's DOM handlers push mouse-button/key events onto TT_msgq;
+  // the engine's loop (winmain.cpp:1291) PeekMessages them and DispatchMessage routes each to
+  // MainWindow::WndProc via the tt_dispatch_to_wndproc bridge. MSG = {hwnd,message,wParam,
+  // lParam,time,pt.x,pt.y} (7 dwords, offsets 0..24). Mouse position comes from GetCursorPos,
+  // so button messages need only the type.
+  PeekMessageA: function(msgPtr, hwnd, minF, maxF, remove) {
+    var q = globalThis.TT_msgq; if (!q || !q.length) return 0;
+    var idx = -1;
+    for (var i = 0; i < q.length; i++) { var m = q[i].message; if ((minF === 0 && maxF === 0) || (m >= minF && m <= maxF)) { idx = i; break; } }
+    if (idx < 0) return 0;
+    var e = q[idx];
+    if (msgPtr) { var b = msgPtr >> 2; HEAP32[b] = 0; HEAP32[b + 1] = e.message; HEAP32[b + 2] = e.wParam; HEAP32[b + 3] = e.lParam | 0; HEAP32[b + 4] = 0; HEAP32[b + 5] = (globalThis.TT_mouse_x | 0); HEAP32[b + 6] = (globalThis.TT_mouse_y | 0); }
+    if (remove & 1) q.splice(idx, 1);
+    return 1;
+  },
+  GetMessageA: function(msgPtr, hwnd, minF, maxF) {
+    var q = globalThis.TT_msgq, b = msgPtr >> 2;
+    if (q && q.length) { var e = q.shift(); if (msgPtr) { HEAP32[b] = 0; HEAP32[b + 1] = e.message; HEAP32[b + 2] = e.wParam; HEAP32[b + 3] = e.lParam | 0; } return 1; }
+    if (msgPtr) { HEAP32[b + 1] = 0; } // WM_NULL — keep the (rare) paused GetMessage loop alive, never WM_QUIT
+    return 1;
+  },
+  TranslateMessage: function(msgPtr) { return 0; }, // keys are posted as WM_CHAR directly
+  DispatchMessageA: function(msgPtr) {
+    if (!msgPtr) return 0;
+    var b = msgPtr >> 2;
+    if (Module['_tt_dispatch_to_wndproc']) Module['_tt_dispatch_to_wndproc'](HEAP32[b + 1], HEAP32[b + 2], HEAP32[b + 3]);
+    return 0;
+  },
+
   // Modern Win32 file API over the Emscripten FS. The BMP loader (DibOpenFile/DibReadBitmapInfo,
   // wingutil.cpp) reads sprite pixels with CreateFile/ReadFile/CloseHandle — distinct from the
   // OpenFile/_lread path used for the DATs — so these were stubbed and every sprite came up blank.

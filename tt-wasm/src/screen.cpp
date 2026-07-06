@@ -527,13 +527,6 @@ void Screen::display(boolean clean_background) {
   timer_start = timeGetTime();
 #endif
   boolean display_background = !cache_valid;
-#ifdef __EMSCRIPTEN__
-  display_background = TRUE; // TEMP: force background redraw every frame to bypass the cache and see pixels
-  { static int n = 0; if (n < 12) { n++;
-    printf("[tt] Screen::display clean_bg=%d cache_valid=%d display_bg=%d bg=%p type=%s\n",
-      (int)clean_background, (int)cache_valid, (int)display_background, (void*)background,
-      background ? typeid(*background).name() : "(null)"); fflush(stdout); } }
-#endif
   if (display_background && background != NULL) { // second condition added for robustness - interruption dialog can trigger this
 //#if TT_DIRECTX
 //     if (!background->display_region()) { // next frame won't change
