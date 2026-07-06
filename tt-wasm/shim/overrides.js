@@ -124,6 +124,11 @@ addToLibrary({
     if (ptr) { HEAP32[ptr >> 2] = (globalThis.TT_mouse_x | 0); HEAP32[(ptr >> 2) + 1] = (globalThis.TT_mouse_y | 0); }
     return 1;
   },
+  // RELATIVE_MOUSE_MODE reads the delta (cursor - client_center) each frame then warps the cursor
+  // back to centre via SetCursorPos so the next delta is measured fresh. In the browser we emulate
+  // that warp: reset the virtual cursor to (x,y). Under Pointer Lock, pre.js accumulates movementX/Y
+  // from this reset point, so the per-frame delta is exactly the mouse movement — the hand tracks.
+  SetCursorPos: function(x, y) { globalThis.TT_mouse_x = x; globalThis.TT_mouse_y = y; return 1; },
   // Our window IS the canvas (origin 0,0), so screen<->client is identity (leave POINT unchanged).
   ScreenToClient: function(hwnd, ptr) { return 1; },
   ClientToScreen: function(hwnd, ptr) { return 1; },

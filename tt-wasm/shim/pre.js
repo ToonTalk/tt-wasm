@@ -40,23 +40,41 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
 // (accounting for CSS scaling) into TT_mouse_x/y. Default to centre until the first move.
 globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
 globalThis.TT_msgq = globalThis.TT_msgq || [];
+globalThis.TT_pointer_locked = false;
 (function attachMouse() {
   if (typeof document === 'undefined') return;
   var c = document.getElementById('ttcanvas');
   if (!c) { setTimeout(attachMouse, 100); return; }
   var post = function (message, wParam, lParam) { globalThis.TT_msgq.push({ message: message, wParam: wParam | 0, lParam: lParam | 0 }); };
+  document.addEventListener('pointerlockchange', function () { globalThis.TT_pointer_locked = (document.pointerLockElement === c); });
   c.addEventListener('mousemove', function (e) {
-    var r = c.getBoundingClientRect();
-    var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
-    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
-    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
+    if (globalThis.TT_pointer_locked) {
+      // RELATIVE_MOUSE_MODE: accumulate raw movement from the last SetCursorPos re-centre; the
+      // engine reads (cursor - centre) = this movement each frame, then re-centres. No clamp — it
+      // resets every frame and the engine dampens big deltas. Y is inverted because the engine's
+      // delta_y = client_center_y - cursor.y (winmain.cpp:1406), so mouse-down must lower cursor.y.
+      globalThis.TT_mouse_x += (e.movementX || 0);
+      globalThis.TT_mouse_y -= (e.movementY || 0);
+    } else {
+      // Not locked (aerial/menus): absolute canvas position, CSS-scale aware.
+      var r = c.getBoundingClientRect();
+      var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
+      globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
+      globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
+    }
   });
-  // Buttons -> WM_[LR]BUTTONDOWN/UP; position is read separately via GetCursorPos.
-  c.addEventListener('mousedown', function (e) { e.preventDefault(); c.focus && c.focus(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
+  // A click engages Pointer Lock (requires a real user gesture) so the mouse drives the hand as a
+  // relative device — the natural browser equivalent of ToonTalk warping the cursor each frame —
+  // and is itself a game button. Esc releases the lock. Buttons -> WM_[LR]BUTTONDOWN/UP.
+  c.addEventListener('mousedown', function (e) {
+    e.preventDefault(); if (c.focus) c.focus();
+    if (!globalThis.TT_pointer_locked && c.requestPointerLock) { try { c.requestPointerLock(); } catch (_) {} }
+    post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
+  });
   c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
-  var keyTgt = c.tabIndex >= 0 ? c : window; if (c.tabIndex < 0) c.tabIndex = 0;
+  if (c.tabIndex < 0) c.tabIndex = 0;
   window.addEventListener('keydown', function (e) { post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
 })();
 
