@@ -2214,11 +2214,13 @@ void Programmer::em_enter_bootstrap_house() {
    if (room == NULL) return;
    Floor *floor = room->pointer_to_floor();
    if (floor == NULL) return;
+   tt_bootstrap_house->built();               // build the floor (lego + walls) so it can display
    if (state != NULL) { state->cleanup(tt_screen, PROGRAMMER_NORMAL); delete state; }
    state = new Programmer_At_Floor(floor);
    set_next_status(PROGRAMMER_NORMAL);
    tt_screen->new_view(CAMERA_MOSTLY_ABOVE);
    tt_screen->switch_to(floor, FALSE, FALSE);
+   state->finish_initializing();              // hand + toolbox
 }
 #endif
 

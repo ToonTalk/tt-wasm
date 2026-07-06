@@ -10083,11 +10083,12 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 		xml_document *fresh = document_from_string("<Nothing/>");
 		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
 		printf("[tt] bootstrap: houses after=%d\n", (int)current_house_counter()); fflush(stdout);
-		// NOTE: em_enter_bootstrap_house() (prgrmmr.cpp) drops you onto the first house's floor, but a
-		// freshly-built house has an UNBUILT, EMPTY floor (no notebook/toolbox/robot/cubby — those come
-		// from a truck delivering a house or a loaded notebook) and renders as garbage. Populating a
-		// proper starting house = ToonTalk's new-user setup (create the notebook + tools + robot/cubby,
-		// build the floor). Left disabled until that's done; the fly-in lands you on the ground for now.
+		// em_enter_bootstrap_house() (prgrmmr.cpp) puts you on the first house's floor and DOES bring up
+		// the hand + toolbox (house->built() + Programmer_At_Floor::finish_initializing()) — but the floor
+		// BACKGROUND renders as a thin garbage band over black: background(floor_id)->display() /
+		// display_background_cache() (floor.cpp:542 display_region) don't produce the lego-baseplate for a
+		// freshly-bootstrapped floor (view geometry + background-cache subsystem), unlike the city ground
+		// which renders via a different path. Deep rendering fix needed; left disabled — fly-in→ground for now.
 	}
 #endif
 #if TT_SPECIAL_VERSION_TO_DEBUG_WIN_ME
