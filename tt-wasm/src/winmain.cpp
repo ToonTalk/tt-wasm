@@ -2523,6 +2523,13 @@ void MainWindow::initialize_palette() {
 void MainWindow::compute_screen_dimensions(int width, int height) { // abstracted on 130502
    client_width = width;
 	client_height = height;
+#ifdef __EMSCRIPTEN__
+	// The center is normally set from a WM_SIZE the port never delivers; without it client_center
+	// stays 0 and the RELATIVE-mode mouse delta (mouse - client_center, winmain.cpp:1405) becomes
+	// the absolute position, clamping the hand cursor to a screen corner. Set it to screen centre.
+	client_center_x = client_width / 2;
+	client_center_y = client_height / 2;
+#endif
 //	};
 //	if (tt_dispdib_mode == DISPLAYDIB_MODE_640x480x8 ||
 //		 (tt_dispdib_mode == DISPLAYDIB_MODE_320x240x8 && tt_using_dispdib == 2)) {
