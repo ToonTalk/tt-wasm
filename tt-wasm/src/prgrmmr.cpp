@@ -3724,7 +3724,7 @@ ProgrammerStatus Programmer_Titles_Flying::react(boolean ,
 //				WCHAR test[5] = {27700,12288,12434,12288,0};
 //				tt_martian->say(test,99);
 //				tt_martian->say(" clipping: ",99);
-//				ascii_string test2 = "Before …@‚ğ@  after";
+//				ascii_string test2 = "Before ï¿½ï¿½ï¿½@ï¿½ï¿½ï¿½@  after";
 //				wide_string test3 = new WCHAR[10];
 //MultiByteToWideChar(932,0,test2,-1,test3,10);
 //message_box(MB_OK,test3);

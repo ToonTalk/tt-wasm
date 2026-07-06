@@ -42,6 +42,7 @@ EXTRA="${1:-}"
   --preload-file assets/pics@/toontalk/pics \
   -sERROR_ON_UNDEFINED_SYMBOLS=0 -Wl,--allow-multiple-definition \
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
+  -sSTACK_SIZE=16777216 \
   -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
 rc=$?; echo "link exit=$rc"
 [ $rc -ne 0 ] && { echo "--- link errors ---"; tail -30 logs/link.err; exit 1; }
