@@ -92,6 +92,9 @@ class Programmer : public Entity {
 		};
 		void set_timer(millisecond new_time);
 		void set_next_status(ProgrammerStatus new_next_status); // new on 201000
+#ifdef __EMSCRIPTEN__
+		void em_enter_bootstrap_house(); // WASM new-user: start on the first house's floor
+#endif
 		void set_starting_status(ProgrammerStatus status) { // new on 070103
 			starting_status = status;
 		};

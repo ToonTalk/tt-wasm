@@ -2203,6 +2203,25 @@ xml_element *Programmer::xml(xml_document *document) { // new on 011102 - comple
 	return(programmer_element);
 };
 
+#ifdef __EMSCRIPTEN__
+// WASM new-user bootstrap: drop the programmer straight onto a house's floor (the interactive
+// workspace — notebook, toolbox, robot, cubby) instead of leaving them on open city ground after
+// the fly-in. Mirrors the XML-restore path (HOUSE_LOCATION_TAG then PROGRAMMER_AT_FLOOR_TAG).
+void Programmer::em_enter_bootstrap_house() {
+   extern House *tt_bootstrap_house;
+   if (tt_bootstrap_house == NULL) return;
+   room = tt_bootstrap_house->pointer_to_room();
+   if (room == NULL) return;
+   Floor *floor = room->pointer_to_floor();
+   if (floor == NULL) return;
+   if (state != NULL) { state->cleanup(tt_screen, PROGRAMMER_NORMAL); delete state; }
+   state = new Programmer_At_Floor(floor);
+   set_next_status(PROGRAMMER_NORMAL);
+   tt_screen->new_view(CAMERA_MOSTLY_ABOVE);
+   tt_screen->switch_to(floor, FALSE, FALSE);
+}
+#endif
+
 boolean Programmer::handle_xml_tag(Tag tag, xml_node *node) { // new on 051102
    switch (tag) {
       case IN_HAND_TAG:

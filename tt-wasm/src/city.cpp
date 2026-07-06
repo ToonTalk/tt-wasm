@@ -169,6 +169,8 @@ void City::set_containment() {
 	set_containment_active(TRUE);
 };
 
+House *tt_bootstrap_house = NULL; // first house built — the WASM new-user bootstrap starts you inside it
+
 void City::build_initial_houses() {
 #if TT_LARGE_CITIES
 	boolean fill_with_random_houses = (tt_city_width < 0 || tt_city_height < 0);
@@ -215,6 +217,7 @@ void City::build_initial_houses() {
             new_house = new House(x,y,block,(HouseStyle) (i%3));
          };
          block->add_house(new_house,index);
+         if (tt_bootstrap_house == NULL) tt_bootstrap_house = new_house; // remember the first for the bootstrap
          if (tt_system_mode == PUZZLE) {
             if (i == 0) {
                if (load_puzzle(new_house) == NO_PUZZLE_FILE) {
