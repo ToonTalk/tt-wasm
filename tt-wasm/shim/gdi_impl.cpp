@@ -34,7 +34,7 @@
 
 namespace {
 
-enum ObjKind { OBJ_BRUSH, OBJ_PEN, OBJ_BITMAP, OBJ_REGION };
+enum ObjKind { OBJ_BRUSH, OBJ_PEN, OBJ_BITMAP, OBJ_REGION, OBJ_FONT };
 
 struct GdiObj {
     ObjKind kind;
@@ -50,12 +50,14 @@ struct GdiObj {
     unsigned char *bits; int bw, bh; bool owns;
     /* region */
     RECT rgn;
+    /* font */
+    int font_w, font_h;
 };
 
 struct GdiDC {
     unsigned char *pixels; int w, h;   /* target (surface, or a selected bitmap for a memory DC) */
     bool owns_surface_ref;             /* surface DC: don't free pixels */
-    GdiObj *brush, *pen, *bitmap;
+    GdiObj *brush, *pen, *bitmap, *font;
     int cur_x, cur_y;                  /* MoveToEx */
     int brush_org_x, brush_org_y;
     RECT clip; bool has_clip;
@@ -166,6 +168,27 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
     return (HBRUSH)o;
 }
 
+/* Fonts: we don't rasterize glyphs, but MainWindow::set_font reads back the metrics
+ * (character_width = tmAveCharWidth) and place_text divides max_width by them — so track the
+ * requested size and report non-zero metrics, or text layout divides by zero. */
+HFONT CreateFontIndirectA(const LOGFONTA *lf) {
+    GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_FONT;
+    int h = lf ? (lf->lfHeight < 0 ? -lf->lfHeight : lf->lfHeight) : 0;
+    int w = lf ? (lf->lfWidth  < 0 ? -lf->lfWidth  : lf->lfWidth ) : 0;
+    o->font_h = (h * 96 + 36) / 72; if (o->font_h < 1) o->font_h = 12;   /* LOGFONT points -> ~pixels */
+    o->font_w = (w * 96 + 36) / 72; if (o->font_w < 1) o->font_w = o->font_h / 2;
+    return (HFONT)o;
+}
+BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
+    GdiDC *dc = (GdiDC *)hdc;
+    int h = (dc && dc->font) ? dc->font->font_h : 12;
+    int w = (dc && dc->font && dc->font->font_w > 0) ? dc->font->font_w : 6;
+    if (tm) { memset(tm, 0, sizeof(*tm));
+        tm->tmHeight = h; tm->tmAscent = (h * 4) / 5; tm->tmDescent = h - tm->tmAscent;
+        tm->tmAveCharWidth = w; tm->tmMaxCharWidth = w; }
+    return 1;
+}
+
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ obj) {
     GdiDC *dc = (GdiDC *)hdc; GdiObj *o = (GdiObj *)obj; if (!dc || !o) return NULL;
     GdiObj *prev = NULL;
@@ -173,6 +196,7 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ obj) {
         case OBJ_BRUSH:  prev = dc->brush; dc->brush = o; break;
         case OBJ_PEN:    prev = dc->pen;   dc->pen = o;   break;
         case OBJ_BITMAP: prev = dc->bitmap; dc->bitmap = o; dc->pixels = o->bits; dc->w = o->bw; dc->h = o->bh; break;
+        case OBJ_FONT:   prev = dc->font;  dc->font = o;   break;
         case OBJ_REGION: break;
     }
     return (HGDIOBJ)prev;

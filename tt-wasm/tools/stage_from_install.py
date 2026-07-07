@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Stage the REAL ToonTalk art from an original install (found 2026-07-07):
+  - Downloads/M25.US1        : the real packed art DAT (68 sprites, references frames by name)
+  - <install>/resind.us1     : real ground/brush textures
+  - <install>/java/*.PNG      : the sprite frames as (anti-aliased, hi-res, RGB) PNGs
+
+The engine is 8-bit single-palette, so quantize each PNG to the M25 palette -> 8-bit BMP that
+DibOpenFile loads. Per frame, prefer the source in order: native dev/M25 BMP (true 8-bit) >
+java PNG (quantized) > dev/M22 BMP (upscaled 2x). Writes assets/pics + assets/toontalk, and
+removes the loose .tts so all 68 sprites load from the real DAT's descriptors.
+"""
+import struct, glob, os, shutil
+from PIL import Image
+
+INSTALL = r"C:\Program Files (x86)\Animated Programs\ToonTalk"
+JAVA    = os.path.join(INSTALL, "java")
+M25US1  = r"C:\Users\toont\Downloads\M25.US1"
+DEVM25  = r"C:\Users\toont\dev\M25"
+DEVM22  = r"C:\Users\toont\dev\M22"
+ROOT    = r"C:\Users\toont\dev\tt-wasm\assets"
+PICS    = os.path.join(ROOT, "pics")
+TT      = os.path.join(ROOT, "toontalk")
+
+try:    NONE = Image.Dither.NONE
+except AttributeError: NONE = Image.NONE
+
+def m25_palette():
+    d = open(M25US1, "rb").read()
+    pb = d[2+40 : 2+40+1024]                       # 256 RGBQUAD (B,G,R,x) after the 40-byte header
+    rgb = []
+    for i in range(256):
+        rgb += [pb[i*4+2], pb[i*4+1], pb[i*4]]     # -> R,G,B
+    p = Image.new("P", (1, 1)); p.putpalette(rgb)
+    return p
+
+def referenced_names():
+    """every image name the real DAT's sprite descriptors reference (lowercased)."""
+    d = open(M25US1, "rb").read()
+    off = 2 + 1064
+    (n1,) = struct.unpack_from("<h", d, off); off += 2
+    offs = struct.unpack_from("<%dl" % n1, d, off)
+    names = set()
+    for i in range(n1 - 1):
+        blk = d[offs[i]:offs[i+1]].split(b"\x00")[0].decode("latin1")
+        toks = blk.split()
+        # file-list lines are "name resid flag"; grab name tokens (non-numeric first token)
+        for j in range(len(toks) - 2):
+            if toks[j+1].isdigit() and toks[j+2] in ("0", "1") and not toks[j][0].isdigit():
+                names.add(toks[j].lower())
+    return names
+
+def main():
+    pal = m25_palette()
+    want = referenced_names()
+    print("DAT references %d distinct frame names" % len(want))
+    for f in glob.glob(os.path.join(PICS, "*.bmp")): os.remove(f)
+    for f in glob.glob(os.path.join(PICS, "*.tts")): os.remove(f)  # use the DAT's descriptors
+
+    native = upscaled = quantized = missing = 0
+    # 1. native dev/M25 (true 8-bit) — highest quality
+    have = {}
+    for bmp in glob.glob(os.path.join(DEVM25, "*.BMP")):
+        name = os.path.basename(bmp)[:-4].lower()
+        shutil.copyfile(bmp, os.path.join(PICS, name + ".bmp")); have[name] = 1; native += 1
+    # 2. java PNGs -> quantized, for names not already native
+    for png in glob.glob(os.path.join(JAVA, "*.PNG")):
+        name = os.path.basename(png)[:-4].lower()
+        if name in have: continue
+        try:
+            im = Image.open(png).convert("RGB").quantize(palette=pal, dither=NONE)
+            im.save(os.path.join(PICS, name + ".bmp"), "BMP"); have[name] = 1; quantized += 1
+        except Exception as e:
+            print("  png fail", name, e)
+    # 3. dev/M22 upscaled, for anything still missing that the DAT wants
+    for name in want:
+        if name in have: continue
+        m22 = os.path.join(DEVM22, name.upper() + ".BMP")
+        if os.path.exists(m22):
+            im = Image.open(m22)
+            if im.mode != "P": im = im.convert("P")
+            im.resize((im.width*2, im.height*2), Image.NEAREST).save(os.path.join(PICS, name+".bmp"), "BMP")
+            have[name] = 1; upscaled += 1
+        else:
+            missing += 1
+    print("frames: native(M25)=%d  quantized(java)=%d  upscaled(M22)=%d  still-missing=%d"
+          % (native, quantized, upscaled, missing))
+
+    # 4. the real DAT + brushes
+    os.makedirs(os.path.join(TT, "Java"), exist_ok=True)
+    for d in (TT, os.path.join(TT, "Java")):
+        shutil.copyfile(M25US1, os.path.join(d, "m25.us1"))
+        shutil.copyfile(M25US1, os.path.join(d, "m800.us1"))
+        shutil.copyfile(os.path.join(INSTALL, "resind.us1"), os.path.join(d, "resind.us1"))
+    print("staged real m25.us1 (%d KB) + resind.us1 (%d KB)"
+          % (os.path.getsize(M25US1)//1024, os.path.getsize(os.path.join(INSTALL, "resind.us1"))//1024))
+
+if __name__ == "__main__":
+    main()

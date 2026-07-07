@@ -32,3 +32,5 @@ BitBlt
 DeleteDC
 RealizePalette
 SelectPalette
+CreateFontIndirectA
+GetTextMetricsA
