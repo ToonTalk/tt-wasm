@@ -6,14 +6,15 @@ let frames = 0;
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
   frames++;
   if (frames % 60 === 0) console.log(`[harness] ${frames} frames pumped (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
-  // Headless auto-descend: after boot, hold the left button at screen centre so the helicopter
-  // flies down and lands (reaches the zoomed-in lawn scene that the browser can only get to via
-  // real input). Lets us profile the landed-scene leak headlessly. Enable with TT_AUTODESCEND=1.
-  if (process.env.TT_AUTODESCEND && frames === 150) {
+  // Headless auto-descend: after boot, hold the 'd' key (DOWN_IF_IN_HELICOPTER accelerator) so
+  // the helicopter flies down, lands, and hands over to walking. In ABSOLUTE mouse mode the
+  // left button is reserved for selection, so descent is keyboard-driven — matching real play.
+  // Enable with TT_AUTODESCEND=1.
+  if (process.env.TT_AUTODESCEND && frames >= 150 && frames < 1400 && (frames % 2) === 0) {
     globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
     globalThis.TT_msgq = globalThis.TT_msgq || [];
-    globalThis.TT_msgq.push({ message: 0x0201, wParam: 0, lParam: 0 }); // WM_LBUTTONDOWN, held
-    console.log('[harness] injected held LBUTTONDOWN — descending');
+    if (globalThis.TT_msgq.length < 4) globalThis.TT_msgq.push({ message: 0x0102, wParam: 100, lParam: 0 }); // WM_CHAR 'd', autorepeat
+    if (frames === 150) console.log('[harness] holding "d" — descending');
   }
   cb(Date.now() - t0);
 }, 16);

@@ -67,7 +67,6 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
 // (accounting for CSS scaling) into TT_mouse_x/y. Default to centre until the first move.
 globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
 globalThis.TT_msgq = globalThis.TT_msgq || [];
-globalThis.TT_pointer_locked = false;
 (function attachMouse() {
   if (typeof document === 'undefined') return;
   var c = document.getElementById('ttcanvas');
@@ -79,38 +78,21 @@ globalThis.TT_pointer_locked = false;
     // of stale clicks/keys when the tab becomes visible again is worse than losing them.
     while (q.length > 32) q.shift();
   };
-  document.addEventListener('pointerlockchange', function () { globalThis.TT_pointer_locked = (document.pointerLockElement === c); });
+  // The port runs ToonTalk's native ABSOLUTE mouse mode (AbsoluteMouseMode=1 in the INI below):
+  // the OS cursor stays visible and TT_mouse is simply its canvas position, CSS-scale aware.
+  // No Pointer Lock — relative mode's per-frame re-centring can't be done honestly on the web.
   c.addEventListener('mousemove', function (e) {
-    if (globalThis.TT_pointer_locked) {
-      // RELATIVE_MOUSE_MODE: accumulate raw movement from the last SetCursorPos re-centre; the
-      // engine reads (cursor - centre) = this movement each frame, then re-centres. No clamp — it
-      // resets every frame and the engine dampens big deltas. Y is inverted because the engine's
-      // delta_y = client_center_y - cursor.y (winmain.cpp:1406), so mouse-down must lower cursor.y.
-      globalThis.TT_mouse_x += (e.movementX || 0);
-      globalThis.TT_mouse_y -= (e.movementY || 0);
-    } else {
-      // Not locked (aerial/menus): absolute canvas position, CSS-scale aware.
-      var r = c.getBoundingClientRect();
-      var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
-      globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
-      globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
-    }
+    var r = c.getBoundingClientRect();
+    var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
+    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
+    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
   });
-  // A click engages Pointer Lock (requires a real user gesture) so the mouse drives the hand as a
-  // relative device — the natural browser equivalent of ToonTalk warping the cursor each frame —
-  // and is itself a game button. Esc releases the lock. Buttons -> WM_[LR]BUTTONDOWN/UP.
-  c.addEventListener('mousedown', function (e) {
-    e.preventDefault(); if (c.focus) c.focus();
-    if (!globalThis.TT_pointer_locked && c.requestPointerLock) {
-      // returns a promise in modern Chrome — a bare try/catch misses async rejections
-      // (e.g. WrongDocumentError when the tab isn't visible / gesture is not accepted)
-      try { var pl = c.requestPointerLock(); if (pl && pl.catch) pl.catch(function () {}); } catch (_) {}
-    }
-    post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
-  });
+  // Buttons -> WM_[LR]BUTTONDOWN/UP (position is read separately via GetCursorPos).
+  c.addEventListener('mousedown', function (e) { e.preventDefault(); if (c.focus) c.focus(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
   c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
+  // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.
   if (c.tabIndex < 0) c.tabIndex = 0;
   window.addEventListener('keydown', function (e) { post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
 })();
@@ -129,6 +111,11 @@ Module['preRun'].push(function () {
     'MaximumNumberOfHoles=2048',
     'RobotCounter=50',
     'DelayBetweenTitles=0',
+    // A browser is an absolute pointing device: use ToonTalk's native absolute-mouse mode
+    // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
+    // which the web can only fake with Pointer Lock — and without the lock the cursor offset
+    // acts as a stuck joystick (the helicopter drifted/climbed on its own and could never land).
+    'AbsoluteMouseMode=1',
     '',
     '[Directories]',
     'MainDir=/toontalk/',

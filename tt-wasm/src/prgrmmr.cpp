@@ -916,6 +916,9 @@ boolean Programmer::react(Screen *screen) {
 			play_sound(HELICOPTER_SOUND,TRUE);
 			break;
 		case LEAVE_HELICOPTER:
+#ifdef __EMSCRIPTEN__
+			printf("[tt] LEAVE_HELICOPTER — touched down, walking out\n"); fflush(stdout);
+#endif
 			pointer_to_appearance()->set_parameter(HELICOPTER_PERSON_LEAVING);
 			set_timer(pointer_to_appearance()->total_cycle_duration()+100);
 			x_speed = 0;
