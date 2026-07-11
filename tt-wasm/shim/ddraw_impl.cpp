@@ -109,14 +109,18 @@ struct DDSurface : public IDirectDrawSurface {
     }
 
     HRESULT Blt(LPRECT dst, LPDIRECTDRAWSURFACE srcSurf, LPRECT src, DWORD flags, LPDDBLTFX fx) {
-        long dx0 = dst ? dst->left : 0, dy0 = dst ? dst->top : 0;
-        long dx1 = dst ? dst->right : (long)w, dy1 = dst ? dst->bottom : (long)h;
-        if (dx1 > (long)w) dx1 = w; if (dy1 > (long)h) dy1 = h;
-        if (dx0 < 0) dx0 = 0; if (dy0 < 0) dy0 = 0;
-        if (dx0 >= dx1 || dy0 >= dy1) return DD_OK;
+        /* Keep the ORIGINAL dest rect for source mapping and clip only the iteration bounds.
+         * Clamping dx0/dy0 before mapping shifted a partially off-screen sprite's CONTENT by the
+         * clipped amount (houses visibly jumped as they crossed a screen edge in flight), and
+         * computing the stretch ratio from the clipped size distorted it further. */
+        long odx0 = dst ? dst->left : 0, ody0 = dst ? dst->top : 0;
+        long odx1 = dst ? dst->right : (long)w, ody1 = dst ? dst->bottom : (long)h;
+        long cx0 = odx0 < 0 ? 0 : odx0, cy0 = ody0 < 0 ? 0 : ody0;
+        long cx1 = odx1 > (long)w ? (long)w : odx1, cy1 = ody1 > (long)h ? (long)h : ody1;
+        if (cx0 >= cx1 || cy0 >= cy1) return DD_OK;
         if (flags & DDBLT_COLORFILL) {
             unsigned char c = (unsigned char)(fx ? fx->dwFillColor : 0);
-            for (long y = dy0; y < dy1; y++) memset(pixels + y * w + dx0, c, (size_t)(dx1 - dx0));
+            for (long y = cy0; y < cy1; y++) memset(pixels + y * w + cx0, c, (size_t)(cx1 - cx0));
             if (this == g_primary) tt_present_surface(this);
             return DD_OK;
         }
@@ -124,19 +128,36 @@ struct DDSurface : public IDirectDrawSurface {
         if (!s) return DD_OK;
         long sx0 = src ? src->left : 0, sy0 = src ? src->top : 0;
         long sx1 = src ? src->right : (long)s->w, sy1 = src ? src->bottom : (long)s->h;
-        long sw = sx1 - sx0, sh = sy1 - sy0, dw = dx1 - dx0, dh = dy1 - dy0;
-        if (sw <= 0 || sh <= 0) return DD_OK;
+        long sw = sx1 - sx0, sh = sy1 - sy0, dw = odx1 - odx0, dh = ody1 - ody0;
+        if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) return DD_OK;
         boolean keyed = (flags & DDBLT_KEYSRC) && s->hasColorKey;
         unsigned char key = (unsigned char)s->colorKey.dwColorSpaceLowValue;
-        for (long y = 0; y < dh; y++) {
-            long sy = sy0 + (dh == sh ? y : y * sh / dh);
-            if (sy < 0 || sy >= (long)s->h) continue;
-            for (long x = 0; x < dw; x++) {
-                long sx = sx0 + (dw == sw ? x : x * sw / dw);
-                if (sx < 0 || sx >= (long)s->w) continue;
-                unsigned char p = s->pixels[sy * s->w + sx];
-                if (keyed && p == key) continue;
-                pixels[(dy0 + y) * w + (dx0 + x)] = p;
+        if (s == this && dw == sw && dh == sh && !keyed) {
+            /* Same-surface 1:1 copy (the background cache scrolling): rows must be walked in
+             * the safe order or we read rows already overwritten; memmove handles horizontal
+             * overlap within a row. */
+            boolean down = (ody0 > sy0);
+            long rows = cy1 - cy0;
+            for (long i = 0; i < rows; i++) {
+                long y = down ? (cy1 - 1 - i) : (cy0 + i);
+                long sy = sy0 + (y - ody0);
+                if (sy < 0 || sy >= (long)s->h) continue;
+                long sxr = sx0 + (cx0 - odx0), count = cx1 - cx0, dxr = cx0;
+                if (sxr < 0) { count += sxr; dxr -= sxr; sxr = 0; }          /* clip source left */
+                if (sxr + count > (long)s->w) count = (long)s->w - sxr;      /* clip source right */
+                if (count > 0) memmove(pixels + y * w + dxr, s->pixels + sy * s->w + sxr, (size_t)count);
+            }
+        } else {
+            for (long y = cy0; y < cy1; y++) {
+                long sy = sy0 + (dh == sh ? (y - ody0) : ((y - ody0) * sh) / dh);
+                if (sy < 0 || sy >= (long)s->h) continue;
+                for (long x = cx0; x < cx1; x++) {
+                    long sx = sx0 + (dw == sw ? (x - odx0) : ((x - odx0) * sw) / dw);
+                    if (sx < 0 || sx >= (long)s->w) continue;
+                    unsigned char p = s->pixels[sy * s->w + sx];
+                    if (keyed && p == key) continue;
+                    pixels[y * w + x] = p;
+                }
             }
         }
         if (this == g_primary) tt_present_surface(this);

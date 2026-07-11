@@ -4031,8 +4031,15 @@ ProgrammerStatus Programmer_City_Flying::react(boolean new_user_input,
                           virtual_right_button(button_status,FALSE) ||  // shift any button
                           (!extended_key && keyboard_accelerator(key,UP_IF_IN_HELICOPTER))));
 		// following updated on 030605 so if ABSOLUTE_MOUSE_MODE then keyboard buttons work
+#ifdef __EMSCRIPTEN__
+      // Web port runs in absolute mode, but with a real mouse (not a pen) the left button
+      // should still fly the helicopter down (Ken, 2026-07-11). 'd' works as well.
+      boolean move_down = (left_button(button_status) ||
+                           (!extended_key && keyboard_accelerator(key,DOWN_IF_IN_HELICOPTER)));
+#else
       boolean move_down = ((tt_mouse_mode != ABSOLUTE_MOUSE_MODE && left_button(button_status)) ||
                            (!extended_key && keyboard_accelerator(key,DOWN_IF_IN_HELICOPTER)));
+#endif
       if (tt_delta_x_and_delta_y_due_solely_to_arrow_keys) {
          // new on 060502 so up and down arrow keys move in z rather y
          if (delta_y > 0) {
