@@ -1,3 +1,30 @@
+// Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
+// non-visible tabs, which froze the whole message loop (input queued forever and burst-replayed
+// on return). Race each rAF against a 500ms timeout — visible tabs run at full rAF rate (the
+// timeout is cleared), hidden tabs pump at the browser's throttled timer rate (~1-2Hz), enough
+// to drain input and keep the world's clock moving.
+if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+  (function () {
+    var origRAF = window.requestAnimationFrame.bind(window);
+    var origCancel = window.cancelAnimationFrame ? window.cancelAnimationFrame.bind(window) : function () {};
+    var timeouts = {};                                  /* rafId -> timeoutId */
+    window.requestAnimationFrame = function (cb) {
+      var done = false, rafId;
+      var fire = function (t) {
+        if (done) return; done = true;
+        clearTimeout(timeouts[rafId]); delete timeouts[rafId];
+        cb(t);
+      };
+      rafId = origRAF(fire);
+      timeouts[rafId] = setTimeout(function () { origCancel(rafId); fire(performance.now()); }, 500);
+      return rafId;
+    };
+    window.cancelAnimationFrame = function (id) {
+      clearTimeout(timeouts[id]); delete timeouts[id]; origCancel(id);
+    };
+  })();
+}
+
 // TT_present(pixelsPtr, w, h, palettePtr): called from the DirectDraw shim whenever the
 // primary surface changes (Flip / Blt-to-primary). In a browser it paints #ttcanvas —
 // 8-bit indices through the PALETTEENTRY LUT (RGB + flags, 4 bytes each) into RGBA
@@ -45,7 +72,13 @@ globalThis.TT_pointer_locked = false;
   if (typeof document === 'undefined') return;
   var c = document.getElementById('ttcanvas');
   if (!c) { setTimeout(attachMouse, 100); return; }
-  var post = function (message, wParam, lParam) { globalThis.TT_msgq.push({ message: message, wParam: wParam | 0, lParam: lParam | 0 }); };
+  var post = function (message, wParam, lParam) {
+    var q = globalThis.TT_msgq;
+    q.push({ message: message, wParam: wParam | 0, lParam: lParam | 0 });
+    // If the loop isn't draining (hidden/throttled tab), drop the oldest — replaying a backlog
+    // of stale clicks/keys when the tab becomes visible again is worse than losing them.
+    while (q.length > 32) q.shift();
+  };
   document.addEventListener('pointerlockchange', function () { globalThis.TT_pointer_locked = (document.pointerLockElement === c); });
   c.addEventListener('mousemove', function (e) {
     if (globalThis.TT_pointer_locked) {
@@ -68,7 +101,11 @@ globalThis.TT_pointer_locked = false;
   // and is itself a game button. Esc releases the lock. Buttons -> WM_[LR]BUTTONDOWN/UP.
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus();
-    if (!globalThis.TT_pointer_locked && c.requestPointerLock) { try { c.requestPointerLock(); } catch (_) {} }
+    if (!globalThis.TT_pointer_locked && c.requestPointerLock) {
+      // returns a promise in modern Chrome — a bare try/catch misses async rejections
+      // (e.g. WrongDocumentError when the tab isn't visible / gesture is not accepted)
+      try { var pl = c.requestPointerLock(); if (pl && pl.catch) pl.catch(function () {}); } catch (_) {}
+    }
     post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
   });
   c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });

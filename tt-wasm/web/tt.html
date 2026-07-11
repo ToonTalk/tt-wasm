@@ -20,6 +20,9 @@
     border: 1px solid #3a3a4c; border-radius: 6px;
     box-shadow: 0 10px 50px rgba(0,0,0,.55);
   }
+  /* the canvas is focusable (tabIndex for keys) — suppress the white UA focus ring */
+  #ttcanvas:focus { outline: none; }
+  #ttcanvas:focus-visible { outline: none; }
   #help {
     max-width: 620px; text-align: center; color: #a9a9bd;
     background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
