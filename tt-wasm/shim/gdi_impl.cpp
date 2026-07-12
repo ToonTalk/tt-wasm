@@ -87,6 +87,31 @@ static void init_stock() {
 
 static inline unsigned char lum(COLORREF c) { return (unsigned char)(((c & 0xFF) + ((c >> 8) & 0xFF) + ((c >> 16) & 0xFF)) / 3); }
 
+/* COLORREF -> palette index. The engine passes TRUE RGB colorrefs (tt_colors is built from the
+ * DAT palette in initialize_palette), so the only faithful mapping is nearest-colour against the
+ * REAL palette — the old luminance shortcut was only ever right for the grayscale dev palette
+ * (it painted number pads black). ddraw_impl pushes the palette here whenever it is set. */
+static unsigned char g_pal[256][3];
+static bool g_pal_set = false;
+static unsigned char nearest_index(int r, int g, int b) {
+    int best = 0; long bestd = 0x7FFFFFFF;
+    for (int i = 0; i < 256; i++) {
+        int dr = r - g_pal[i][0], dg = g - g_pal[i][1], db = b - g_pal[i][2];
+        long d = (long)dr*dr + (long)dg*dg + (long)db*db;
+        if (d < bestd) { bestd = d; best = i; if (d == 0) break; }
+    }
+    return (unsigned char)best;
+}
+static unsigned char colorref_to_index(COLORREF c) {
+    if ((c >> 24) == 1) return (unsigned char)(c & 0xFF);       /* PALETTEINDEX(i) */
+    int r = c & 0xFF, g = (c >> 8) & 0xFF, b = (c >> 16) & 0xFF;
+    if (!g_pal_set) return lum(c);
+    static COLORREF last_c = 0xFFFFFFFF; static unsigned char last_i = 0;   /* 1-entry cache */
+    if (c == last_c) return last_i;
+    last_c = c; last_i = nearest_index(r, g, b);
+    return last_i;
+}
+
 static inline void put(GdiDC *dc, int x, int y, unsigned char idx) {
     if (!dc->pixels || x < 0 || y < 0 || x >= dc->w || y >= dc->h) return;
     if (dc->has_clip && (x < dc->clip.left || x >= dc->clip.right || y < dc->clip.top || y >= dc->clip.bottom)) return;
@@ -121,6 +146,24 @@ static void draw_line(GdiDC *dc, int x0, int y0, int x1, int y1) {
 } /* namespace */
 
 /* ---- entry points used by ddraw_impl for surface DCs ---- */
+extern "C" void gdi_set_palette(const unsigned char *rgb_triples /* 256*3 */) {
+    for (int i = 0; i < 256; i++) {
+        g_pal[i][0] = rgb_triples[i * 3];
+        g_pal[i][1] = rgb_triples[i * 3 + 1];
+        g_pal[i][2] = rgb_triples[i * 3 + 2];
+    }
+    g_pal_set = true;
+    /* retune the stock objects from fixed grayscale indices to the real palette */
+    init_stock();
+    g_stock[WHITE_BRUSH]->fill  = nearest_index(255, 255, 255);
+    g_stock[LTGRAY_BRUSH]->fill = nearest_index(192, 192, 192);
+    g_stock[GRAY_BRUSH]->fill   = nearest_index(128, 128, 128);
+    g_stock[DKGRAY_BRUSH]->fill = nearest_index(64, 64, 64);
+    g_stock[BLACK_BRUSH]->fill  = nearest_index(0, 0, 0);
+    g_stock[WHITE_PEN]->pen_index = nearest_index(255, 255, 255);
+    g_stock[BLACK_PEN]->pen_index = nearest_index(0, 0, 0);
+}
+
 extern "C" HDC gdi_create_surface_dc(unsigned char *pixels, int w, int h) {
     init_stock();
     GdiDC *dc = new GdiDC(); memset(dc, 0, sizeof(*dc));
@@ -161,8 +204,8 @@ HBITMAP CreateDIBitmap(HDC, const BITMAPINFOHEADER *bmih, DWORD init, const void
 }
 
 HGDIOBJ GetStockObject(int i) { init_stock(); return (i >= 0 && i < 9) ? (HGDIOBJ)g_stock[i] : (HGDIOBJ)g_stock[NULL_BRUSH]; }
-HBRUSH  CreateSolidBrush(COLORREF c) { return (HBRUSH)make_solid(lum(c)); }
-HPEN    CreatePen(int style, int, COLORREF c) { GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_PEN; o->pen_index = lum(c); o->pen_null = (style == PS_NULL); return (HPEN)o; }
+HBRUSH  CreateSolidBrush(COLORREF c) { return (HBRUSH)make_solid(colorref_to_index(c)); }
+HPEN    CreatePen(int style, int, COLORREF c) { GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_PEN; o->pen_index = colorref_to_index(c); o->pen_null = (style == PS_NULL); return (HPEN)o; }
 HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
     GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_BRUSH; o->pattern = true;
     if (packed) { const unsigned char *p = (const unsigned char *)packed + 1064 /*dib_header_size*/; memcpy(o->pat, p, 64); }
@@ -289,9 +332,9 @@ BOOL BitBlt(HDC hdcD, int x, int y, int cx, int cy, HDC hdcS, int x1, int y1, DW
     return 1;
 }
 
-COLORREF SetBkColor(HDC hdc, COLORREF c) { GdiDC *dc = (GdiDC *)hdc; unsigned char p = dc ? dc->bk_index : 0; if (dc) dc->bk_index = lum(c); return RGB(p, p, p); }
+COLORREF SetBkColor(HDC hdc, COLORREF c) { GdiDC *dc = (GdiDC *)hdc; unsigned char p = dc ? dc->bk_index : 0; if (dc) dc->bk_index = colorref_to_index(c); return RGB(p, p, p); }
 int      SetBkMode(HDC hdc, int m) { GdiDC *dc = (GdiDC *)hdc; int p = dc ? dc->bk_mode : 0; if (dc) dc->bk_mode = m; return p; }
-COLORREF SetTextColor(HDC hdc, COLORREF c) { GdiDC *dc = (GdiDC *)hdc; unsigned char p = dc ? dc->text_index : 0; if (dc) dc->text_index = lum(c); return RGB(p, p, p); }
+COLORREF SetTextColor(HDC hdc, COLORREF c) { GdiDC *dc = (GdiDC *)hdc; unsigned char p = dc ? dc->text_index : 0; if (dc) dc->text_index = colorref_to_index(c); return RGB(p, p, p); }
 BOOL     SetBrushOrgEx(HDC hdc, int x, int y, LPPOINT pt) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; if (pt) { pt->x = dc->brush_org_x; pt->y = dc->brush_org_y; } dc->brush_org_x = x; dc->brush_org_y = y; return 1; }
 
 HRGN CreateRectRgn(int l, int t, int r, int b) { GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_REGION; o->rgn.left = l; o->rgn.top = t; o->rgn.right = r; o->rgn.bottom = b; return (HRGN)o; }

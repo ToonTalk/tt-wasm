@@ -28,6 +28,9 @@
 #define E_NOTIMPL ((HRESULT)0x80004001L)
 #endif
 
+/* GDI rasterizer (shim/gdi_impl.cpp): give it the real palette for COLORREF->index mapping. */
+extern "C" void gdi_set_palette(const unsigned char *rgb_triples);
+
 namespace {
 
 /* ------------------------------------------------------------- palette */
@@ -46,6 +49,13 @@ struct DDPalette : public IDirectDrawPalette {
     HRESULT SetEntries(DWORD, DWORD start, DWORD n, LPPALETTEENTRY in) {
         if (!in) return DDERR_INVALIDPARAMS;
         for (DWORD i = 0; i < n && start + i < 256; i++) entries[start + i] = in[i];
+        /* Feed the GDI rasterizer the real palette so COLORREF fills map to the right
+         * indices (nearest-colour) instead of the old grayscale luminance shortcut. */
+        unsigned char rgb[256 * 3];
+        for (int i = 0; i < 256; i++) {
+            rgb[i * 3] = entries[i].peRed; rgb[i * 3 + 1] = entries[i].peGreen; rgb[i * 3 + 2] = entries[i].peBlue;
+        }
+        gdi_set_palette(rgb);
         return DD_OK;
     }
 };
