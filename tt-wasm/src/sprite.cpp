@@ -5425,7 +5425,14 @@ work_page UserImage::retrieve_image(int &transparent_color, int &bits_per_pixel,
 //   OFSTRUCT file_struct;
 //   HFILE file = OpenFile(file_name, &file_struct, OF_READ);
 //	boolean treat_white_as_black = FALSE; // new on 121001
-   if (!compute_full_file_name()) return(NULL);
+   if (!compute_full_file_name()) {
+#ifdef __EMSCRIPTEN__
+      printf("[tt] missing-art: no file for image '%s' (resIdx=%d code=%d)\n",
+        (resource_index >= 0 && tt_image_file_names && tt_image_file_names[resource_index]) ? tt_image_file_names[resource_index] : "(unnamed)",
+        resource_index, (int)code); fflush(stdout);
+#endif
+      return(NULL);
+   };
 	LPBITMAPINFOHEADER dib = NULL;
 #if TT_DEBUG_ON
 	millisecond start_time;
@@ -5582,6 +5589,12 @@ work_page UserImage::retrieve_image(int &transparent_color, int &bits_per_pixel,
 			return(NULL);
 		};
 		dib = DibOpenFile(full_file_name);
+#ifdef __EMSCRIPTEN__
+		if (dib == NULL) {
+			printf("[tt] missing-art: DibOpenFile failed for '%s' (resIdx=%d code=%d)\n",
+			  full_file_name ? full_file_name : "(null)", resource_index, (int)code); fflush(stdout);
+		};
+#endif
 		if (dib != NULL) { // moved here on 290500
 		   long width = dib->biWidth;
 		   if (width&3) { // needs padding
