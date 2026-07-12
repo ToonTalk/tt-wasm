@@ -49,6 +49,26 @@ def referenced_names():
                 names.add(toks[j].lower())
     return names
 
+def fix_pad_template(name, im):
+    """The java export's PAD faces are chroma-key TEMPLATES — number pads solid green-family,
+    text pads magenta-family, with the 3D shading encoded as key-shade variation (the Java
+    runtime recolored them). The C++ engine expects real white pads, so untranslated templates
+    color-key away to black boxes. Rebuild the classic white pad: map each key pixel's shade to
+    a neutral gray/white, leave non-key pixels (digits, borders drawn in real colors) alone."""
+    if not (name.startswith("numb") or name.startswith("text")):
+        return im
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b = px[x, y]
+            if name.startswith("numb") and g > 180 and g > r + 80 and g > b + 60:
+                v = min(255, 140 + r)                    # R carries the shading (0=border..~112=face)
+                px[x, y] = (v, v, v)
+            elif name.startswith("text") and r > 180 and r > g + 80 and b > 100 and b > g:
+                v = min(255, 120 + (g * 85) // 100)      # G carries the shading (40..152)
+                px[x, y] = (v, v, v)
+    return im
+
 def main():
     pal = m25_palette()
     want = referenced_names()
@@ -67,7 +87,7 @@ def main():
         name = os.path.basename(png)[:-4].lower()
         if name in have: continue
         try:
-            im = Image.open(png).convert("RGB").quantize(palette=pal, dither=NONE)
+            im = fix_pad_template(name, Image.open(png).convert("RGB")).quantize(palette=pal, dither=NONE)
             im.save(os.path.join(PICS, name + ".bmp"), "BMP"); have[name] = 1; quantized += 1
         except Exception as e:
             print("  png fail", name, e)
