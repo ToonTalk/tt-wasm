@@ -89,7 +89,9 @@ def main():
     os.makedirs(os.path.join(TT, "Java"), exist_ok=True)
     for d in (TT, os.path.join(TT, "Java")):
         shutil.copyfile(M25US1, os.path.join(d, "m25.us1"))
-        shutil.copyfile(M25US1, os.path.join(d, "m800.us1"))
+        # deliberately NO m800.us1: the engine must fall back to m25 and set the art scale to
+        # 640x480 (open_images_file does this) — shipping m25 AS m800 made all sprite-offset
+        # math run at 800/640 scale (arm attached at a finger, toolbox contents misplaced).
         shutil.copyfile(os.path.join(INSTALL, "resind.us1"), os.path.join(d, "resind.us1"))
     print("staged real m25.us1 (%d KB) + resind.us1 (%d KB)"
           % (os.path.getsize(M25US1)//1024, os.path.getsize(os.path.join(INSTALL, "resind.us1"))//1024))
