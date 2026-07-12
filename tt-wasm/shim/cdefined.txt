@@ -34,3 +34,10 @@ RealizePalette
 SelectPalette
 CreateFontIndirectA
 GetTextMetricsA
+TextOutA
+TextOutW
+TabbedTextOutA
+TabbedTextOutW
+GetTextExtentPoint32A
+GetTextExtentPoint32W
+SetTextAlign

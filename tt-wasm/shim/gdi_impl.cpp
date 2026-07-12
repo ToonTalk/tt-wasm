@@ -13,6 +13,7 @@
 #include "windows.h"
 #include <cstdlib>
 #include <cstring>
+#include "gdi_font.h"   /* tiny bitmap font for TextOut (tools/make_font.py) */
 
 #ifndef NULL_PEN
 #define WHITE_BRUSH 0
@@ -168,7 +169,30 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
     return (HBRUSH)o;
 }
 
-/* Fonts: we don't rasterize glyphs, but MainWindow::set_font reads back the metrics
+/* Text: rasterize with the embedded bitmap font, integer-scaled toward the requested LOGFONT
+ * height (balloons/pads/labels are legible without a real font engine). Colour comes from
+ * SetTextColor via the same luminance mapping the brushes use. */
+static int glyph_scale(GdiDC *dc) {
+    int h = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT_H;
+    int s = h / TT_FONT_H; if (s < 1) s = 1; if (s > 4) s = 4;
+    return s;
+}
+static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, int s, unsigned char color) {
+    if (ch < 32 || ch > 126) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }
+    const unsigned char *rows = tt_font[ch - 32];
+    for (int gy = 0; gy < TT_FONT_H; gy++) {
+        unsigned char bits = rows[gy];
+        if (!bits) continue;
+        for (int gx = 0; gx < TT_FONT_W; gx++) {
+            if (!(bits & (0x80 >> gx))) continue;
+            for (int sy = 0; sy < s; sy++)
+                for (int sx = 0; sx < s; sx++)
+                    put(dc, x + gx * s + sx, y + gy * s + sy, color);
+        }
+    }
+}
+
+/* Fonts: we don't rasterize vector glyphs, but MainWindow::set_font reads back the metrics
  * (character_width = tmAveCharWidth) and place_text divides max_width by them — so track the
  * requested size and report non-zero metrics, or text layout divides by zero. */
 HFONT CreateFontIndirectA(const LOGFONTA *lf) {
@@ -181,13 +205,45 @@ HFONT CreateFontIndirectA(const LOGFONTA *lf) {
 }
 BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
     GdiDC *dc = (GdiDC *)hdc;
-    int h = (dc && dc->font) ? dc->font->font_h : 12;
-    int w = (dc && dc->font && dc->font->font_w > 0) ? dc->font->font_w : 6;
+    int s = glyph_scale(dc);                 /* report what TextOut actually draws */
     if (tm) { memset(tm, 0, sizeof(*tm));
-        tm->tmHeight = h; tm->tmAscent = (h * 4) / 5; tm->tmDescent = h - tm->tmAscent;
-        tm->tmAveCharWidth = w; tm->tmMaxCharWidth = w; }
+        tm->tmHeight = TT_FONT_H * s; tm->tmAscent = (TT_FONT_H * s * 4) / 5;
+        tm->tmDescent = TT_FONT_H * s - tm->tmAscent;
+        tm->tmAveCharWidth = TT_FONT_W * s; tm->tmMaxCharWidth = TT_FONT_W * s; }
     return 1;
 }
+
+BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
+    GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
+    int s = glyph_scale(dc);
+    for (int i = 0; i < len; i++)
+        draw_glyph(dc, x + i * TT_FONT_W * s, y, (unsigned char)str[i], s, dc->text_index);
+    return 1;
+}
+BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
+    GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
+    int s = glyph_scale(dc);
+    for (int i = 0; i < len; i++)
+        draw_glyph(dc, x + i * TT_FONT_W * s, y, (unsigned int)str[i], s, dc->text_index);
+    return 1;
+}
+LONG TabbedTextOutA(HDC hdc, int x, int y, LPCSTR str, int len, int, const INT *, int) {
+    TextOutA(hdc, x, y, str, len); return 0;
+}
+LONG TabbedTextOutW(HDC hdc, int x, int y, const wchar_t *str, int len, int, const INT *, int) {
+    TextOutW(hdc, x, y, str, len); return 0;
+}
+BOOL GetTextExtentPoint32A(HDC hdc, LPCSTR, int len, LPSIZE sz) {
+    int s = glyph_scale((GdiDC *)hdc);
+    if (sz) { sz->cx = len * TT_FONT_W * s; sz->cy = TT_FONT_H * s; }
+    return 1;
+}
+BOOL GetTextExtentPoint32W(HDC hdc, const wchar_t *, int len, LPSIZE sz) {
+    int s = glyph_scale((GdiDC *)hdc);
+    if (sz) { sz->cx = len * TT_FONT_W * s; sz->cy = TT_FONT_H * s; }
+    return 1;
+}
+UINT SetTextAlign(HDC, UINT) { return 0; }
 
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ obj) {
     GdiDC *dc = (GdiDC *)hdc; GdiObj *o = (GdiObj *)obj; if (!dc || !o) return NULL;
