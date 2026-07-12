@@ -4018,6 +4018,19 @@ ProgrammerStatus Programmer_City_Flying::react(boolean new_user_input,
 															  boolean ,
 															  millisecond duration,
 															  boolean ) {
+#ifdef __EMSCRIPTEN__
+	// Navigation aid (see City_Walking::react): copter position relative to the first house.
+	{ static millisecond em_last_fnav = 0;
+	  if (tt_current_time - em_last_fnav > 3000) { em_last_fnav = tt_current_time;
+	    extern House *tt_bootstrap_house;
+	    if (tt_bootstrap_house != NULL && appearance != NULL) {
+	      city_coordinate px, py, hx, hy;
+	      appearance->lower_left_corner(px, py);
+	      tt_bootstrap_house->house_center(hx, hy);
+	      printf("[tt] fnav: copter=(%ld,%ld) house1=(%ld,%ld) delta=(%ld,%ld) scale=%ld\n",
+	        (long)px, (long)py, (long)hx, (long)hy, (long)(hx-px), (long)(hy-py), (long)scale); fflush(stdout);
+	    } } }
+#endif
 #if !TT_DIRECTX
 	play_sound(HELICOPTER_SOUND,TRUE);
 #endif
@@ -5037,6 +5050,20 @@ ProgrammerStatus Programmer_City_Walking::react(boolean ,
 														      boolean ,
 														      millisecond duration,
 														      boolean ) {
+#ifdef __EMSCRIPTEN__
+	// Navigation aid for driving/debugging the port: where am I relative to the first house?
+	{ static millisecond em_last_nav = 0;
+	  if (tt_current_time - em_last_nav > 4000) { em_last_nav = tt_current_time;
+	    extern House *tt_bootstrap_house;
+	    if (tt_bootstrap_house != NULL && appearance != NULL) {
+	      city_coordinate px, py, hx, hy;
+	      appearance->lower_left_corner(px, py);
+	      tt_bootstrap_house->house_center(hx, hy);
+	      printf("[tt] nav: person=(%ld,%ld) house1=(%ld,%ld) delta=(%ld,%ld) tile=(%ld,%ld) screen=(%ld,%ld)\n",
+	        (long)px, (long)py, (long)hx, (long)hy, (long)(hx-px), (long)(hy-py),
+	        (long)tile_width, (long)tile_height, (long)ideal_screen_width, (long)ideal_screen_height); fflush(stdout);
+	    } } }
+#endif
 	ProgrammerStatus status = PROGRAMMER_NORMAL;
 	if (tt_programmer->invisible()) return(status); // new on 221299
 	delta_x = new_delta_x;
