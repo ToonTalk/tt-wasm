@@ -1,26 +1,45 @@
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
-// non-visible tabs, which froze the whole message loop (input queued forever and burst-replayed
-// on return). Race each rAF against a 500ms timeout — visible tabs run at full rAF rate (the
-// timeout is cleared), hidden tabs pump at the browser's throttled timer rate (~1-2Hz), enough
-// to drain input and keep the world's clock moving.
+// non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
+// input queued forever and burst-replayed on return. Dedicated-worker timers are NOT
+// throttled, so a tiny worker ticks every 50ms and fires any main-loop callback that rAF
+// hasn't serviced within ~100ms. Visible tabs run at full rAF rate; hidden tabs pump at
+// ~10fps. A 1s setTimeout remains as a last-resort fallback if Workers are unavailable.
 if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
   (function () {
     var origRAF = window.requestAnimationFrame.bind(window);
     var origCancel = window.cancelAnimationFrame ? window.cancelAnimationFrame.bind(window) : function () {};
-    var timeouts = {};                                  /* rafId -> timeoutId */
+    var pending = null, pendingId = 0, scheduledAt = 0, timeoutId = null;
+    var firePending = function () {
+      if (!pending) return;
+      var cb = pending; pending = null;
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      origCancel(pendingId);
+      cb(performance.now());
+    };
+    try {
+      if (typeof Worker !== 'undefined' && typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
+        var w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50);'])));
+        w.onmessage = function () {
+          if (pending && performance.now() - scheduledAt > 100) firePending();
+        };
+      }
+    } catch (e) {}
     window.requestAnimationFrame = function (cb) {
-      var done = false, rafId;
-      var fire = function (t) {
-        if (done) return; done = true;
-        clearTimeout(timeouts[rafId]); delete timeouts[rafId];
-        cb(t);
-      };
-      rafId = origRAF(fire);
-      timeouts[rafId] = setTimeout(function () { origCancel(rafId); fire(performance.now()); }, 500);
-      return rafId;
+      pending = cb; scheduledAt = performance.now();
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(firePending, 1000);        /* fallback if no worker and no rAF */
+      pendingId = origRAF(function (t) {
+        if (pending === cb) {
+          pending = null;
+          if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+          cb(t);
+        }
+      });
+      return pendingId;
     };
     window.cancelAnimationFrame = function (id) {
-      clearTimeout(timeouts[id]); delete timeouts[id]; origCancel(id);
+      if (id === pendingId) { pending = null; if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; } }
+      origCancel(id);
     };
   })();
 }

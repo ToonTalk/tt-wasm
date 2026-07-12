@@ -46,5 +46,6 @@ EXTRA="${1:-}"
   -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
 rc=$?; echo "link exit=$rc"
 [ $rc -ne 0 ] && { echo "--- link errors ---"; tail -30 logs/link.err; exit 1; }
-cp -f web/tt.html build/tt.html
+# version the script URL so browsers never serve a stale tt.js after a rebuild
+sed "s|src=\"tt.js\"|src=\"tt.js?v=$(date +%s)\"|" web/tt.html > build/tt.html
 ls -la build/tt.wasm
