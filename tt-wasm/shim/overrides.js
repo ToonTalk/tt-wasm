@@ -253,6 +253,6 @@ addToLibrary({
 
   // --- screen metrics + client rect (the engine sizes its window from these) ---
   GetSystemMetrics: function(i) { return i === 0 ? 1024 : (i === 1 ? 768 : 0); },
-  GetClientRect: function(h, r) { HEAP32[r >> 2] = 0; HEAP32[(r >> 2) + 1] = 0; HEAP32[(r >> 2) + 2] = 1024; HEAP32[(r >> 2) + 3] = 768; return 1; },
+  GetClientRect: function(h, r) { HEAP32[r >> 2] = 0; HEAP32[(r >> 2) + 1] = 0; HEAP32[(r >> 2) + 2] = 800; HEAP32[(r >> 2) + 3] = 600; return 1; }, // must match tt_screen 800x600 — mixed coordinate spaces corrupt absolute-mouse math
   GetWindowRect: function(h, r) { HEAP32[r >> 2] = 0; HEAP32[(r >> 2) + 1] = 0; HEAP32[(r >> 2) + 2] = 1024; HEAP32[(r >> 2) + 3] = 768; return 1; },
 });

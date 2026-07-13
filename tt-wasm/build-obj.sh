@@ -1,33 +1,21 @@
 #!/usr/bin/env bash
-# Phase-0 object compile for the ToonTalk WASM port. Compiles a single .cpp to a
-# WASM object file (.o). Unresolved externals at *link* time are EXPECTED in
-# phase 0 — we only care that the translation unit type-checks and emits an
-# object. (No -fsyntax-only here: we want a real .o.)
-#
-#   ./build-obj.sh number.cpp        # compiles /c/Users/toont/dev/source/number.cpp -> build/number.o
-#   ./build-obj.sh /abs/path.cpp 200 # show up to 200 diagnostic lines
+# Compile a single forked .cpp to its LINKED object (obj/<name>.o) — same flags as build-all.sh.
+# link.sh links obj/*.o, so this is the incremental-rebuild helper.
+#   ./build-obj.sh src/winmain.cpp
+#   ./build-obj.sh prgrmmr.cpp        # bare names resolve against src/
 set -u
 EMCC=/c/Users/toont/dev/emsdk/upstream/emscripten/emcc.exe
 HERE="$(cd "$(dirname "$0")" && pwd)"
-SRC=/c/Users/toont/dev/source
-LINES="${2:-80}"
-mkdir -p "$HERE/build"
-
-# Allow either a bare name (resolved against the source tree) or an absolute path.
+mkdir -p "$HERE/obj" "$HERE/logs"
 ARG="$1"
 case "$ARG" in
   /*) TARGET="$ARG" ;;
-  *)  if [ -f "$HERE/$ARG" ]; then TARGET="$HERE/$ARG"; else TARGET="$SRC/$ARG"; fi ;;
+  *)  if [ -f "$HERE/$ARG" ]; then TARGET="$HERE/$ARG"; else TARGET="$HERE/src/$ARG"; fi ;;
 esac
-BASE="$(basename "${TARGET%.cpp}")"
-OUT="$HERE/build/$BASE.o"
-
-"$EMCC" -std=gnu++14 -w -c \
-  -I"$HERE/shim" -I"$SRC" \
-  "$TARGET" -o "$OUT" 2>&1 | head -"$LINES"
-RC="${PIPESTATUS[0]}"
-if [ "$RC" = "0" ] && [ -f "$OUT" ]; then
-  echo "=== OK: $OUT ($(stat -c%s "$OUT") bytes) ==="
+B=$(basename "$TARGET" .cpp)
+if "$EMCC" -std=gnu++14 -w -DWIN32 -c "$TARGET" -o "$HERE/obj/$B.o" \
+     -I "$HERE/shim" -I "$HERE/src" 2>"$HERE/logs/$B.err"; then
+  echo "=== OK: obj/$B.o ($(stat -c %s "$HERE/obj/$B.o") bytes) ==="
 else
-  echo "=== exit $RC (no object emitted) ==="
+  echo "=== FAIL: $B ==="; tail -40 "$HERE/logs/$B.err"; exit 1
 fi

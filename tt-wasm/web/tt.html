@@ -50,6 +50,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
+    // TTBUILDSTAMP is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
+    locateFile: function (f) { return f + '?v=TTBUILDSTAMP'; },
     print: function (t) { console.log(t); },
     printErr: function (t) { console.warn(t); },
     onRuntimeInitialized: function () { statusEl.textContent = 'engine running — click the picture to begin'; }

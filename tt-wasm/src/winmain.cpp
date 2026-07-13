@@ -1368,7 +1368,17 @@ boolean Main::MessageLoopOnce() {
 						// branch new on 290801
 						delta_x = mouse_position.x-front_surface_rectangle.left;
 						delta_y = front_surface_rectangle.bottom-mouse_position.y;
-                  if (delta_x < 0 || delta_y < 0 || delta_x > client_width || delta_y > client_height) { 
+#ifdef __EMSCRIPTEN__
+                  if (left_button_still_down || left_button_just_went_down) {
+                     printf("[tt] absin: mouse=(%ld,%ld) front=(l%ld,t%ld,r%ld,b%ld) delta=(%ld,%ld) client=%ldx%ld still=%d just=%d\n",
+                            (long)mouse_position.x,(long)mouse_position.y,
+                            (long)front_surface_rectangle.left,(long)front_surface_rectangle.top,
+                            (long)front_surface_rectangle.right,(long)front_surface_rectangle.bottom,
+                            (long)delta_x,(long)delta_y,(long)client_width,(long)client_height,
+                            (int)left_button_still_down,(int)left_button_just_went_down); fflush(stdout);
+                  };
+#endif
+                  if (delta_x < 0 || delta_y < 0 || delta_x > client_width || delta_y > client_height) {
                      // these were tt_screen_width etc prior to 200502 but didn't work if window wasn't 1x1
                      // new on 060502 -- since offscreen
                      delta_x = 0;
@@ -10073,24 +10083,10 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 	};
 //	MainWnd.initialize();
 	printf("[tt] 10002 pre mainwindow->initialize()\n"); fflush(stdout); tt_main_window->initialize(); printf("[tt] 10002 post mainwindow->initialize()\n"); fflush(stdout);
-#ifdef __EMSCRIPTEN__
-	// Fresh-world bootstrap: with no saved profile/notebook the normal city load never runs, so
-	// the screen stays empty. Populate a starting city procedurally (build_initial_houses) and
-	// activate the programmer + camera via a minimal "Nothing" document (City::xml_entity_and_activate).
-	if (tt_city != NULL && current_house_counter() == 0) {
-		printf("[tt] bootstrap: building fresh city (houses before=%d)\n", (int)current_house_counter()); fflush(stdout);
-		tt_city->build_initial_houses();
-		xml_document *fresh = document_from_string("<Nothing/>");
-		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
-		printf("[tt] bootstrap: houses after=%d\n", (int)current_house_counter()); fflush(stdout);
-		// em_enter_bootstrap_house() (prgrmmr.cpp) puts you on the first house's floor and DOES bring up
-		// the hand + toolbox (house->built() + Programmer_At_Floor::finish_initializing()) — but the floor
-		// BACKGROUND renders as a thin garbage band over black: background(floor_id)->display() /
-		// display_background_cache() (floor.cpp:542 display_region) don't produce the lego-baseplate for a
-		// freshly-bootstrapped floor (view geometry + background-cache subsystem), unlike the city ground
-		// which renders via a different path. Deep rendering fix needed; left disabled — fly-in→ground for now.
-	}
-#endif
+	// (A former __EMSCRIPTEN__ "fresh-world bootstrap" here built 3 houses before the engine's own
+	// fresh-start path below (win_main_initialize: !load_city -> build_initial_houses) built 3 more —
+	// SIX houses instead of the original's three. It dated from the synthetic-DAT days when the real
+	// load path couldn't run; with the real m25.us1 the engine initializes the world natively.)
 #if TT_SPECIAL_VERSION_TO_DEBUG_WIN_ME
 	tt_error_file() << "Finished tt_main_window->initialize()" << endl;
 #endif
@@ -10141,10 +10137,22 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 #endif
 	// moved here on 201199 since cities are loaded early when running demos
    // changed on 200799 since CTY is now saved with DMO
-	if (tt_system_mode == PUZZLE || tt_jump_to_current_log_segment || (!replaying() && !tt_city->load_city(tt_city_name))) { 
+	boolean tt_no_city_was_loaded = (tt_system_mode == PUZZLE || tt_jump_to_current_log_segment || (!replaying() && !tt_city->load_city(tt_city_name)));
 		//  || tt_log_version_number < 16
+	if (tt_no_city_was_loaded) {
 		tt_city->build_initial_houses();
 	};
+#ifdef __EMSCRIPTEN__
+	// The retail titles sequence (which ends in START_FLYING) doesn't run in the web port, so with
+	// no city file nothing activates the programmer/camera. Feed the engine's own no-city document:
+	// NOTHING_TAG's handler (City::handle_xml_tag) sets START_FLYING — its comment says "since no
+	// city this is the right starting status". load_city() does the same activation when a real
+	// city file exists, so this branch only runs for a fresh world.
+	if (tt_no_city_was_loaded) {
+		xml_document *fresh = document_from_string("<Nothing/>");
+		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
+	};
+#endif
    // commented out the following since why save and restore only to destroy??
 	//if (tt_martian != NULL) { 
 	// new on 260601 to create a fresh Marty in case it was saved (since might matter for time travel but then wouldn't be here)

@@ -3103,6 +3103,14 @@ void Programmer_State::note_absolute_mode_deltas(coordinate &delta_x, coordinate
 //      city_coordinate y_distance = tt_screen->y_pixel_to_screen(y_distance_in_pixels);
       int client_width = return_client_width(); // new on 170502 since window might not be 1-to-1 with screen coordinates
       int client_height = return_client_height();
+#ifdef __EMSCRIPTEN__
+      printf("[tt] press: mouse=(%ld,%ld) center_city=(%ld,%ld) center_px_raw=(%ld,%ld) center_px_adj=(%ld,%ld) dist=(%ld,%ld) client=%dx%d tt_screen=%dx%d\n",
+             (long)delta_x,(long)delta_y,(long)center_x,(long)center_y,
+             (long)tt_screen->screen_x(center_x),(long)tt_screen->screen_y(center_y),
+             (long)center_x_in_pixels,(long)center_y_in_pixels,
+             (long)x_distance_in_pixels,(long)y_distance_in_pixels,
+             (int)client_width,(int)client_height,(int)tt_screen_width,(int)tt_screen_height); fflush(stdout);
+#endif
       // replaced tt_screen_width with client_width etc below
       millisecond time_to_cover_x_distance = (abs(x_distance_in_pixels)*1000)/client_width; // 1 second to cross screen
       millisecond time_to_cover_y_distance = (abs(y_distance_in_pixels)*1000)/client_height;
@@ -3982,6 +3990,20 @@ void Programmer_City_Flying::initialize_appearance() { // abstracted on 100103
   appearance->set_priority_fixed(TRUE);
   appearance->set_priority(min_long+1); // above everything else (including birds) +1 added 240100 so time travel buttons on top
 };
+
+#ifdef __EMSCRIPTEN__
+void Programmer_City_Flying::note_absolute_mode_deltas(coordinate &delta_x, coordinate &delta_y, boolean left_button_down, boolean left_button_just_went_down) {
+   // Web port: in the helicopter a held left button means "fly down" (react()), so it must not
+   // ALSO keep re-targeting travel toward the cursor every frame the way the base class does —
+   // that steady re-target made the whole city drift while descending. Re-target only on the
+   // initial press (tap = fly there); on held frames treat the button as up so any in-progress
+   // travel just runs out via the base class's remaining-travel-time logic.
+   if (left_button_down && !left_button_just_went_down) {
+      left_button_down = FALSE;
+   };
+   Programmer_State::note_absolute_mode_deltas(delta_x,delta_y,left_button_down,left_button_just_went_down);
+};
+#endif
 
 #if TT_DIRECT_INPUT
 void play_wall_force_feedback_effect(Direction direction) {

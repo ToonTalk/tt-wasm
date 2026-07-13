@@ -470,6 +470,9 @@ class Programmer_City_Flying : public Programmer_State {
 //  };
   void set_visibility(boolean visible);
   void true_center(city_coordinate &x, city_coordinate &y);
+#ifdef __EMSCRIPTEN__
+  void note_absolute_mode_deltas(coordinate &delta_x, coordinate &delta_y, boolean left_button_down, boolean left_button_just_went_down);
+#endif
 #if TT_XML
 	wide_string xml_tag() {
 		return(L"ProgrammerCityFlying");
