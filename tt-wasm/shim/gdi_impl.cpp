@@ -5,11 +5,13 @@
  * back_surface->GetDC). The DDraw shim (ddraw_impl.cpp) routes GetDC/ReleaseDC here so those
  * GDI calls actually rasterize onto the surface's 8bpp buffer.
  *
- * Orientation: the surface buffer is bottom-up (lock_back_surface uses a negative pitch, so
- * screen row 0 lives at the END of the buffer; the canvas present flips rows to match). GDI
- * coords are top-down, so pixel (x,y) -> buf[(h-1-y)*w + x]. Colours: the DAT palette is a
- * grayscale ramp, so COLORREF -> palette index is luminance (r+g+b)/3 (exact for that palette).
- * Sprite/DIB blits carry palette indices directly. */
+ * Orientation: surface memory is TOP-DOWN (row 0 = top scanline), exactly like real DirectDraw
+ * surfaces — the engine's y-up code builds its own bottom-up view over it at Lock time
+ * (lock_back_surface: "tt_destination_width = -lPitch // -1 since upside down"), and
+ * blt_to_back_surface pre-flips y-up marks into top-down rects. GDI coords are top-down, so
+ * pixel (x,y) -> buf[y*w + x] with no flip; the canvas present copies rows straight. Colours:
+ * COLORREF -> palette index is nearest-colour against the real DAT palette (gdi_set_palette);
+ * luminance is only the pre-palette fallback. Sprite/DIB blits carry palette indices directly. */
 #include "windows.h"
 #include <cstdlib>
 #include <cstring>
@@ -115,11 +117,11 @@ static unsigned char colorref_to_index(COLORREF c) {
 static inline void put(GdiDC *dc, int x, int y, unsigned char idx) {
     if (!dc->pixels || x < 0 || y < 0 || x >= dc->w || y >= dc->h) return;
     if (dc->has_clip && (x < dc->clip.left || x >= dc->clip.right || y < dc->clip.top || y >= dc->clip.bottom)) return;
-    dc->pixels[(dc->h - 1 - y) * dc->w + x] = idx;   /* bottom-up */
+    dc->pixels[y * dc->w + x] = idx;   /* top-down: surface row 0 = top scanline (matches DDraw + present) */
 }
 static inline unsigned char get(GdiDC *dc, int x, int y) {
     if (!dc->pixels || x < 0 || y < 0 || x >= dc->w || y >= dc->h) return 0;
-    return dc->pixels[(dc->h - 1 - y) * dc->w + x];
+    return dc->pixels[y * dc->w + x];
 }
 static void fill_rect(GdiDC *dc, int l, int t, int r, int b) {
     GdiObj *br = dc->brush;

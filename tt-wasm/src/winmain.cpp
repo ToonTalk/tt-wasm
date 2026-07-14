@@ -4544,9 +4544,10 @@ void display_on_page(work_page page, LPBITMAPINFOHEADER dib, DWORD SizeImage) { 
 	if (dib == NULL) return; // e.g. file was deleted while this was running -- warn??
 #ifdef __EMSCRIPTEN__
 	// WASM port: GetDIBits is unimplemented and DibMapToPalette would remap indices off our
-	// palette. Decode the 8-bit DIB straight into the page as raw palette indices, top-down
-	// (matching Windows GetDIBits with negated biHeight). Handles BI_RGB and BI_RLE8; the
-	// present step maps these indices through the DAT palette LUT.
+	// palette. Decode the 8-bit DIB into the page as raw palette indices, KEEPING the DIB's
+	// bottom-up row order: engine work pages are y-up (row 0 = bottom scanline; see blit.cpp
+	// offset() and lock_back_surface's "-1 since upside down" view). Handles BI_RGB and BI_RLE8;
+	// the present step maps these indices through the DAT palette LUT.
 	if (dib->biBitCount <= 8) {
 		int w = dib->biWidth, h = dib->biHeight;
 		int pitch = w; if (pitch & 3) pitch += 4 - (pitch & 3);
@@ -4557,7 +4558,7 @@ void display_on_page(work_page page, LPBITMAPINFOHEADER dib, DWORD SizeImage) { 
 			int x = 0, row = 0; DWORD i = 0;
 			while (i + 1 < SizeImage && row < h) {
 				unsigned char cnt = src[i++], val = src[i++];
-				bytes dst = page + (size_t)(h - 1 - row) * pitch; // bottom-up DIB -> top-down page
+				bytes dst = page + (size_t) row * pitch; // RLE rows arrive bottom-up = page order
 				if (cnt > 0) {                       // encoded run
 					for (int k = 0; k < cnt && x < w; k++) dst[x++] = val;
 				} else if (val == 0) { x = 0; row++; } // end of line
@@ -4569,9 +4570,8 @@ void display_on_page(work_page page, LPBITMAPINFOHEADER dib, DWORD SizeImage) { 
 					if (val & 1) i++;                    // padded to word boundary
 				};
 			};
-		} else { // BI_RGB (uncompressed), rows bottom-up padded to 4 bytes
-			for (int y = 0; y < h; y++)
-				memcpy(page + (size_t) y * pitch, src + (size_t)(h - 1 - y) * pitch, w);
+		} else { // BI_RGB (uncompressed), rows bottom-up padded to 4 bytes = page order
+			memcpy(page, src, (size_t) pitch * h);
 		};
 		return;
 	};

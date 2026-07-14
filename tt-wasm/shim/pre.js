@@ -69,8 +69,13 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
   }
   var src = HEAPU8, dst = TT_img.data;
   var pal = palPtr ? HEAPU8.subarray(palPtr, palPtr + 1024) : null;
+  // Surface memory is TOP-DOWN (row 0 = top scanline), matching what the engine's TT_DIRECTX
+  // build expects of DirectDraw surfaces (blt_to_back_surface pre-flips its y-up marks into
+  // top-down rects). Present rows straight. A bottom-up present here mirrored every sprite's
+  // PLACEMENT about the horizontal midline (landing copter rose from the ground, parked copter
+  // sat at the top on grass) while GDI content compensated via its own flip.
   for (var y = 0; y < h; y++) {
-    var srow = ptr + (h - 1 - y) * w, drow = y * w * 4;
+    var srow = ptr + y * w, drow = y * w * 4;
     for (var x = 0; x < w; x++) {
       var p = src[srow + x], j = drow + x * 4;
       if (pal) { var k = p * 4; dst[j] = pal[k]; dst[j + 1] = pal[k + 1]; dst[j + 2] = pal[k + 2]; }

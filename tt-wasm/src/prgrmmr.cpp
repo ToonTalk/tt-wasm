@@ -4432,6 +4432,11 @@ ProgrammerStatus Programmer_City_Landing::react(boolean new_user_input,
 		min_x += x_adjustment;
 		max_x += x_adjustment;
 		tt_screen->move_by(x_adjustment,0);
+#ifdef __EMSCRIPTEN__
+		printf("[tt] land: y=%ld dy=%ld min_y=%ld max_y=%ld scr_y=%ld scr_min=%ld\n",
+		       (long)y,(long)delta_y,(long)min_y,(long)max_y,
+		       (long)tt_screen->screen_y(y),(long)tt_screen->screen_y(min_y)); fflush(stdout);
+#endif
 	};
 	appearance->update_display(delta_x,delta_y);
 	if (key == '\026' && !extended_key) { // control-v added on 300904
