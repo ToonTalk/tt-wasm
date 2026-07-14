@@ -69,6 +69,23 @@ def fix_pad_template(name, im):
                 px[x, y] = (v, v, v)
     return im
 
+def pad4(im):
+    # DWORD-align the WIDTH by replicating the right edge. The engine composites loose BMPs with
+    # an UNPADDED source pitch in places (TTImage::display_on head-onto-body); retail art was
+    # authored 4-aligned so it never mattered there, but arbitrary-width frames shear (the
+    # indoor person's head rendered as diagonal slices).
+    w, h = im.size
+    pad = (-w) % 4
+    if not pad: return im
+    out = Image.new(im.mode, (w + pad, h))
+    if im.mode == "P":
+        p = im.getpalette()
+        if p: out.putpalette(p)
+    out.paste(im, (0, 0))
+    edge = im.crop((w - 1, 0, w, h))
+    for i in range(pad): out.paste(edge, (w + i, 0))
+    return out
+
 def main():
     pal = m25_palette()
     want = referenced_names()
@@ -81,14 +98,19 @@ def main():
     have = {}
     for bmp in glob.glob(os.path.join(DEVM25, "*.BMP")):
         name = os.path.basename(bmp)[:-4].lower()
-        shutil.copyfile(bmp, os.path.join(PICS, name + ".bmp")); have[name] = 1; native += 1
+        im = Image.open(bmp)
+        if im.width % 4:
+            pad4(im).save(os.path.join(PICS, name + ".bmp"), "BMP")
+        else:
+            shutil.copyfile(bmp, os.path.join(PICS, name + ".bmp"))  # aligned: keep bytes identical
+        have[name] = 1; native += 1
     # 2. java PNGs -> quantized, for names not already native
     for png in glob.glob(os.path.join(JAVA, "*.PNG")):
         name = os.path.basename(png)[:-4].lower()
         if name in have: continue
         try:
             im = fix_pad_template(name, Image.open(png).convert("RGB")).quantize(palette=pal, dither=NONE)
-            im.save(os.path.join(PICS, name + ".bmp"), "BMP"); have[name] = 1; quantized += 1
+            pad4(im).save(os.path.join(PICS, name + ".bmp"), "BMP"); have[name] = 1; quantized += 1
         except Exception as e:
             print("  png fail", name, e)
     # 3. dev/M22 upscaled, for anything still missing that the DAT wants
@@ -98,7 +120,7 @@ def main():
         if os.path.exists(m22):
             im = Image.open(m22)
             if im.mode != "P": im = im.convert("P")
-            im.resize((im.width*2, im.height*2), Image.NEAREST).save(os.path.join(PICS, name+".bmp"), "BMP")
+            pad4(im.resize((im.width*2, im.height*2), Image.NEAREST)).save(os.path.join(PICS, name+".bmp"), "BMP")
             have[name] = 1; upscaled += 1
         else:
             missing += 1

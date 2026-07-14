@@ -219,7 +219,7 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
  * SetTextColor via the same luminance mapping the brushes use. */
 static int glyph_scale(GdiDC *dc) {
     int h = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT_H;
-    int s = h / TT_FONT_H; if (s < 1) s = 1; if (s > 4) s = 4;
+    int s = h / TT_FONT_H; if (s < 1) s = 1; if (s > 40) s = 40;  /* pads request digit heights ~ pad size; a low cap broke the engine's fit-to-extent sizing (microscopic digits) */
     return s;
 }
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, int s, unsigned char color) {
