@@ -61,10 +61,14 @@ def fix_pad_template(name, im):
     for y in range(im.height):
         for x in range(im.width):
             r, g, b = px[x, y]
-            if name.startswith("numb") and g > 180 and g > r + 80 and g > b + 60:
+            # Loose gates on purpose: the saturated frame greens/magentas AND the PALE face
+            # centers (e.g. mint ~(185,255,185), pink ~(255,185,255)) are all key pixels — the
+            # first version's tight gates (+80 channel spread) missed the pale faces, leaving
+            # green number pads and pink text pads in the game ("the pads are still wrong").
+            if name.startswith("numb") and g > 150 and g > r + 30 and g > b + 20:
                 v = min(255, 140 + r)                    # R carries the shading (0=border..~112=face)
                 px[x, y] = (v, v, v)
-            elif name.startswith("text") and r > 180 and r > g + 80 and b > 100 and b > g:
+            elif name.startswith("text") and r > 150 and r > g + 30 and b > g + 20:
                 v = min(255, 120 + (g * 85) // 100)      # G carries the shading (40..152)
                 px[x, y] = (v, v, v)
     return im
