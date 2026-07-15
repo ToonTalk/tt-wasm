@@ -224,15 +224,22 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
 struct FontPick { int base; int s; int cw, ch; };
 static FontPick pick_font(GdiDC *dc) {
     int want = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT8_H;
-    FontPick p;
-    if      (want >= TT_FONT32_H) { p.base = 2; p.s = want / TT_FONT32_H; }
-    else if (want >= TT_FONT16_H) { p.base = 1; p.s = want / TT_FONT16_H; }
-    else                          { p.base = 0; p.s = want / TT_FONT8_H;  }
-    if (p.s < 1) p.s = 1; if (p.s > 40) p.s = 40;
-    int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
-    int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;
-    p.cw = bw * p.s; p.ch = bh * p.s;
-    return p;
+    /* round to the NEAREST achievable height across all bases and integer scales — flooring
+     * alone drew 24px where 43px was asked (page numbers noticeably small) */
+    static const int BW[3] = { TT_FONT8_W, TT_FONT16_W, TT_FONT32_W };
+    static const int BH[3] = { TT_FONT8_H, TT_FONT16_H, TT_FONT32_H };
+    FontPick best; best.base = 0; best.s = 1; int bestd = 0x7FFFFFFF;
+    for (int b = 0; b < 3; b++) {
+        int lo = want / BH[b]; if (lo < 1) lo = 1; if (lo > 40) lo = 40;
+        for (int k = 0; k < 2; k++) {
+            int s = lo + k; if (s > 40) continue;
+            int d = BH[b] * s - want; if (d < 0) d = -d;
+            /* prefer the larger base on ties (smoother glyphs) */
+            if (d < bestd || (d == bestd && b > best.base)) { bestd = d; best.base = b; best.s = s; }
+        }
+    }
+    best.cw = BW[best.base] * best.s; best.ch = BH[best.base] * best.s;
+    return best;
 }
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
     if (ch < 32 || ch > 126) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }
