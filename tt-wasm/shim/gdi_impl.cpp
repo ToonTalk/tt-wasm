@@ -15,6 +15,7 @@
 #include "windows.h"
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #include "gdi_font.h"   /* tiny bitmap font for TextOut (tools/make_font.py) */
 
 #ifndef NULL_PEN
@@ -217,19 +218,33 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
 /* Text: rasterize with the embedded bitmap font, integer-scaled toward the requested LOGFONT
  * height (balloons/pads/labels are legible without a real font engine). Colour comes from
  * SetTextColor via the same luminance mapping the brushes use. */
-static int glyph_scale(GdiDC *dc) {
-    int h = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT_H;
-    int s = h / TT_FONT_H; if (s < 1) s = 1; if (s > 40) s = 40;  /* pads request digit heights ~ pad size; a low cap broke the engine's fit-to-extent sizing (microscopic digits) */
-    return s;
+/* Three Arial-Bold base sizes (8x12, 16x24, 32x48); pick the largest base that fits the
+ * requested height and integer-scale the remainder. One base scaled from 12px made digits
+ * unreadable blobs at pad sizes ('1' read as a 5 — "the numbers weren't visible"). */
+struct FontPick { int base; int s; int cw, ch; };
+static FontPick pick_font(GdiDC *dc) {
+    int want = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT8_H;
+    FontPick p;
+    if      (want >= TT_FONT32_H) { p.base = 2; p.s = want / TT_FONT32_H; }
+    else if (want >= TT_FONT16_H) { p.base = 1; p.s = want / TT_FONT16_H; }
+    else                          { p.base = 0; p.s = want / TT_FONT8_H;  }
+    if (p.s < 1) p.s = 1; if (p.s > 40) p.s = 40;
+    int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
+    int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;
+    p.cw = bw * p.s; p.ch = bh * p.s;
+    return p;
 }
-static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, int s, unsigned char color) {
+static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
     if (ch < 32 || ch > 126) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }
-    const unsigned char *rows = tt_font[ch - 32];
-    for (int gy = 0; gy < TT_FONT_H; gy++) {
-        unsigned char bits = rows[gy];
+    int i = (int)ch - 32, s = p.s;
+    int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
+    int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;
+    for (int gy = 0; gy < bh; gy++) {
+        unsigned int bits = (p.base == 2) ? tt_font32[i][gy] : (p.base == 1) ? (unsigned int)tt_font16[i][gy] : (unsigned int)tt_font8[i][gy];
         if (!bits) continue;
-        for (int gx = 0; gx < TT_FONT_W; gx++) {
-            if (!(bits & (0x80 >> gx))) continue;
+        unsigned int top = 1u << (bw - 1);
+        for (int gx = 0; gx < bw; gx++) {
+            if (!(bits & (top >> gx))) continue;
             for (int sy = 0; sy < s; sy++)
                 for (int sx = 0; sx < s; sx++)
                     put(dc, x + gx * s + sx, y + gy * s + sy, color);
@@ -246,30 +261,42 @@ HFONT CreateFontIndirectA(const LOGFONTA *lf) {
     int w = lf ? (lf->lfWidth  < 0 ? -lf->lfWidth  : lf->lfWidth ) : 0;
     o->font_h = (h * 96 + 36) / 72; if (o->font_h < 1) o->font_h = 12;   /* LOGFONT points -> ~pixels */
     o->font_w = (w * 96 + 36) / 72; if (o->font_w < 1) o->font_w = o->font_h / 2;
+    static int font_log = 0; static int last_fh = -1;   /* temporary diagnosis of pad digit sizing */
+    if (font_log < 500 && o->font_h != last_fh) { font_log++; last_fh = o->font_h;
+        printf("[tt] font: lfH=%ld lfW=%ld -> px %dx%d\n", lf ? (long)lf->lfHeight : 0L, lf ? (long)lf->lfWidth : 0L, o->font_w, o->font_h); fflush(stdout); }
     return (HFONT)o;
 }
 BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
     GdiDC *dc = (GdiDC *)hdc;
-    int s = glyph_scale(dc);                 /* report what TextOut actually draws */
+    FontPick p = pick_font(dc);              /* report what TextOut actually draws */
     if (tm) { memset(tm, 0, sizeof(*tm));
-        tm->tmHeight = TT_FONT_H * s; tm->tmAscent = (TT_FONT_H * s * 4) / 5;
-        tm->tmDescent = TT_FONT_H * s - tm->tmAscent;
-        tm->tmAveCharWidth = TT_FONT_W * s; tm->tmMaxCharWidth = TT_FONT_W * s; }
+        tm->tmHeight = p.ch; tm->tmAscent = (p.ch * 4) / 5;
+        tm->tmDescent = p.ch - tm->tmAscent;
+        tm->tmAveCharWidth = p.cw; tm->tmMaxCharWidth = p.cw; }
     return 1;
 }
 
 BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
     GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
-    int s = glyph_scale(dc);
+    FontPick p = pick_font(dc);
+    static int texta_log = 0;   /* temporary diagnosis of pad digit sizing */
+    if (texta_log < 2000 && len > 0 && len <= 2) { texta_log++;
+        printf("[tt] textA: '%c%c' len=%d at(%d,%d) fontH=%d base=%d s=%d\n",
+               str[0], (len > 1 ? str[1] : ' '), len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.s); fflush(stdout); }
     for (int i = 0; i < len; i++)
-        draw_glyph(dc, x + i * TT_FONT_W * s, y, (unsigned char)str[i], s, dc->text_index);
+        draw_glyph(dc, x + i * p.cw, y, (unsigned char)str[i], p, dc->text_index);
     return 1;
 }
 BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
     GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
-    int s = glyph_scale(dc);
+    FontPick p = pick_font(dc);
+    static int text_log = 0;   /* temporary diagnosis of pad digit sizing */
+    if (text_log < 2000 && len > 0 && len <= 2) { text_log++;
+        printf("[tt] textW: '%c%c' len=%d at(%d,%d) fontH=%d base=%d s=%d\n",
+               (char)(str[0] < 127 ? str[0] : '?'), (char)(len > 1 && str[1] < 127 ? str[1] : ' '),
+               len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.s); fflush(stdout); }
     for (int i = 0; i < len; i++)
-        draw_glyph(dc, x + i * TT_FONT_W * s, y, (unsigned int)str[i], s, dc->text_index);
+        draw_glyph(dc, x + i * p.cw, y, (unsigned int)str[i], p, dc->text_index);
     return 1;
 }
 LONG TabbedTextOutA(HDC hdc, int x, int y, LPCSTR str, int len, int, const INT *, int) {
@@ -279,13 +306,13 @@ LONG TabbedTextOutW(HDC hdc, int x, int y, const wchar_t *str, int len, int, con
     TextOutW(hdc, x, y, str, len); return 0;
 }
 BOOL GetTextExtentPoint32A(HDC hdc, LPCSTR, int len, LPSIZE sz) {
-    int s = glyph_scale((GdiDC *)hdc);
-    if (sz) { sz->cx = len * TT_FONT_W * s; sz->cy = TT_FONT_H * s; }
+    FontPick p = pick_font((GdiDC *)hdc);
+    if (sz) { sz->cx = len * p.cw; sz->cy = p.ch; }
     return 1;
 }
 BOOL GetTextExtentPoint32W(HDC hdc, const wchar_t *, int len, LPSIZE sz) {
-    int s = glyph_scale((GdiDC *)hdc);
-    if (sz) { sz->cx = len * TT_FONT_W * s; sz->cy = TT_FONT_H * s; }
+    FontPick p = pick_font((GdiDC *)hdc);
+    if (sz) { sz->cx = len * p.cw; sz->cy = p.ch; }
     return 1;
 }
 UINT SetTextAlign(HDC, UINT) { return 0; }

@@ -10151,6 +10151,13 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 	if (tt_no_city_was_loaded) {
 		xml_document *fresh = document_from_string("<Nothing/>");
 		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
+		// Dev shortcut: tt.html?floor=1 boots straight onto the first house's floor (hand +
+		// toolbox), skipping the flight/landing/door journey — for iterating on floor rendering.
+		if (tt_programmer != NULL &&
+		    EM_ASM_INT({ return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; })) {
+			printf("[tt] dev: ?floor=1 — entering the bootstrap house floor directly\n"); fflush(stdout);
+			tt_programmer->em_enter_bootstrap_house();
+		};
 	};
 #endif
    // commented out the following since why save and restore only to destroy??

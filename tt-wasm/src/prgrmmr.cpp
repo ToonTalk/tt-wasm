@@ -2223,7 +2223,9 @@ void Programmer::em_enter_bootstrap_house() {
    set_next_status(PROGRAMMER_NORMAL);
    tt_screen->new_view(CAMERA_MOSTLY_ABOVE);
    tt_screen->switch_to(floor, FALSE, FALSE);
-   state->finish_initializing();              // hand + toolbox
+   state->finish_initializing();              // hand
+   floor->restore_toolbox();                  // Tooly + notebook + tools (what change_state AT_FLOOR does
+                                              // for a fresh floor via starting_floor->restore_toolbox())
 }
 #endif
 
@@ -6529,6 +6531,11 @@ ProgrammerStatus Programmer_At_Floor::react(boolean ,
 		};
 	};
 	ProgrammerStatus status = PROGRAMMER_NORMAL;
+#ifdef __EMSCRIPTEN__
+	{ static int key_log = 0;
+	  if (key != 0 && key_log < 40) { key_log++;
+	    printf("[tt] floorkey: key=%d ext=%d hand=%d tool=%p\n", (int)key, (int)extended_key, (int)hand, (void*)tool_in_hand); fflush(stdout); } }
+#endif
 	boolean retraining =	(appearance->kind_of() == ROBOT_IN_TRAINING &&
 		                   (((Robot *) appearance)->still_running() ||
 		                   ((Robot *) appearance)->pointer_to_working_cubby() != NULL)); // or waiting to run
