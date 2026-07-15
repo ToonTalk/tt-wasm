@@ -306,7 +306,7 @@ int move_insertion_point_down(int insertion_point, wide_string text, int text_le
 
 Sprite *Text::respond_to_keyboard(unsigned char key, boolean extended, boolean robot_selected, Sprite *by,
 										    boolean record_action, Sprite *original_recipient, boolean size_constrained_regardless) {
-	// changed key on 310899 to be unsigned so input of extra characters (e.g. Swedish E works OK
+	// changed key on 310899 to be unsigned so input of extra characters (e.g. Swedish ï¿½E works OK
 //	if (infinite_stack_flag) return(this); // ignore keystrokes over stack - commented out on 080400 since handled by programmer
    if (!puzzle_oks_typing_to_text_pads(by)) return(this);
 	if (animation_in_progress() && tt_log_version_number >= 37) { // commented out on 080702 -- restored 280204
@@ -1831,6 +1831,12 @@ void Text::display(SelectionFeedback selection_feedback, boolean followers_too, 
 		log("About to display text debug target.");
 	};
 #endif
+#ifdef __EMSCRIPTEN__
+	{ static int tdisp0_log = 0;
+	  if (tdisp0_log < 300) { tdisp0_log++;
+	    printf("[tt] textdisp0: this=%p len=%d vis=%d stacktop=%d w=%ld\n",
+	           (void*)this,(int)text_length,(int)visible(),(int)(pointer_to_top_of_stack()!=NULL),(long)width); fflush(stdout); } }
+#endif
 	if (!visible()) return;
 //	if (rescale_if_camera_above(selection_feedback,followers_too,region)) return; -- commented out on 080202 - 
 	// should everyone comment this out?? --- many were on 160804 but what about the few remaining?
@@ -1860,6 +1866,15 @@ void Text::display(SelectionFeedback selection_feedback, boolean followers_too, 
 			adjusted_height = region->height();
 		};
 		city_coordinate one_x_pixel = tt_screen->one_pixel_in_x_city_units();
+#ifdef __EMSCRIPTEN__
+	{ static int tdisp_log = 0;
+	  if (tdisp_log < 80 && text_length > 2) { tdisp_log++;
+	    printf("[tt] textdisp: len=%d w=%ld h=%ld idealpx=%ld region=%d off=%d blank=%d showall=%d\n",
+	           (int)text_length,(long)width,(long)height,(long)tt_ideal_units_per_horizontal_pixel,
+	           (int)(region!=NULL),
+	           (int)tt_screen->off_screen(adjusted_llx,adjusted_lly,adjusted_width,adjusted_height),
+	           (int)is_blank(),(int)show_all()); fflush(stdout); } }
+#endif
       if (width < tt_ideal_units_per_horizontal_pixel) {
          return; // was one_x_pixel prior to 240100 but that broken time travel buttons when flying very high
       };
@@ -2198,11 +2213,18 @@ void Text::compute_number_of_lines() { // boolean sizes_constrained) {
 //	};
 };
 
-boolean Text::compute_display_text_character_size(city_coordinate region_width, 
+boolean Text::compute_display_text_character_size(city_coordinate region_width,
 																  city_coordinate region_height) {
 	// added arguments on 190299 so that this works when displayed in a region - e.g. when a part of something
    // returns FALSE if too small
    city_coordinate one_x_pixel = tt_screen->one_pixel_in_x_city_units();
+#ifdef __EMSCRIPTEN__
+	{ static int fit_log = 0;
+	  if (fit_log < 60 && text_length > 2) { fit_log++;
+	    printf("[tt] textfit: len=%d rw=%ld rh=%ld 1px=%ld longest=%d lines=%d\n",
+	           (int)text_length,(long)region_width,(long)region_height,
+	           (long)one_x_pixel,(int)longest_line,(int)number_of_lines); fflush(stdout); } }
+#endif
    if (region_width < one_x_pixel || longest_line == 0) return(FALSE); // disjuncted add on 20300
 	set_character_width(region_width/longest_line);
    // can only set it to integer pixel values anyways

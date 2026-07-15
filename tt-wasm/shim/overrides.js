@@ -12,6 +12,47 @@ addToLibrary({
   // Resource strings: serve the real ToonTalk STRINGTABLE (shim/resstrings.js, generated from the
   // .rc files) by numeric id. LoadString is the funnel for every C()/S()/SC() accessor; unknown
   // ids return "" (null-terminated) so callers that strlen the result stay safe.
+  // Memory status: the engine sizes its image cache from GlobalMemoryStatus (25% of
+  // min(TotalPhys, AvailPageFile) in compute_memory_available). The zero-stub left the struct
+  // untouched -> cache budget 0 -> the FIRST image load tried to evict from an EMPTY cache and
+  // my_random2(max_cache_index==0) trapped on %0. Report a healthy fixed 256MB everywhere.
+  GlobalMemoryStatus: function(ptr) {
+    var MB256 = 256 * 1024 * 1024;
+    HEAP32[(ptr >> 2) + 1] = 25;      /* dwMemoryLoad */
+    HEAP32[(ptr >> 2) + 2] = MB256;   /* dwTotalPhys */
+    HEAP32[(ptr >> 2) + 3] = MB256;   /* dwAvailPhys */
+    HEAP32[(ptr >> 2) + 4] = MB256;   /* dwTotalPageFile */
+    HEAP32[(ptr >> 2) + 5] = MB256;   /* dwAvailPageFile */
+    HEAP32[(ptr >> 2) + 6] = MB256;   /* dwTotalVirtual */
+    HEAP32[(ptr >> 2) + 7] = MB256;   /* dwAvailVirtual */
+    return 1;
+  },
+
+  // Narrow<->wide conversion. The zero-stubs here made EVERY set_text()-style narrow->wide
+  // conversion return length 0, so all engine-created labels/pads displayed as EMPTY (the BOK
+  // notebook's "Pictures"/"Sensors" pads, Marty's text, ... — "no digits or characters").
+  // ToonTalk strings are Windows-1252/ASCII, so byte <-> code-unit 1:1 is faithful. wchar_t is
+  // 4 bytes under Emscripten -> HEAP32. Windows semantics: srcLen==-1 processes through the NUL
+  // and the returned count INCLUDES it; dstLen==0 is a size query.
+  MultiByteToWideChar: function(cp, flags, src, srcLen, dst, dstLen) {
+    if (!src) return 0;
+    var n = srcLen;
+    if (n < 0) { n = 0; while (HEAPU8[src + n]) n++; n++; }
+    if (!dst || dstLen === 0) return n;
+    var m = Math.min(n, dstLen);
+    for (var i = 0; i < m; i++) HEAP32[(dst >> 2) + i] = HEAPU8[src + i];
+    return m;
+  },
+  WideCharToMultiByte: function(cp, flags, src, srcLen, dst, dstLen, defc, used) {
+    if (!src) return 0;
+    var n = srcLen;
+    if (n < 0) { n = 0; while (HEAP32[(src >> 2) + n]) n++; n++; }
+    if (!dst || dstLen === 0) return n;
+    var m = Math.min(n, dstLen);
+    for (var i = 0; i < m; i++) { var c = HEAP32[(src >> 2) + i]; HEAPU8[dst + i] = c < 256 ? c : 63; }
+    return m;
+  },
+
   LoadStringA__deps: ['$TT_RES_STRINGS', '$TT_writeCStr'],
   LoadStringA: function(hInst, id, buf, maxLen) {
     var s = TT_RES_STRINGS[id];

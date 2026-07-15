@@ -394,6 +394,13 @@ void Number::display(SelectionFeedback selection_feedback, boolean followers_too
 //   if (text_length < 0) { // not computed yet
 //      update_text_and_widths(TRUE);
 //   };
+#ifdef __EMSCRIPTEN__
+	{ static int numdisp_log = 0;
+	  if (numdisp_log < 80) { numdisp_log++;
+	    printf("[tt] numdisp: len=%d cw=%ld chh=%ld w=%ld h=%ld showall=%d blank=%d region=%d\n",
+	           (int)text_length,(long)character_width,(long)character_height,(long)width,(long)height,
+	           (int)show_all(),(int)is_blank(),(int)(region!=NULL)); fflush(stdout); } }
+#endif
 	if (show_all() && text_length == 0) { // how can this happen with numbers? -- it does now (090604) while editing while holding
 		Sprite::display(selection_feedback,followers_too,region); // only one plate
 	} else {
@@ -1002,10 +1009,17 @@ END_GDI
 																	 height_or_region_height); // new on 251004
 //					};
 				} else {
+#ifdef __EMSCRIPTEN__
+					{ static int numtext_log = 0;
+					  if (numtext_log < 40) { numtext_log++;
+					    printf("[tt] numtext: len=%d at(%ld,%ld) charWH=(%ld,%ld)\n",(int)wide_text_length,
+					           (long)start_x,(long)(adjusted_lly+adjusted_height-edge_size),
+					           (long)adjusted_character_width,(long)adjusted_character_height); fflush(stdout); } }
+#endif
 					tt_screen->text_out((string) wide_text,wide_text_length,start_x,adjusted_lly+adjusted_height-edge_size,
 											  adjusted_character_width,adjusted_character_height,
 											  TRUE,TRUE,TRUE,text_color,TRUE,permutation,WHITE,adjusted_text_width,FALSE,insertion_point);
-					// replaced adjusted_width with adjusted_text_width on 031104 
+					// replaced adjusted_width with adjusted_text_width on 031104
 					// since otherwise clipped long integers stick out a tiny bit
 #if TT_DEBUG_ON
 					add_to_log_if_interesting_error();

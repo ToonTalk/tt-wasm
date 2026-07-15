@@ -1183,8 +1183,15 @@ void Notebook::finish_switching_contents() {
       if (picture != NULL) { // copied here on 231002 
          left_page->now_on_back_of(picture);
       };
-      left_page->set_in_notebook(NULL); // so sensors work while open in the notebook      
+      left_page->set_in_notebook(NULL); // so sensors work while open in the notebook
    };
+#ifdef __EMSCRIPTEN__
+	{ static int fsc_log = 0;
+	  if (fsc_log < 30) { fsc_log++;
+	    printf("[tt] pageset: n=%d left=%p kind=%d copy=%d\n",
+	           (int)left_page_number_when_displayed,(void*)left_page,
+	           left_page ? (int)left_page->kind_of() : -1,(int)left_page_is_copy); fflush(stdout); } }
+#endif
    right_page = page_sprite(left_page_number_when_displayed+1); // was right_page_number(by) prior to 180103
    if (right_page != NULL) {
       right_page_is_copy = (right_page->pointer_to_leader() != NULL); // need to copy if already part of another notebook
@@ -4242,12 +4249,20 @@ void Notebook::load() { // ascii_string ignore_file_name, boolean add_prefix) { 
 		pad_in->close();
 	} else {
 		if (strcmp(file_name,"bok") == 0) {
-//#if TT_DEBUG_ON 
+//#if TT_DEBUG_ON
 			if (tt_create_new_notebooks) {
 				short int page = 1;
 				Notebook *notebook;
+#ifdef __EMSCRIPTEN__
+				printf("[tt] bok: building default pages, movies='%s' sensors='%s'\n",
+				       S(IDS_MOVIES_NOTEBOOK), S(IDS_SENSORS_NOTEBOOK)); fflush(stdout);
+#endif
 				// no pad file so fill with defaults -- made them "See some" on 120200
-				add_page(page++,variable_width_text_pad(S(IDS_MOVIES_NOTEBOOK),text_pad_see_all));
+				{ Text *p1 = variable_width_text_pad(S(IDS_MOVIES_NOTEBOOK),text_pad_see_all);
+#ifdef __EMSCRIPTEN__
+				  printf("[tt] bok: page1 item kind=%d ptr=%p\n",(int)p1->kind_of(),(void*)p1); fflush(stdout);
+#endif
+				  add_page(page++,p1); }
 				notebook = new Notebook(0,0,0,copy_ascii_string("2")); // beginning 210802 the caller copies the file name
 				notebook->set_label_string(S(IDS_MOVIES_NOTEBOOK)); // seems to have already been set - noticed on 260803
 				add_page(page++,notebook);

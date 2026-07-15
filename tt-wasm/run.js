@@ -1,6 +1,7 @@
 // Node test harness: emscripten's fps=0 main loop uses requestAnimationFrame,
 // which node lacks — polyfill it with setTimeout so frames pump headlessly.
 // (In the real browser target, the native rAF drives it.)
+if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=1" };
 let t0 = Date.now();
 let frames = 0;
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
