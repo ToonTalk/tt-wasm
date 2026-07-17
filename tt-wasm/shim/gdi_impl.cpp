@@ -218,43 +218,35 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
 /* Text: rasterize with the embedded bitmap font, integer-scaled toward the requested LOGFONT
  * height (balloons/pads/labels are legible without a real font engine). Colour comes from
  * SetTextColor via the same luminance mapping the brushes use. */
-/* Three Arial-Bold base sizes (8x12, 16x24, 32x48); pick the largest base that fits the
- * requested height and integer-scale the remainder. One base scaled from 12px made digits
- * unreadable blobs at pad sizes ('1' read as a 5 — "the numbers weren't visible"). */
-struct FontPick { int base; int s; int cw, ch; };
+/* Three Arial-Bold base sizes (8x12, 16x24, 32x48). The requested LOGFONT width AND height are
+ * honored EXACTLY by resampling the best base glyph to the target cell (nearest neighbor).
+ * Integer height-only scaling made every drawn size a lie: the engine's fit-text-to-pad math
+ * (correct_font_size, get_extent_size, the shrink-and-grow gate that checks whether the fitted
+ * font got skinny) computes exact sizes and expects the font to draw at them — quantized cells
+ * overflowed pads and kept the shrinking-digits path from ever triggering. */
+struct FontPick { int base; int cw, ch; };
 static FontPick pick_font(GdiDC *dc) {
-    int want = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT8_H;
-    /* round to the NEAREST achievable height across all bases and integer scales — flooring
-     * alone drew 24px where 43px was asked (page numbers noticeably small) */
-    static const int BW[3] = { TT_FONT8_W, TT_FONT16_W, TT_FONT32_W };
-    static const int BH[3] = { TT_FONT8_H, TT_FONT16_H, TT_FONT32_H };
-    FontPick best; best.base = 0; best.s = 1; int bestd = 0x7FFFFFFF;
-    for (int b = 0; b < 3; b++) {
-        int lo = want / BH[b]; if (lo < 1) lo = 1; if (lo > 40) lo = 40;
-        for (int k = 0; k < 2; k++) {
-            int s = lo + k; if (s > 40) continue;
-            int d = BH[b] * s - want; if (d < 0) d = -d;
-            /* prefer the larger base on ties (smoother glyphs) */
-            if (d < bestd || (d == bestd && b > best.base)) { bestd = d; best.base = b; best.s = s; }
-        }
-    }
-    best.cw = BW[best.base] * best.s; best.ch = BH[best.base] * best.s;
-    return best;
+    int h = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT8_H;
+    int w = (dc && dc->font && dc->font->font_w > 0) ? dc->font->font_w : (h * 2) / 3;
+    if (h < 2) h = 2; if (h > 600) h = 600;
+    if (w < 1) w = 1; if (w > 600) w = 600;
+    FontPick p; p.cw = w; p.ch = h;
+    p.base = (h >= TT_FONT32_H) ? 2 : (h >= TT_FONT16_H) ? 1 : 0;
+    return p;
 }
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
     if (ch < 32 || ch > 126) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }
-    int i = (int)ch - 32, s = p.s;
+    int i = (int)ch - 32;
     int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
     int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;
-    for (int gy = 0; gy < bh; gy++) {
+    unsigned int top = 1u << (bw - 1);
+    for (int ty = 0; ty < p.ch; ty++) {
+        int gy = (ty * bh) / p.ch;
         unsigned int bits = (p.base == 2) ? tt_font32[i][gy] : (p.base == 1) ? (unsigned int)tt_font16[i][gy] : (unsigned int)tt_font8[i][gy];
         if (!bits) continue;
-        unsigned int top = 1u << (bw - 1);
-        for (int gx = 0; gx < bw; gx++) {
-            if (!(bits & (top >> gx))) continue;
-            for (int sy = 0; sy < s; sy++)
-                for (int sx = 0; sx < s; sx++)
-                    put(dc, x + gx * s + sx, y + gy * s + sy, color);
+        for (int tx = 0; tx < p.cw; tx++) {
+            int gx = (tx * bw) / p.cw;
+            if (bits & (top >> gx)) put(dc, x + tx, y + ty, color);
         }
     }
 }
@@ -288,8 +280,8 @@ BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
     FontPick p = pick_font(dc);
     static int texta_log = 0;   /* temporary diagnosis of pad digit sizing */
     if (texta_log < 2000 && len > 0 && len <= 16) { texta_log++;
-        printf("[tt] textA: '%c%c' len=%d at(%d,%d) fontH=%d base=%d s=%d ink=%d bk=%d\n",
-               str[0], (len > 1 ? str[1] : ' '), len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.s, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
+        printf("[tt] textA: '%c%c' len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
+               str[0], (len > 1 ? str[1] : ' '), len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
     for (int i = 0; i < len; i++)
         draw_glyph(dc, x + i * p.cw, y, (unsigned char)str[i], p, dc->text_index);
     return 1;
@@ -299,9 +291,9 @@ BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
     FontPick p = pick_font(dc);
     static int text_log = 0;   /* temporary diagnosis of pad digit sizing */
     if (text_log < 2000 && len > 0 && len <= 16) { text_log++;
-        printf("[tt] textW: '%c%c' len=%d at(%d,%d) fontH=%d base=%d s=%d ink=%d bk=%d\n",
+        printf("[tt] textW: '%c%c' len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
                (char)(str[0] < 127 ? str[0] : '?'), (char)(len > 1 && str[1] < 127 ? str[1] : ' '),
-               len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.s, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
+               len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
     for (int i = 0; i < len; i++)
         draw_glyph(dc, x + i * p.cw, y, (unsigned int)str[i], p, dc->text_index);
     return 1;

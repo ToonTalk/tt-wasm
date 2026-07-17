@@ -6635,10 +6635,40 @@ ProgrammerStatus Programmer_At_Floor::react(boolean ,
             tt_error_file() << "programmer_y is " << programmer_y << " and delta_y is " << delta_y;
          };
 #endif
+#ifdef __EMSCRIPTEN__
+         // Web port: classic point-then-glide hand (the pre-170502 behavior Ken asked for).
+         // Remember the last commanded cursor position and keep gliding toward it across frames
+         // (~0.4s to cross the screen) even after the button is released, instead of snapping to
+         // the cursor only while the button is held. Holding still drags: the target updates
+         // continuously while pressed.
+         {
+            static city_coordinate em_target_x = 0, em_target_y = 0;
+            static boolean em_target_valid = FALSE;
+            if (moved && (delta_x != 0 || delta_y != 0)) {
+               em_target_x = delta_x; em_target_y = delta_y; em_target_valid = TRUE;
+            };
+            if (em_target_valid) {
+               city_coordinate to_x = em_target_x - programmer_x;
+               city_coordinate to_y = em_target_y - programmer_y;
+               city_coordinate max_step = (city_coordinate)(((long) ideal_screen_width * (long) tt_millisecond_delta) / 400);
+               if (max_step < 1) max_step = 1;
+               boolean clamped = FALSE;
+               if (to_x > max_step) { to_x = max_step; clamped = TRUE; }
+               else if (to_x < -max_step) { to_x = -max_step; clamped = TRUE; }
+               if (to_y > max_step) { to_y = max_step; clamped = TRUE; }
+               else if (to_y < -max_step) { to_y = -max_step; clamped = TRUE; }
+               delta_x = to_x; delta_y = to_y;
+               if (!clamped) em_target_valid = FALSE; // this step reaches the target
+            } else {
+               delta_x = 0; delta_y = 0;
+            };
+         };
+#else
          if (delta_x != 0 || delta_y != 0) { // conditional new on 180602 to scroll and drag
             delta_x = delta_x-programmer_x;
             delta_y = delta_y-programmer_y;
          };
+#endif
 #if TT_DEBUG_ON
          if (tt_debug_mode == 180602) {
             tt_error_file() << " and became " << (delta_y-programmer_y) << endl;
