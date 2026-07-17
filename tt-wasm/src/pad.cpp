@@ -4091,6 +4091,12 @@ FileInputStream *open_page_file(ascii_string file_name, ascii_string user_file_n
 	};
 #endif
    ascii_string full_file_name = page_full_file_name(file_name,user_file_name,check_paths,NULL);
+#ifdef __EMSCRIPTEN__
+	{ static int pf_log = 0;
+	  if (pf_log < 40) { pf_log++;
+	    printf("[tt] pagefile: name='%s' user='%s' -> '%s'\n", file_name ? file_name : "(null)",
+	           user_file_name ? user_file_name : "(null)", full_file_name ? full_file_name : "(NOT FOUND)"); fflush(stdout); } }
+#endif
 	if (full_file_name != NULL) {
 		FileInputStream *pad_in = new FileInputStream();
       pad_in->open(full_file_name,std::ios_base::in|std::ios_base::binary); //std::ios_base::nocreate);

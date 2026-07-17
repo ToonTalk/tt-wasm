@@ -9426,6 +9426,10 @@ void compute_tt_default_file_name() { // prior to 050301 was in-line below
 		add_to_log_if_interesting_error();
 #endif
 		string entry = ini_entry(AC(IDC_USER),AC(IDC_DEFAULT_USER));
+#ifdef __EMSCRIPTEN__
+		printf("[tt] defuser: ini_entry('%s','%s') -> '%s'\n", AC(IDC_USER), AC(IDC_DEFAULT_USER),
+		       entry ? entry : "(null)"); fflush(stdout);
+#endif
 		// rewritten on 240105 to deal with spaces and other punctuation
 		if (entry != NULL) {
 			int length = strlen(entry);

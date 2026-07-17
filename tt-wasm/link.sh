@@ -12,10 +12,10 @@ EMCC=/c/Users/toont/dev/emsdk/upstream/emscripten/emcc.exe
 mkdir -p build logs
 
 # 0. compile the shim .cpp that carry real code (COM data symbols, entry, MSXML DOM) into obj/
-for s in guids diformats entry msxml_impl ddraw_impl gdi_impl; do
+for s in guids diformats entry msxml_impl ddraw_impl gdi_impl dunzip_impl; do
   if [ "shim/$s.cpp" -nt "obj/$s.o" ] || [ ! -f "obj/$s.o" ]; then
     echo "compiling shim/$s.cpp"
-    "$EMCC" -std=gnu++14 -w -DWIN32 -c "shim/$s.cpp" -o "obj/$s.o" -I shim -I src 2>"logs/$s.err" \
+    "$EMCC" -std=gnu++14 -w -DWIN32 -sUSE_ZLIB=1 -c "shim/$s.cpp" -o "obj/$s.o" -I shim -I src 2>"logs/$s.err" \
       || { echo "SHIM COMPILE FAILED: $s"; tail -25 "logs/$s.err"; exit 1; }
   fi
 done
@@ -43,7 +43,7 @@ EXTRA="${1:-}"
   -sERROR_ON_UNDEFINED_SYMBOLS=0 -Wl,--allow-multiple-definition \
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
   -sSTACK_SIZE=16777216 \
-  -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
+  -sUSE_ZLIB=1 -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
 rc=$?; echo "link exit=$rc"
 [ $rc -ne 0 ] && { echo "--- link errors ---"; tail -30 logs/link.err; exit 1; }
 # version the script URL AND the wasm/data URLs (Module.locateFile) so browsers never serve any

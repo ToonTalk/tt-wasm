@@ -41,3 +41,4 @@ TabbedTextOutW
 GetTextExtentPoint32A
 GetTextExtentPoint32W
 SetTextAlign
+dunzip

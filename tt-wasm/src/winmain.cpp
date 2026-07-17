@@ -10126,6 +10126,9 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 #endif
 	if (tt_system_mode != PUZZLE) {
       // moved here so that the behavior is the same whether logs are generated or not -- since logs need tt_favorites
+#ifdef __EMSCRIPTEN__
+		printf("[tt] toolbox: branch reached, tt_toolbox=%p mode=%d\n", (void*)tt_toolbox, (int)tt_system_mode); fflush(stdout);
+#endif
 		if (tt_toolbox == NULL) {
 			tt_toolbox = new Toolbox();
 			tt_toolbox->initialize();

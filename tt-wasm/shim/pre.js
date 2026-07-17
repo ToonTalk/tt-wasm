@@ -177,11 +177,32 @@ Module['preRun'].push(function () {
     '',
     '[User]',
     'PreviousName=Kid',
+    // Like retail: DefaultUser empty. The default-resource notebook builds its own pages, and the
+    // page-6 "Examples" nested notebook (file name "6") loads <MainDir>Examples.xml.tt — a PKZIP
+    // with the sample robots (Doubler, Builder, ...) — through the dunzip shim (pad.cpp ~4518).
+    'DefaultUser=',
     ''
   ].join('\n');
   try { FS.mkdir('/toontalk'); } catch (e) {}
   try { FS.writeFile('/toontalk/ToonTalk.ini', ini); } catch (e) {}
   try { FS.writeFile('/ToonTalk.ini', ini); } catch (e) {}
+  // The engine builds Windows-style paths ("/toontalk/Users\X\file", sometimes with MainDir
+  // prefixed twice because "/"-leading paths don't look absolute to its is_absolute check).
+  // The Win32 shims (CreateFile & co) normalize via TT_resolvePath, but plain C/C++ i/o
+  // (ifstream in document_from_file, fopen in dunzip) hits the FS directly — so normalize
+  // once here, at FS.open itself: backslashes -> slashes, collapse "//", and if MainDir got
+  // doubled keep the LAST "/toontalk/" occurrence.
+  var ttNorm = function (path) {
+    if (typeof path !== 'string' || (path.indexOf('\\') < 0 && path.indexOf('//') < 0)) return path;
+    var p = path.replace(/\\/g, '/').replace(/\/+/g, '/');
+    var ix = p.toLowerCase().lastIndexOf('/toontalk/');
+    if (ix > 0) p = p.slice(ix);
+    return p;
+  };
+  var origOpen = FS.open;
+  FS.open = function (path, flags, mode) { return origOpen.call(FS, ttNorm(path), flags, mode); };
+  var origStat = FS.stat;
+  FS.stat = function (path, dontFollow) { return origStat.call(FS, ttNorm(path), dontFollow); };
   // Dummy string-DLL files so load_string_library's existence check (local_file_exists ->
   // CreateFile, common.cpp:132) passes. The strings themselves come from resstrings.js and
   // LoadLibrary is faked to a non-null handle; only the file's *existence* is load-bearing.

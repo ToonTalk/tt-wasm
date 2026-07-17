@@ -53,6 +53,26 @@ addToLibrary({
     return m;
   },
 
+  // Character classification (Windows-1252). The zero-stubs classified EVERY char as
+  // non-alphanumeric, so copy_alphanumerics() stripped the whole DefaultUser name from the INI
+  // ("PlaygroundBookX" -> "") and no user notebook files could ever resolve. IsCharAlphaW's
+  // zero-stub also broke number.cpp's shrink-digits gate (!IsCharAlphaW let letters through).
+  $TT_isAlpha: function(c) {
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) return 1;      /* A-Z a-z */
+    if (c >= 0xC0 && c <= 0xFF && c !== 0xD7 && c !== 0xF7) return 1; /* À-ÿ minus × ÷ */
+    if (c === 0x83 || c === 0x8A || c === 0x8C || c === 0x8E ||       /* ƒ Š Œ Ž */
+        c === 0x9A || c === 0x9C || c === 0x9E || c === 0x9F) return 1; /* š œ ž Ÿ */
+    return 0;
+  },
+  IsCharAlphaA__deps: ['$TT_isAlpha'],
+  IsCharAlphaA: function(c) { return TT_isAlpha(c & 0xFF); },
+  IsCharAlphaW__deps: ['$TT_isAlpha'],
+  IsCharAlphaW: function(c) { return c > 255 ? 1 : TT_isAlpha(c); },
+  IsCharAlphaNumericA__deps: ['$TT_isAlpha'],
+  IsCharAlphaNumericA: function(c) { c &= 0xFF; return (c >= 48 && c <= 57) ? 1 : TT_isAlpha(c); },
+  IsCharAlphaNumericW__deps: ['$TT_isAlpha'],
+  IsCharAlphaNumericW: function(c) { return (c >= 48 && c <= 57) ? 1 : (c > 255 ? 1 : TT_isAlpha(c)); },
+
   LoadStringA__deps: ['$TT_RES_STRINGS', '$TT_writeCStr'],
   LoadStringA: function(hInst, id, buf, maxLen) {
     var s = TT_RES_STRINGS[id];
@@ -147,16 +167,32 @@ addToLibrary({
   $TT_resolvePath__deps: ['$FS'],
   $TT_resolvePath: function(raw) {
     var p = raw.replace(/\\/g, '/').replace(/\/+/g, '/');
+    if (p.length > 1) p = p.replace(/\/$/, '');   // directory names arrive with a trailing slash
+    var cands = [p];
+    // Use the LAST occurrence: the engine's is_absolute check doesn't recognise "/"-leading
+    // paths, so it re-prefixes MainDir onto already-absolute ones ("/toontalk/toontalk/Users/...").
+    var ix = p.toLowerCase().lastIndexOf('/toontalk/');
+    if (ix > 0) cands.push(p.slice(ix));          // "C:/.../toontalk/x" -> "/toontalk/x"
     var base = p.split('/').pop();
-    var cands = [p, '/toontalk/' + base, '/toontalk/Java/' + base, '/toontalk/pics/' + base,
-                 '/toontalk/pics/' + base.toLowerCase(), base];
+    cands.push('/toontalk/' + base, '/toontalk/Java/' + base, '/toontalk/pics/' + base,
+               '/toontalk/pics/' + base.toLowerCase(), base);
     for (var i = 0; i < cands.length; i++) { try { FS.stat(cands[i]); return cands[i]; } catch (e) {} }
+    if (!TT_resolvePath.n) TT_resolvePath.n = 0;
+    if (p.indexOf('Playground') >= 0 && TT_resolvePath.n < 60) { TT_resolvePath.n++; console.log('[tt] probe-miss: ' + raw); }
     return null;
   },
   OpenFile__deps: ['$FS', '$UTF8ToString', '$TT_resolvePath'],
   OpenFile: function(namePtr, ofstruct, style) { if (!namePtr) return -1; var r = TT_resolvePath(UTF8ToString(namePtr)); if (!r) return -1; try { return FS.open(r, 'r').fd; } catch (e) { return -1; } },
-  GetFileAttributesA__deps: ['$UTF8ToString', '$TT_resolvePath'],
-  GetFileAttributesA: function(namePtr) { if (!namePtr) return 0xFFFFFFFF; return TT_resolvePath(UTF8ToString(namePtr)) ? 0x80 : 0xFFFFFFFF; },
+  GetFileAttributesA__deps: ['$UTF8ToString', '$TT_resolvePath', '$FS'],
+  GetFileAttributesA: function(namePtr) {
+    if (!namePtr) return 0xFFFFFFFF;
+    var r = TT_resolvePath(UTF8ToString(namePtr));
+    if (!r) return 0xFFFFFFFF;
+    /* FILE_ATTRIBUTE_DIRECTORY matters: set_tt_default_file_name compares == 0x10 to accept the
+     * DefaultUser directory (Users/PlaygroundBookX with the retail BOK pages). */
+    try { if (FS.isDir(FS.stat(r).mode)) return 0x10; } catch (e) {}
+    return 0x80;
+  },
 
   // Mouse position. DirectInput failed to init (tt_using_direct_input=FALSE), so the engine polls
   // the absolute cursor via GetCursorPos each cycle (winmain.cpp:1358). pre.js's canvas mousemove
