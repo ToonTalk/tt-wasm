@@ -6128,6 +6128,17 @@ void Programmer_At_Floor::robot_in_control(boolean robot) {
      max_x = 19*tile_width;
      min_y = tile_height;
      max_y = 19*tile_height;
+#ifdef __EMSCRIPTEN__
+     // The 180402 absolute-mouse branch never configured floor containment, leaving it at the
+     // constructor default (inactive) forever: pads could grow right off the floor and never
+     // became size_constrained(), so the shrinking-digits display for long numbers never armed.
+     // Mirror the relative branch's containment setup below.
+     if (ok_to_scroll()) {
+        set_containment_region();
+     } else {
+        floor->set_containment_active(FALSE);
+     };
+#endif
   } else {
 //     if (tt_log_version_number >= 7) {
 	     min_x = tile_width; //  was 2*tile_width before 5/22/97

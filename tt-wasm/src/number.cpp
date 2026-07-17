@@ -575,6 +575,15 @@ END_GDI
 					};
 #endif
 					need_to_change_size = TRUE;
+#ifdef __EMSCRIPTEN__
+					// Web port: don't let a free pad grow wider than the floor. At the cap, switch
+					// to fitting the FONT instead (the same move the engine makes for constrained
+					// pads) so the shrinking-digits display can arm for long numbers.
+					if (adjusted_text_width > 17*tile_width) {
+						adjusted_text_width = 17*tile_width;
+						set_change_font_size_to_fit_extent(TRUE);
+					};
+#endif
 //					if (!animation_in_progress()) { // if animating shouldn't be changing size to fit, right?
 						set_change_size_to_fit_extent(FALSE);
 //					};
@@ -644,8 +653,15 @@ END_GDI
 				//};
 				if (//tt_shrink_and_grow_numbers // not needed as of 141104 && // !animation_in_progress() && 
 					// added !animation_in_progress on 051104 
-					 (multiple_lines || decimal_places > 0 || 
-					  (correct_character_height > correct_character_width*3 && size_constrained())) 
+					 (multiple_lines || decimal_places > 0 ||
+					  (correct_character_height > correct_character_width*3 &&
+#ifdef __EMSCRIPTEN__
+						// a pad that has hit the web port's floor-width cap is constrained in practice
+						(size_constrained() || width >= 16*tile_width)
+#else
+						size_constrained()
+#endif
+					  ))
 					  && text_length > 2 && !IsCharAlphaW(wide_text[0])) {
 					// added size_constrained() on 081105 since if large number on the ground shouldn't do this
 				   // on 021205 moved size_constrained() to only apply if the digits are getting too narrow

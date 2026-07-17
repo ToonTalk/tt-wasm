@@ -235,7 +235,7 @@ static FontPick pick_font(GdiDC *dc) {
     return p;
 }
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
-    if (ch < 32 || ch > 126) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }
+    if (ch < 32 || ch > 255) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }   /* Latin-1 coverage */
     int i = (int)ch - 32;
     int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
     int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;
@@ -291,8 +291,8 @@ BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
     FontPick p = pick_font(dc);
     static int text_log = 0;   /* temporary diagnosis of pad digit sizing */
     if (text_log < 2000 && len > 0 && len <= 16) { text_log++;
-        printf("[tt] textW: '%c%c' len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
-               (char)(str[0] < 127 ? str[0] : '?'), (char)(len > 1 && str[1] < 127 ? str[1] : ' '),
+        printf("[tt] textW: u0=%u u1=%u len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
+               (unsigned)str[0], (unsigned)(len > 1 ? str[1] : 0),
                len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
     for (int i = 0; i < len; i++)
         draw_glyph(dc, x + i * p.cw, y, (unsigned int)str[i], p, dc->text_index);

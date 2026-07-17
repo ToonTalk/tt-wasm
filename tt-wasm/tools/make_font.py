@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate shim/gdi_font.h — bitmap fonts for the GDI shim's TextOut.
+"""Generate shim/gdi_font.h — bitmap fonts for the GDI shim's TextOut (ASCII+Latin-1, 32..255).
 
 Renders ASCII 32..126 from a real vector font (Arial, from the Windows fonts
 directory) at THREE base cell sizes. The shim picks the largest base that fits
@@ -27,7 +27,7 @@ def render(cell_w, cell_h, pt):
     font = ImageFont.truetype(TTF, pt)
     ascent, descent = font.getmetrics()
     rows_per_glyph = []
-    for c in range(32, 127):
+    for c in range(32, 256):
         im = Image.new("1", (cell_w, cell_h), 0)
         d = ImageDraw.Draw(im)
         ch = chr(c)
@@ -55,11 +55,11 @@ with open(OUT, "w", newline="\n") as f:
     for cell_w, cell_h, pt, ctype, suffix in SIZES:
         rows_all = render(cell_w, cell_h, pt)
         f.write("#define TT_FONT%s_W %d\n#define TT_FONT%s_H %d\n" % (suffix, cell_w, suffix, cell_h))
-        f.write("static const %s tt_font%s[95][%d] = {\n" % (ctype, suffix, cell_h))
+        f.write("static const %s tt_font%s[224][%d] = {\n" % (ctype, suffix, cell_h))
         hexw = cell_w // 4
         for i, rows in enumerate(rows_all):
             ch = chr(32 + i)
-            label = ch if ch not in "\\'" else " "
+            label = ch if (32 + i < 127 and ch not in "\'") else ("x%02X" % (32 + i))
             f.write("  {%s}, /* '%s' */\n" % (",".join("0x%0*X" % (hexw, b) for b in rows), label))
         f.write("};\n")
     # compatibility aliases for existing shim code
