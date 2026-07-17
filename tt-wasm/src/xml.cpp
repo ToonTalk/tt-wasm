@@ -277,8 +277,13 @@ Tag tag_token_from_string(BSTR tag_string) {
 		return(FLYING_HELICOPTER_TAG);
 	};
 	string narrow_tag_string = copy_narrow_string(tag_string);
-	tt_error_file() << "This version of ToonTalk doesn't know the XML tag: " << narrow_tag_string << endl; 
+	tt_error_file() << "This version of ToonTalk doesn't know the XML tag: " << narrow_tag_string << endl;
 	// warning new on 060405
+#ifdef __EMSCRIPTEN__
+	{ static int ut_log = 0;
+	  if (ut_log < 20) { ut_log++;
+	    printf("[tt] xmltag-unknown: '%s' len=%d\n", narrow_tag_string, (int)::SysStringLen(tag_string)); fflush(stdout); } }
+#endif
 	delete [] narrow_tag_string;
    return(NO_SUCH_TAG);
 };

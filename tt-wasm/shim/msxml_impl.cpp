@@ -330,7 +330,11 @@ HRESULT DomNode::setAttribute(BSTR nm, VARIANT val) {
     wstring v = (val.vt == VT_BSTR && val.bstrVal) ? wstring(val.bstrVal) : wstring();
     DomNode *a = find_attr(key);
     if (!a) { a = owner->mint(NODE_ATTRIBUTE); a->name = key; a->parent = this; attrs.push_back(a); }
-    a->text = v; return S_OK;
+    a->text = v;
+    /* keep the #text child (see parser note) in sync with the value */
+    if (a->kids.empty()) { DomNode *at = owner->mint(NODE_TEXT); at->name = L"#text"; at->parent = a; a->kids.push_back(at); }
+    a->kids[0]->text = v;
+    return S_OK;
 }
 HRESULT DomNode::removeAttribute(BSTR nm) {
     wstring key = nm ? wstring(nm) : wstring();
@@ -426,6 +430,10 @@ struct Parser {
             wstring av;
             if (p < end && *p == L'=') { p++; skip_ws(); if (p < end && (*p == L'"' || *p == L'\'')) read_quoted(av); }
             DomNode *a = doc->mint(NODE_ATTRIBUTE); a->name = an; a->text = av; a->parent = el; el->attrs.push_back(a);
+            /* MSXML models an attribute's value as a #text CHILD of the attribute node, and the
+             * engine reads values that way (xml_get_attribute_int -> first_node_that_is_text).
+             * Without this child every attribute read silently returned the caller's default. */
+            DomNode *at = doc->mint(NODE_TEXT); at->name = L"#text"; at->text = av; at->parent = a; a->kids.push_back(at);
         }
         parse_children(el);                                                       /* fills until </ */
         if (starts(L"</")) { p += 2; read_name(); skip_ws(); if (p < end && *p == L'>') p++; }

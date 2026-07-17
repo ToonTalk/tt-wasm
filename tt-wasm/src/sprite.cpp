@@ -10341,7 +10341,7 @@ boolean Sprite::handle_xml_tag(Tag tag, xml_node *node) {
 #endif
                          };
          return(TRUE);
-		case GEOMETRIC_RELATION_TO_CONTAINER_TAG: 
+		case GEOMETRIC_RELATION_TO_CONTAINER_TAG:
 			// new on 101202
 			if (leader_offsets == NULL) {
 				leader_offsets = new Leader_Offsets();
