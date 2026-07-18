@@ -5698,6 +5698,12 @@ void Bird::receive_new_item(Sprite *item) {
 };
 
 boolean Bird::receive_item(Sprite *item, Sprite *who_by, millisecond duration, Sprite *original_recipient, Sprite *original_item) {
+#ifdef __EMSCRIPTEN__
+	{ static int br_log = 0;
+	  if (br_log < 24) { br_log++;
+	    printf("[tt] bird:receive_item this=%p item=%p nest=%p dur=%ld\n",
+	           (void*)this, (void*)item, (void*)nest, (long)duration); fflush(stdout); } }
+#endif
 #if TT_DEBUG_ON
 	if (debug_counter == tt_debug_target) {
 		log(_T("Debug target is a bird receiving something."));
@@ -6136,6 +6142,13 @@ boolean Bird::flying_outside() {
 };
 
 void Bird::fly_to_nest() {
+#ifdef __EMSCRIPTEN__
+	{ static int b_log = 0;
+	  if (b_log < 24) { b_log++;
+	    printf("[tt] bird:fly_to_nest this=%p nest=%p item=%p destroy=%d\n",
+	           (void*)this, (void*)nest, (void*)item_to_deliver, (int)destroy_item_flag);
+	    fflush(stdout); } }
+#endif
 	millisecond duration = default_duration();
 	if (destroy_item_flag || floor->inside_rule_body()) { // && !nest_inside_rule_body())) {
 		// fly away, destroy item, and return
@@ -6987,6 +7000,13 @@ void Bird::deliver_to_another_house() { // without flying inside
 };
 
 void Bird::deliver_instantly() {
+#ifdef __EMSCRIPTEN__
+	{ static int b_log = 0;
+	  if (b_log < 24) { b_log++;
+	    printf("[tt] bird:deliver_instantly this=%p nest=%p item=%p\n",
+	           (void*)this, (void*)nest, (void*)item_to_deliver);
+	    fflush(stdout); } }
+#endif
    if (item_to_deliver->pointer_to_leader() == this) {
       remove_follower(item_to_deliver);
    };

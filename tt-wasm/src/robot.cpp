@@ -1967,6 +1967,11 @@ void Robot::activate(boolean reset_animation, PictureActivateContext context) {
 };
 
 void Robot::suspend() {
+#ifdef __EMSCRIPTEN__
+	{ static int su_log = 0;
+	  if (su_log < 20) { su_log++;
+	    printf("[tt] robot:suspend %p\n", (void*)this); fflush(stdout); } }
+#endif
 #if TT_DEBUG_ON
 	if (debug_counter == tt_debug_target) {
 		log(_T("Debug target suspended."));
@@ -1986,6 +1991,11 @@ void Robot::suspend() {
 };
 
 void Robot::stop_team(SelectionReason reason) {
+#ifdef __EMSCRIPTEN__
+	{ static int st_log = 0;
+	  if (st_log < 20) { st_log++;
+	    printf("[tt] robot:stop_team %p reason=%d\n", (void*)this, (int)reason); fflush(stdout); } }
+#endif
 	// commented out the following on 040500 since might not have started because say saved floor and yet need to update some of these things - at least top_cubby
 //	if (!body_started && tt_log_version_number >= 22) return; // new on 070400 since lots of this is wasteful if already stopped
 	// and might end up adding cubby to the "real" floor
@@ -5579,7 +5589,14 @@ void Robot::try_clause(Cubby *cubby, millisecond delay) {
       log(_T("Robot wants to run but ToonTalk lost track of where it is."));
    }; 
 #endif
-	if (body == NULL) return; // wouldn't do anything if it could 
+#ifdef __EMSCRIPTEN__
+	{ static int tc_log = 0;
+	  if (tc_log < 20) { tc_log++;
+	    printf("[tt] tryclause: this=%p body=%p floor=%p top=%p susp=%d\n",
+	           (void*)this, (void*)body, (void*)floor, (void*)top_cubby, (int)suspended_flag);
+	    fflush(stdout); } }
+#endif
+	if (body == NULL) return; // wouldn't do anything if it could
 	if (floor == NULL) return; // new on 090400 since more robust this way - could be about to be deleted but queue is holding on to it just now
 	if (cubby != NULL) {
 		set_working_cubby(cubby);
@@ -5918,6 +5935,12 @@ void Robot::really_try_clause() {
 		set_first_to_fail_for_unstable_reasons(NULL); // reset this
 	};
 	set_last_failure_was_for_unstable_reasons(FALSE); // new on 301000 unless proven otherwise below
+#ifdef __EMSCRIPTEN__
+	{ static int ms_log = 0;
+	  if (ms_log < 30) { ms_log++;
+	    printf("[tt] match: robot=%p status=%d frame=%ld\n", (void*)this, (int)match_status, (long)tt_frame_number);
+	    fflush(stdout); } }
+#endif
 	switch (match_status) {
 	  case MATCH_GOOD:
 #if TT_DEBUG_ON

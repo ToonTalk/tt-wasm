@@ -224,4 +224,21 @@ Module['preRun'].push(function () {
   // Country code is empty at load time so it tries "<cc>VER22.DLL" then "US"+"VER22.DLL" (warn=TRUE).
   var stub = new Uint8Array([0x4D, 0x5A]); // "MZ" — content irrelevant, presence is what matters
   ['VER22.DLL', 'USVER22.DLL'].forEach(function (n) { try { FS.writeFile('/toontalk/' + n, stub); } catch (e) {} });
+  // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
+  // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
+  globalThis.TT_dumpErr = function () {
+    var dirs = ['/toontalk/temp', '/toontalk', '/'];
+    for (var d = 0; d < dirs.length; d++) {
+      var names; try { names = FS.readdir(dirs[d]); } catch (e) { continue; }
+      for (var i = 0; i < names.length; i++) {
+        if (/\.txt$/i.test(names[i])) {
+          try {
+            var bytes = FS.readFile(dirs[d] + '/' + names[i]);
+            var txt = ''; for (var k = Math.max(0, bytes.length - 4000); k < bytes.length; k++) txt += String.fromCharCode(bytes[k]);
+            if (txt.replace(/\s/g, '').length) console.log('[errfile ' + dirs[d] + '/' + names[i] + '] ' + txt);
+          } catch (e) {}
+        }
+      }
+    }
+  };
 });

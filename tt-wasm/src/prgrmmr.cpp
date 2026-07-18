@@ -2237,10 +2237,14 @@ void Programmer::em_enter_bootstrap_house() {
          printf("[tt] copyrobots: page6 sprite=%p kind=%d\n", (void*)pg6, pg6 ? (int)pg6->kind_of() : -1); fflush(stdout);
          if (pg6 != NULL && pg6->kind_of() == PROGRAM_PAD) {
             Notebook *ex = (Notebook *) pg6;
-            // page picked via ?robotpage=N (default 2 = the Adds-1 robot)
+            // page picked via ?robotpage=N (default 2 = the Adds-1 robot). NOTE: EM_ASM mangles
+            // regex escapes like \d — use a character class instead.
             int rp = EM_ASM_INT({
-               var m = (typeof location !== 'undefined') ? location.search.match(/robotpage=(\d+)/) : null;
+               var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null;
                return m ? parseInt(m[1]) : 2;
+            });
+            int runit = EM_ASM_INT({
+               return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0;
             });
             Sprite *item = ex->page_sprite(rp, TRUE);
             printf("[tt] copyrobots: page %d item=%p kind=%d — real pick_up...\n", rp, (void*)item,
@@ -2249,14 +2253,40 @@ void Programmer::em_enter_bootstrap_house() {
                Programmer_At_Floor *paf = (Programmer_At_Floor *) state;
                boolean picked = paf->pick_up(item);
                printf("[tt] copyrobots: pick_up returned %d\n", (int)picked); fflush(stdout);
-               // force the auto-save that trapped for Ken: notebook dump -> XMLPage::top_level_xml
-               // -> xml_node_to_element(xml_clone_node(XML)) -> shim cloneNode
-               printf("[tt] copyrobots: dumping Examples notebook...\n"); fflush(stdout);
-               ex->dump();
-               printf("[tt] copyrobots: Examples dump OK\n"); fflush(stdout);
-               printf("[tt] copyrobots: dumping main notebook...\n"); fflush(stdout);
-               tt_toolbox_notebook->dump();
-               printf("[tt] copyrobots: main dump OK\n"); fflush(stdout);
+               if (runit && paf->pointer_to_tool_in_hand() != NULL
+                         && paf->pointer_to_tool_in_hand()->kind_of() == ROBOT) {
+                  // full run ceremony: drop the robot, copy its thought-bubble box,
+                  // hold the box over the robot team, release — the standard start gesture
+                  Robot *rob = (Robot *) paf->pointer_to_tool_in_hand();
+                  paf->release_object(FALSE);
+                  rob->finish_instantly();
+                  city_coordinate rx, ry;
+                  rob->lower_left_corner(rx, ry);
+                  printf("[tt] copyrobots: robot dropped at (%ld,%ld)\n", (long)rx, (long)ry); fflush(stdout);
+                  Thought_Bubble *bub = rob->pointer_to_thought_bubble();
+                  Cubby *pattern = (bub != NULL) ? bub->pointer_to_cubby() : NULL;
+                  if (pattern != NULL) {
+                     Cubby *box = (Cubby *) pattern->copy(TRUE);
+                     box->set_size_and_location(4*tile_width, 2*tile_height, rx, ry + 8*tile_height, TO_FIT_INSIDE);
+                     floor->add_item(box, TRUE, TRUE);
+                     box->now_on_floor(floor, NULL);
+                     // semantic start: give the team the box and activate (what the box-on-robot
+                     // drop gesture ends up doing: set_working_cubby -> try_clause)
+                     rob->associate_with_box(box);
+                     rob->activate();
+                     printf("[tt] copyrobots: box associated + robot activated — run should start\n"); fflush(stdout);
+                  } else {
+                     printf("[tt] copyrobots: robot has no bubble box to copy\n"); fflush(stdout);
+                  }
+               } else if (!runit) {
+                  // crash-regression mode: force the auto-save that trapped for Ken
+                  printf("[tt] copyrobots: dumping Examples notebook...\n"); fflush(stdout);
+                  ex->dump();
+                  printf("[tt] copyrobots: Examples dump OK\n"); fflush(stdout);
+                  printf("[tt] copyrobots: dumping main notebook...\n"); fflush(stdout);
+                  tt_toolbox_notebook->dump();
+                  printf("[tt] copyrobots: main dump OK\n"); fflush(stdout);
+               }
             }
          }
       }
@@ -6128,6 +6158,11 @@ boolean Programmer_At_Floor::ok_to_scroll() {
 };
 
 void Programmer_At_Floor::robot_in_control(boolean robot) {
+#ifdef __EMSCRIPTEN__
+	{ static int rc_log = 0;
+	  if (rc_log < 40) { rc_log++;
+	    printf("[tt] robctl: robot=%d (was using_arm=%d)\n", (int)robot, (int)using_arm); fflush(stdout); } }
+#endif
   using_arm = (flag) !robot;
   if (robot || tt_system_mode == PUZZLE) {  // puzzles don't use scrolling so need some extra room
 //     if (tt_log_version_number >= 7) { // changed on 4/7/97 because sometimes robot couldn't pick things up
