@@ -49,8 +49,14 @@ if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'fu
 // 8-bit indices through the PALETTEENTRY LUT (RGB + flags, 4 bytes each) into RGBA
 // ImageData, flipping rows (the surface is bottom-up, DIB-style). Headless it just counts.
 var TT_ctx = null, TT_img = null, TT_presents = 0;
+globalThis.TT_present_times = [];   // ring of recent present timestamps (for the ?fps=1 overlay)
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
+  if (typeof performance !== 'undefined') {
+    var pt = globalThis.TT_present_times;
+    pt.push(performance.now());
+    if (pt.length > 120) pt.shift();
+  }
   if (TT_presents <= 3 || TT_presents % 300 === 0 || !globalThis.__ttDrew) {
     var nz = 0, mx = 0, histTop = {}, N = w * h;
     for (var i = 0; i < N; i++) { var v = HEAPU8[ptr + i]; if (v) { nz++; if (v > mx) mx = v; histTop[v] = (histTop[v] || 0) + 1; } }
@@ -224,6 +230,9 @@ Module['preRun'].push(function () {
   // Country code is empty at load time so it tries "<cc>VER22.DLL" then "US"+"VER22.DLL" (warn=TRUE).
   var stub = new Uint8Array([0x4D, 0x5A]); // "MZ" — content irrelevant, presence is what matters
   ['VER22.DLL', 'USVER22.DLL'].forEach(function (n) { try { FS.writeFile('/toontalk/' + n, stub); } catch (e) {} });
+  // Harness helper: heap accessor for run.js-side samplers (HEAPU8 lives in module scope,
+  // invisible to the requiring script in Node).
+  globalThis.TT_HEAPU8 = function () { return HEAPU8; };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
   globalThis.TT_dumpErr = function () {

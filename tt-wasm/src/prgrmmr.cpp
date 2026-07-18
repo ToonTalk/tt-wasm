@@ -714,6 +714,16 @@ void Programmer::shift_sit_corner(Direction direction,
 	new_sit_ury = new_sit_lly+screen_height;
 };
 
+#ifdef __EMSCRIPTEN__
+// Classic point-then-glide hand target (used in At_Floor::react). File-scope so scrolling can
+// shift it along with the world: set_sit_corner moves every floor item AND the appearance by
+// the scroll delta (the hand stays glued to the view — "the hand is always visible on the
+// floor"), so a stored glide goal must shift too or the hand walks itself back off-view
+// chasing a stale coordinate (Ken's vanishing hand during the Fibonacci robot run).
+static city_coordinate em_target_x = 0, em_target_y = 0;
+static boolean em_target_valid = FALSE;
+#endif
+
 boolean Programmer::set_sit_corner(city_coordinate new_sit_llx, city_coordinate new_sit_lly,
                                    Background *floor,
                                    city_coordinate &delta_x, city_coordinate &delta_y) {
@@ -748,6 +758,13 @@ boolean Programmer::set_sit_corner(city_coordinate new_sit_llx, city_coordinate 
 		tt_toolbox->shifted(floor_delta_x,floor_delta_y);
 	};
 	pointer_to_appearance()->move_by(floor_delta_x,floor_delta_y);
+#ifdef __EMSCRIPTEN__
+	// keep the glide goal at the same floor spot, like animations->shift_viewpoint does
+	if (em_target_valid) {
+		em_target_x += floor_delta_x;
+		em_target_y += floor_delta_y;
+	};
+#endif
 //   just_set_sit_corner(new_sit_llx,new_sit_lly); // moved up on 140504
 #if TT_DEBUG_ON
    if (tt_debug_mode == 1924) {
@@ -4500,9 +4517,14 @@ ProgrammerStatus Programmer_City_Landing::react(boolean new_user_input,
 		max_x += x_adjustment;
 		tt_screen->move_by(x_adjustment,0);
 #ifdef __EMSCRIPTEN__
-		printf("[tt] land: y=%ld dy=%ld min_y=%ld max_y=%ld scr_y=%ld scr_min=%ld\n",
-		       (long)y,(long)delta_y,(long)min_y,(long)max_y,
-		       (long)tt_screen->screen_y(y),(long)tt_screen->screen_y(min_y)); fflush(stdout);
+		{ city_coordinate ax, ay;
+		  appearance->lower_left_corner(ax,ay);
+		  city_coordinate ox = appearance->true_x_offset();
+		  city_coordinate oy = appearance->true_y_offset();
+		  printf("[tt] land: app=(%ld,%ld) off=(%ld,%ld) anchor=(%ld,%ld) cyc=%d dxy=(%ld,%ld) ms=%ld\n",
+		         (long)ax,(long)ay,(long)ox,(long)oy,(long)(ax-ox),(long)(ay-oy),
+		         (int)appearance->image_cycle_index(),(long)delta_x,(long)delta_y,
+		         (long)tt_millisecond_delta); fflush(stdout); }
 #endif
 	};
 	appearance->update_display(delta_x,delta_y);
@@ -6723,8 +6745,6 @@ ProgrammerStatus Programmer_At_Floor::react(boolean ,
          // the cursor only while the button is held. Holding still drags: the target updates
          // continuously while pressed.
          {
-            static city_coordinate em_target_x = 0, em_target_y = 0;
-            static boolean em_target_valid = FALSE;
             if (moved && (delta_x != 0 || delta_y != 0)) {
                em_target_x = delta_x; em_target_y = delta_y; em_target_valid = TRUE;
             };

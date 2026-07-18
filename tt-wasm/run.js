@@ -14,6 +14,36 @@ if (process.env.TT_COPYROBOTS) setTimeout(function(){
         globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0});
         setTimeout(function(){ globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0}); console.log('[harness] drop click sent'); }, 1500);
   } catch(e) {} }, 30000);
+// TT_TRACKRED=1: per-present red-body bbox of the copter (frame-accurate, no tab throttling)
+if (process.env.TT_TRACKRED) setTimeout(function () {
+  var orig = globalThis.TT_present;
+  var out = [];
+  globalThis.TT_present = function (ptr, w, h, palPtr) {
+    orig(ptr, w, h, palPtr);
+    try {
+      if (out.length >= 500) return;
+      var HEAPU8 = globalThis.TT_HEAPU8 ? globalThis.TT_HEAPU8() : null;
+      if (!HEAPU8) return;
+      var isred = new Uint8Array(256);
+      for (var i = 0; i < 256; i++) {
+        if (HEAPU8[palPtr + i*4] > 170 && HEAPU8[palPtr + i*4 + 1] < 100 && HEAPU8[palPtr + i*4 + 2] < 100) isred[i] = 1;
+      }
+      var minx = 1e9, miny = 1e9, maxx = -1, maxy = -1, c = 0;
+      for (var y = 0; y < h; y++) {
+        var row = ptr + y*w;
+        for (var x = 0; x < w; x++) {
+          if (isred[HEAPU8[row + x]]) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; c++; }
+        }
+      }
+      out.push([Date.now() - t0, c, minx === 1e9 ? -1 : minx, miny === 1e9 ? -1 : miny, maxx, maxy]);
+    } catch (e) {}
+  };
+  // Windows `timeout` hard-kills node (no exit hooks) — self-terminate instead
+  setTimeout(function () {
+    console.log('[redtrack] ' + out.map(function (r) { return r.join(','); }).join(' | '));
+    process.exit(0);
+  }, 55000);
+}, 4000);
 let t0 = Date.now();
 let frames = 0;
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => {

@@ -81,6 +81,22 @@
     document.getElementById('fsbtn').textContent =
       document.fullscreenElement ? 'Exit full screen' : 'Full screen';
   });
+  // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
+  // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
+  if (/[?&]fps=1/.test(location.search)) {
+    var fpsEl = document.createElement('div');
+    fpsEl.style.cssText = 'position:fixed;top:6px;left:8px;z-index:99;font:13px monospace;' +
+      'color:#0f0;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:4px;pointer-events:none;';
+    document.body.appendChild(fpsEl);
+    setInterval(function () {
+      var t = window.TT_present_times || [];
+      var now = performance.now();
+      var recent = t.filter(function (x) { return now - x < 1000; });
+      var worst = 0;
+      for (var i = 1; i < recent.length; i++) worst = Math.max(worst, recent[i] - recent[i - 1]);
+      fpsEl.textContent = recent.length + ' fps, worst gap ' + Math.round(worst) + 'ms';
+    }, 500);
+  }
 </script>
 <script src="tt.js"></script>
 </body>
