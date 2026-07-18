@@ -2236,6 +2236,26 @@ void Programmer::em_enter_bootstrap_house() {
    Floor *floor = room->pointer_to_floor();
    if (floor == NULL) return;
    tt_bootstrap_house->built();               // build the floor (lego + walls) so it can display
+   // Ground-world coherence for this teleport entry: LEAVING_ROOM restores x/y from
+   // saved_city_x/saved_city_y and re-views city_view_x/y — never set here since we didn't walk
+   // in (Ken exited at the island's SW corner: the 0,0 defaults). Park the empty helicopter by
+   // the door too, so it's findable and F1's call-the-helicopter (NEED_HELICOPTER) has one.
+   {
+      city_coordinate door_x, door_y;
+      tt_bootstrap_house->exit_point(door_x, door_y);
+      saved_city_x = door_x;
+      saved_city_y = door_y;
+      city_view_x = door_x - 5*tile_width;
+      city_view_y = door_y - tile_height;
+      if (empty_helicopter == NULL) {
+         empty_helicopter_x = door_x + 6*tile_width;
+         empty_helicopter_y = door_y - 2*tile_height;
+         add_empty_helicopter(FALSE);   // city extra only; the screen shows the floor right now
+      };
+      printf("[tt] bootstrap: door=(%ld,%ld) saved_city=(%ld,%ld) copter=(%ld,%ld) %p\n",
+             (long)door_x, (long)door_y, (long)saved_city_x, (long)saved_city_y,
+             (long)empty_helicopter_x, (long)empty_helicopter_y, (void*)empty_helicopter); fflush(stdout);
+   };
    if (state != NULL) { state->cleanup(tt_screen, PROGRAMMER_NORMAL); delete state; }
    state = new Programmer_At_Floor(floor);
    set_next_status(PROGRAMMER_NORMAL);
@@ -6744,7 +6764,11 @@ ProgrammerStatus Programmer_At_Floor::react(boolean ,
          // (~0.4s to cross the screen) even after the button is released, instead of snapping to
          // the cursor only while the button is held. Holding still drags: the target updates
          // continuously while pressed.
-         {
+         if (tt_delta_x_and_delta_y_due_solely_to_arrow_keys) {
+            // Held arrow keys produce RELATIVE steps (read_arrow_keys) — pass them through
+            // unchanged like the original, and cancel any point-then-glide in progress.
+            em_target_valid = FALSE;
+         } else {
             if (moved && (delta_x != 0 || delta_y != 0)) {
                em_target_x = delta_x; em_target_y = delta_y; em_target_valid = TRUE;
             };

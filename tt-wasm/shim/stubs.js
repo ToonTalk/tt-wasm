@@ -30,7 +30,6 @@ addToLibrary({
   FindWindowA: function(){ return 0; },
   FormatMessageA: function(){ return 0; },
   FreeResource: function(){ return 0; },
-  GetAsyncKeyState: function(){ return 0; },
   GetClipboardData: function(){ return 0; },
   GetCurrentProcess: function(){ return 0; },
   GetCurrentProcessId: function(){ return 0; },

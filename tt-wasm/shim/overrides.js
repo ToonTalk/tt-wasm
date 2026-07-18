@@ -53,6 +53,18 @@ addToLibrary({
     return m;
   },
 
+  // Key state for the engine's POLLED input: read_arrow_keys (walking!) and the shift/control
+  // checks poll GetAsyncKeyState every cycle. pre.js maintains TT_keys[vk] from real
+  // keydown/keyup. High bit set (negative short) = currently down, matching `< 0` tests.
+  GetAsyncKeyState: function(vk) {
+    var k = globalThis.TT_keys;
+    return (k && k[vk]) ? -32768 : 0;
+  },
+  GetKeyState: function(vk) {
+    var k = globalThis.TT_keys;
+    return (k && k[vk]) ? -32768 : 0;
+  },
+
   // Character classification (Windows-1252). The zero-stubs classified EVERY char as
   // non-alphanumeric, so copy_alphanumerics() stripped the whole DefaultUser name from the INI
   // ("PlaygroundBookX" -> "") and no user notebook files could ever resolve. IsCharAlphaW's

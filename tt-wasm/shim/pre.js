@@ -138,8 +138,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
   // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.
+  // TT_keys[vk] mirrors the physical key state for the engine's POLLED input (GetAsyncKeyState:
+  // read_arrow_keys drives walking; shift/control tests) — e.keyCode is VK-compatible for the
+  // keys the engine polls (arrows 37-40, shift 16, control 17).
   if (c.tabIndex < 0) c.tabIndex = 0;
-  window.addEventListener('keydown', function (e) { resumeAudio(); post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
+  globalThis.TT_keys = {};
+  window.addEventListener('keydown', function (e) {
+    resumeAudio();
+    globalThis.TT_keys[e.keyCode] = 1;
+    if (!e.repeat) post(0x0100, e.keyCode, 0);
+    else post(0x0100, e.keyCode, 0x40000000);   // bit 30: previous key state (autorepeat)
+    if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0);
+    // arrows scroll the page in some browsers — the game consumes them
+    if (e.keyCode >= 37 && e.keyCode <= 40) e.preventDefault();
+  });
+  window.addEventListener('keyup', function (e) { delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0); });
+  window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
 })();
 
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
