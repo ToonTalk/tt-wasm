@@ -2207,6 +2207,7 @@ xml_element *Programmer::xml(xml_document *document) { // new on 011102 - comple
 };
 
 #ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 // WASM new-user bootstrap: drop the programmer straight onto a house's floor (the interactive
 // workspace — notebook, toolbox, robot, cubby) instead of leaving them on open city ground after
 // the fly-in. Mirrors the XML-restore path (HOUSE_LOCATION_TAG then PROGRAMMER_AT_FLOOR_TAG).
@@ -2226,6 +2227,40 @@ void Programmer::em_enter_bootstrap_house() {
    state->finish_initializing();              // hand
    floor->restore_toolbox();                  // Tooly + notebook + tools (what change_state AT_FLOOR does
                                               // for a fresh floor via starting_floor->restore_toolbox())
+   // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages
+   // are infinite stacks). Ken's take-out of an Examples robot trapped, so copy every page item
+   // of the page-6 Examples notebook directly and let the trap point at the culprit.
+   if (EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; })) {
+      extern Notebook *tt_toolbox_notebook;
+      if (tt_toolbox_notebook != NULL) {
+         Sprite *pg6 = tt_toolbox_notebook->page_sprite(6, TRUE);
+         printf("[tt] copyrobots: page6 sprite=%p kind=%d\n", (void*)pg6, pg6 ? (int)pg6->kind_of() : -1); fflush(stdout);
+         if (pg6 != NULL && pg6->kind_of() == PROGRAM_PAD) {
+            Notebook *ex = (Notebook *) pg6;
+            // page picked via ?robotpage=N (default 2 = the Adds-1 robot)
+            int rp = EM_ASM_INT({
+               var m = (typeof location !== 'undefined') ? location.search.match(/robotpage=(\d+)/) : null;
+               return m ? parseInt(m[1]) : 2;
+            });
+            Sprite *item = ex->page_sprite(rp, TRUE);
+            printf("[tt] copyrobots: page %d item=%p kind=%d — real pick_up...\n", rp, (void*)item,
+                   item ? (int)item->kind_of() : -1); fflush(stdout);
+            if (item != NULL) {
+               Programmer_At_Floor *paf = (Programmer_At_Floor *) state;
+               boolean picked = paf->pick_up(item);
+               printf("[tt] copyrobots: pick_up returned %d\n", (int)picked); fflush(stdout);
+               // force the auto-save that trapped for Ken: notebook dump -> XMLPage::top_level_xml
+               // -> xml_node_to_element(xml_clone_node(XML)) -> shim cloneNode
+               printf("[tt] copyrobots: dumping Examples notebook...\n"); fflush(stdout);
+               ex->dump();
+               printf("[tt] copyrobots: Examples dump OK\n"); fflush(stdout);
+               printf("[tt] copyrobots: dumping main notebook...\n"); fflush(stdout);
+               tt_toolbox_notebook->dump();
+               printf("[tt] copyrobots: main dump OK\n"); fflush(stdout);
+            }
+         }
+      }
+   }
 }
 #endif
 

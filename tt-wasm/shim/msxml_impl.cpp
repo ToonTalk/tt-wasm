@@ -116,7 +116,7 @@ struct DomNode : public IXMLDOMElement {
     HRESULT appendChild(IXMLDOMNode *newChild, IXMLDOMNode **out);
     HRESULT hasChildNodes(VARIANT_BOOL *b) { *b = kids.empty() ? VARIANT_FALSE : VARIANT_TRUE; return S_OK; }
     HRESULT get_ownerDocument(IXMLDOMDocument **d);
-    HRESULT cloneNode(VARIANT_BOOL, IXMLDOMNode **out) { *out = NULL; return E_NOTIMPL; }
+    HRESULT cloneNode(VARIANT_BOOL deep, IXMLDOMNode **out);
     HRESULT get_text(BSTR *t) { wstring s; gather_text(s); *t = bstr_of(s); return S_OK; }
     HRESULT put_text(BSTR t) { text = t ? wstring(t) : wstring(); return S_OK; }
     HRESULT get_xml(BSTR *x) { wstring s; serialize(s); *x = bstr_of(s); return S_OK; }
@@ -313,6 +313,21 @@ HRESULT DomNode::get_lastChild(IXMLDOMNode **c) { if (kids.empty()) { *c = NULL;
 HRESULT DomNode::get_previousSibling(IXMLDOMNode **c) { int i = index_in_parent(); if (i <= 0) { *c = NULL; return S_FALSE; } *c = parent->kids[i - 1]; parent->kids[i - 1]->AddRef(); return S_OK; }
 HRESULT DomNode::get_nextSibling(IXMLDOMNode **c) { int i = index_in_parent(); if (i < 0 || (size_t)(i + 1) >= parent->kids.size()) { *c = NULL; return S_FALSE; } *c = parent->kids[i + 1]; parent->kids[i + 1]->AddRef(); return S_OK; }
 HRESULT DomNode::get_attributes(IXMLDOMNamedNodeMap **m) { DomNamedNodeMap *map = new DomNamedNodeMap(); map->items = attrs; *m = map; return S_OK; }
+/* deep copy within the same document; attributes are always cloned fully (with their #text
+ * value child), matching MSXML. The engine's save path relies on this: XMLPage::top_level_xml
+ * does xml_node_to_element(xml_clone_node(XML)) and ignores the HRESULT — the old E_NOTIMPL
+ * stub handed back NULL and the next QueryInterface trapped (Ken's take-a-robot-out freeze). */
+static DomNode *tt_clone_node(DomNode *n, DomDocument *doc, bool deep) {
+    DomNode *c = doc->mint(n->kind);
+    c->name = n->name; c->text = n->text;
+    for (size_t i = 0; i < n->attrs.size(); i++) { DomNode *a = tt_clone_node(n->attrs[i], doc, true); a->parent = c; c->attrs.push_back(a); }
+    if (deep) for (size_t i = 0; i < n->kids.size(); i++) { DomNode *k = tt_clone_node(n->kids[i], doc, true); k->parent = c; c->kids.push_back(k); }
+    return c;
+}
+HRESULT DomNode::cloneNode(VARIANT_BOOL deep, IXMLDOMNode **out) {
+    *out = tt_clone_node(this, owner, deep == VARIANT_TRUE);
+    return S_OK;
+}
 HRESULT DomNode::appendChild(IXMLDOMNode *newChild, IXMLDOMNode **out) {
     DomNode *n = (DomNode *)newChild; if (n) { n->parent = this; kids.push_back(n); }
     if (out) { *out = newChild; if (newChild) newChild->AddRef(); }

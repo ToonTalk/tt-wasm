@@ -2,6 +2,13 @@
 // which node lacks — polyfill it with setTimeout so frames pump headlessly.
 // (In the real browser target, the native rAF drives it.)
 if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=1" };
+if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrobots=1" + (process.env.TT_ROBOTPAGE ? "&robotpage=" + process.env.TT_ROBOTPAGE : "") };
+// after pick_up (copyrobots hook), simulate the drop click on open floor
+if (process.env.TT_COPYROBOTS) setTimeout(function(){
+  try { globalThis.TT_mouse_x = (process.env.TT_DROPX ? parseInt(process.env.TT_DROPX) : 200); globalThis.TT_mouse_y = (process.env.TT_DROPY ? parseInt(process.env.TT_DROPY) : 200);
+        globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0});
+        setTimeout(function(){ globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0}); console.log('[harness] drop click sent'); }, 1500);
+  } catch(e) {} }, 30000);
 let t0 = Date.now();
 let frames = 0;
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
