@@ -1395,8 +1395,32 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 		};
 //		x_offset = (x_offset*x_scale)/256;
 //		y_offset = (y_offset*y_scale)/256;
+#ifdef __EMSCRIPTEN__
+		if (code == HELIOLND || code == HELIOFLY) {
+			static int oc_log = 0;
+			if (oc_log < 40) { oc_log++;
+				printf("[tt] offcomp: code=%d xo=%ld old=%ld xs=%u cs=%ld gs=%ld dx+=%ld llx=%ld pixw=%ld\n",
+				       (int)code, (long)x_offset, (long)old_x_offset, (unsigned)x_scale,
+				       (long)current_scale, (long)ground_scale,
+				       (long)(((x_offset-old_x_offset)*x_scale)/256), (long)llx,
+				       current_image ? (long)current_image->width_without_scaling() : -1L); fflush(stdout);
+			}
+		}
+#endif
+#ifdef __EMSCRIPTEN__
+		// The offsets are in IDEAL 640x480 units (ideal_horizontal_units at load), but x_scale/
+		// y_scale already include the grow-to-screen factor (scale_to_fit applies
+		// grow_width_to_640x480_screen_size). Using the grown scale here applies the 800/600
+		// growth TWICE to the compensation while the art's ink shift only gets it once — every
+		// image change overshot by screen/640, a rotor-locked vibration (Ken: "the helicopter
+		// vibrated as descending"). Compensate with the ungrown scale so the llx adjustment
+		// exactly cancels the art registration difference at any camera zoom.
+		delta_x += shrink_width_from_640x480_screen_size(((x_offset-old_x_offset)*x_scale))/256;
+		delta_y += shrink_height_from_640x480_screen_size(((y_offset-old_y_offset)*y_scale))/256;
+#else
 		delta_x += ((x_offset-old_x_offset)*x_scale)/256;
 		delta_y += ((y_offset-old_y_offset)*y_scale)/256;
+#endif
 		set_old_x_offset(x_offset);
 		set_old_y_offset(y_offset);
       // commented out the following on 090502 since the original delta_x and delta_y shouldn't be scaled - 
@@ -5754,6 +5778,17 @@ boolean TTImage::display(long &width, long &height,
 		 tt_memory_graphics_mark_y+1 >= tt_screen_height) {// or off top -- was just > prior to 251102 +1 new on 121204
 		 return(FALSE); // new on 011100 as an important optimization
 	};
+#ifdef __EMSCRIPTEN__
+	if (code == HELIOLND || code == HELIOFLY) {
+		static int dd_log = 0;
+		if (dd_log < 60) { dd_log++;
+			printf("[tt] drawimg: code=%d mark=(%ld,%ld) drawn=(%ld,%ld) art_px=(%d,%d) xoff=%ld yoff=%ld xs=%u\n",
+			       (int)code, (long)tt_memory_graphics_mark_x, (long)tt_memory_graphics_mark_y,
+			       (long)width, (long)height, (int)pixel_width, (int)pixel_height,
+			       (long)x_offset, (long)y_offset, (unsigned)x_scale); fflush(stdout);
+		}
+	}
+#endif
 	boolean stretching_needed = (width != pixel_width || height != pixel_height);
 	boolean image_surface_provided_by_caller = (image_surface != NULL);
 	// if scale is close enough to 1x1 then don't scale	

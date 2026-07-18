@@ -28,14 +28,40 @@ if (process.env.TT_TRACKRED) setTimeout(function () {
       for (var i = 0; i < 256; i++) {
         if (HEAPU8[palPtr + i*4] > 170 && HEAPU8[palPtr + i*4 + 1] < 100 && HEAPU8[palPtr + i*4 + 2] < 100) isred[i] = 1;
       }
-      var minx = 1e9, miny = 1e9, maxx = -1, maxy = -1, c = 0;
+      var col = new Float64Array(w), rowp = new Float64Array(h), c = 0;
       for (var y = 0; y < h; y++) {
         var row = ptr + y*w;
         for (var x = 0; x < w; x++) {
-          if (isred[HEAPU8[row + x]]) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; c++; }
+          if (isred[HEAPU8[row + x]]) { col[x]++; rowp[y]++; c++; }
         }
       }
-      out.push([Date.now() - t0, c, minx === 1e9 ? -1 : minx, miny === 1e9 ? -1 : miny, maxx, maxy]);
+      var best = 0, sad0 = -1;
+      var bestY = 0, sadY0 = -1;
+      globalThis.TT_colhist = globalThis.TT_colhist || [];
+      var hist = globalThis.TT_colhist;
+      if (hist.length >= 3 && c > 500) {
+        globalThis.TT_prevcol = hist[hist.length - 3][0];
+        globalThis.TT_prevrow = hist[hist.length - 3][1];
+      } else { globalThis.TT_prevcol = null; }
+      hist.push([col, rowp]); if (hist.length > 4) hist.shift();
+      if (globalThis.TT_prevcol && c > 500) {
+        var pc = globalThis.TT_prevcol, bestSad = Infinity;
+        for (var s = -14; s <= 14; s++) {
+          var sad = 0;
+          for (var x2 = 20; x2 < w - 20; x2++) sad += Math.abs(col[x2] - pc[x2 + s]);
+          if (s === 0) sad0 = Math.round(sad);
+          if (sad < bestSad) { bestSad = sad; best = s; }
+        }
+        var pr = globalThis.TT_prevrow, bestSadY = Infinity;
+        for (var sy = -14; sy <= 14; sy++) {
+          var sady = 0;
+          for (var y2 = 20; y2 < h - 20; y2++) sady += Math.abs(rowp[y2] - pr[y2 + sy]);
+          if (sy === 0) sadY0 = Math.round(sady);
+          if (sady < bestSadY) { bestSadY = sady; bestY = sy; }
+        }
+      }
+      var minx2 = -1; for (var xm = 0; xm < w; xm++) { if (col[xm] > 2) { minx2 = xm; break; } }
+      out.push([Date.now() - t0, c, best, bestY, minx2]);
     } catch (e) {}
   };
   // Windows `timeout` hard-kills node (no exit hooks) — self-terminate instead
