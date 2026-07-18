@@ -117,6 +117,14 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
+    if (document.pointerLockElement === c) {
+      // relative mode (fullscreen): accumulate raw movement; the engine measures the delta
+      // from the client centre each cycle and re-centres via SetCursorPos — the original's
+      // full-screen tracking loop, closed through pointer lock.
+      globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, globalThis.TT_mouse_x + e.movementX / scale));
+      globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, globalThis.TT_mouse_y + e.movementY / scale));
+      return;
+    }
     var ox = r.left + (r.width - c.width * scale) / 2;
     var oy = r.top + (r.height - c.height * scale) / 2;
     globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - ox) / scale)));

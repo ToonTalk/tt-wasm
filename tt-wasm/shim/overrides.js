@@ -53,6 +53,18 @@ addToLibrary({
     return m;
   },
 
+  // In-place ANSI uppercase (Windows-1252). The zero-stub left keystrokes lowercase, so
+  // state_index('s') never matched the "SRE"/"COS" tool accelerator tables — every tool
+  // mode letter (selected or held) was dead.
+  AnsiUpperA: function(ptr) {
+    for (var i = ptr; HEAPU8[i]; i++) {
+      var c = HEAPU8[i];
+      if (c >= 97 && c <= 122) HEAPU8[i] = c - 32;              /* a-z */
+      else if (c >= 0xE0 && c <= 0xFE && c !== 0xF7) HEAPU8[i] = c - 32;  /* à-þ minus ÷ */
+    }
+    return ptr;
+  },
+
   // Key state for the engine's POLLED input: read_arrow_keys (walking!) and the shift/control
   // checks poll GetAsyncKeyState every cycle. pre.js maintains TT_keys[vk] from real
   // keydown/keyup. High bit set (negative short) = currently down, matching `< 0` tests.

@@ -74,12 +74,27 @@
   document.getElementById('fsbtn').addEventListener('click', function () {
     var c = document.getElementById('ttcanvas');
     if (document.fullscreenElement) { document.exitFullscreen(); }
-    else if (c.requestFullscreen) { c.requestFullscreen(); }
+    else if (c.requestFullscreen) {
+      // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
+      // (relative mode via pointer lock), no point and click.
+      c.requestFullscreen().then(function () {
+        try { c.requestPointerLock(); } catch (e) {}
+      });
+    }
     c.focus();   // keys keep flowing to the game either way
   });
   document.addEventListener('fullscreenchange', function () {
     document.getElementById('fsbtn').textContent =
       document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+    if (!document.fullscreenElement && document.exitPointerLock) document.exitPointerLock();
+  });
+  document.addEventListener('pointerlockchange', function () {
+    var locked = document.pointerLockElement === document.getElementById('ttcanvas');
+    if (Module && Module._em_set_mouse_mode) {
+      // 0 = relative everywhere (original fullscreen), 1 = absolute everywhere (windowed web)
+      Module._em_set_mouse_mode(locked ? 0 : 1);
+    }
+    if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; }
   });
   // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
   // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.

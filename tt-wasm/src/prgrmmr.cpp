@@ -2329,6 +2329,23 @@ void Programmer::em_enter_bootstrap_house() {
       }
    }
 }
+
+// Runtime mouse-mode switch for the web front end: fullscreen + pointer lock engages the
+// original's full-screen scheme (RELATIVE mode — everything tracks the mouse, no point and
+// click); leaving fullscreen restores the browser-friendly absolute mode. Mirrors what
+// set_absolute_mouse_mode does at INI time, then applies to the CURRENT state (set_mouse_mode
+// is normally only called on state changes).
+void set_mouse_mode(MouseMode new_mode);   // defined below
+extern "C" EMSCRIPTEN_KEEPALIVE void em_set_mouse_mode(int absolute_mode_code) {
+   set_absolute_mouse_mode(absolute_mode_code);
+   if (tt_programmer != NULL && tt_programmer->kind_of() == PROGRAMMER_AT_FLOOR) {
+      set_mouse_mode(tt_mouse_mode_on_floor);
+   } else {
+      set_mouse_mode(tt_mouse_mode_not_on_floor);
+   };
+   printf("[tt] mousemode: code=%d -> tt_mouse_mode=%d\n", absolute_mode_code, (int)tt_mouse_mode);
+   fflush(stdout);
+}
 #endif
 
 boolean Programmer::handle_xml_tag(Tag tag, xml_node *node) { // new on 051102
