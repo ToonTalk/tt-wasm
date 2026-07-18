@@ -2264,6 +2264,16 @@ void Programmer::em_enter_bootstrap_house() {
    state->finish_initializing();              // hand
    floor->restore_toolbox();                  // Tooly + notebook + tools (what change_state AT_FLOOR does
                                               // for a fresh floor via starting_floor->restore_toolbox())
+   // Dev repro hook (?wand=1): a magic wand on the open floor, for the hand-obscures-the-
+   // mode-button investigation (Ken: wand on the floor, hovering its end button).
+   if (EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; })) {
+      Copier *wand = new Copier(8*tile_width, 9*tile_height);
+      floor->add_item(wand, TRUE, TRUE);
+      wand->now_on_floor(floor, NULL);
+      printf("[tt] wand: copier on floor at (%ld,%ld) w=%ld h=%ld\n",
+             (long)wand->current_llx(), (long)wand->current_lly(),
+             (long)wand->current_width(), (long)wand->current_height()); fflush(stdout);
+   };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages
    // are infinite stacks). Ken's take-out of an Examples robot trapped, so copy every page item
    // of the page-6 Examples notebook directly and let the trap point at the culprit.
