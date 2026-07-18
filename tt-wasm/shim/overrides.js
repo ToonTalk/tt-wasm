@@ -153,10 +153,7 @@ addToLibrary({
   LoadLibraryExW: function() { return 1; },
   FreeLibrary: function() { return 1; },
 
-  // DirectSoundCreate(GUID const*, IDirectSound**, IUnknown*) [C++-mangled name]: return a failure
-  // HRESULT (!= DS_OK) so initialize_sound() takes its graceful no-sound path instead of deref'ing
-  // the unset NULL out-param. Sound isn't needed to boot; DirectSound -> Web Audio comes later.
-  _Z17DirectSoundCreatePK5_GUIDPP12IDirectSoundP8IUnknown: function() { return 1; },
+  // (DirectSoundCreate is now a real wasm-side implementation: shim/dsound_impl.cpp over Web Audio.)
 
   // File I/O: the engine opens data files (the art DATs) via Win16-era OpenFile and reads with
   // _lread/_llseek (already CRT macros). Back OpenFile onto the Emscripten FS (return a real fd);

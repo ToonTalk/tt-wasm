@@ -105,20 +105,35 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // The port runs ToonTalk's native ABSOLUTE mouse mode (AbsoluteMouseMode=1 in the INI below):
   // the OS cursor stays visible and TT_mouse is simply its canvas position, CSS-scale aware.
   // No Pointer Lock — relative mode's per-frame re-centring can't be done honestly on the web.
+  // The mapping accounts for letterboxing (fullscreen uses object-fit: contain, so the element
+  // box can be wider/taller than the 4:3 content): scale by the CONTENT rect, not the element.
   c.addEventListener('mousemove', function (e) {
     var r = c.getBoundingClientRect();
-    var sx = r.width ? c.width / r.width : 1, sy = r.height ? c.height / r.height : 1;
-    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - r.left) * sx)));
-    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - r.top) * sy)));
+    if (!r.width || !r.height) return;
+    var scale = Math.min(r.width / c.width, r.height / c.height);
+    var ox = r.left + (r.width - c.width * scale) / 2;
+    var oy = r.top + (r.height - c.height * scale) / 2;
+    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - ox) / scale)));
+    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - oy) / scale)));
+  });
+  // A user gesture is required before Web Audio may start: resume the shim's AudioContext
+  // (created by dsound_impl on the first Play) on any click/key/touch anywhere on the page.
+  // Looping sounds (helicopter) re-Play each engine cycle, so once resumed they are heard.
+  var resumeAudio = function () {
+    var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+    if (DS && DS.ctx && DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} }
+  };
+  ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(function (ev) {
+    window.addEventListener(ev, resumeAudio, true);
   });
   // Buttons -> WM_[LR]BUTTONDOWN/UP (position is read separately via GetCursorPos).
-  c.addEventListener('mousedown', function (e) { e.preventDefault(); if (c.focus) c.focus(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
+  c.addEventListener('mousedown', function (e) { e.preventDefault(); if (c.focus) c.focus(); resumeAudio(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
   c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
   // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.
   if (c.tabIndex < 0) c.tabIndex = 0;
-  window.addEventListener('keydown', function (e) { post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
+  window.addEventListener('keydown', function (e) { resumeAudio(); post(0x0100, e.keyCode, 0); if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0); });
 })();
 
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/

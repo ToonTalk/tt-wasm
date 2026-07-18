@@ -23,6 +23,17 @@
   /* the canvas is focusable (tabIndex for keys) — suppress the white UA focus ring */
   #ttcanvas:focus { outline: none; }
   #ttcanvas:focus-visible { outline: none; }
+  /* fullscreen: fill the screen, keep 4:3 (letterboxed); pre.js maps the mouse to the
+     content rect, so the black bars are dead space rather than misaimed clicks */
+  #ttcanvas:fullscreen {
+    width: 100vw; height: 100vh; aspect-ratio: auto;
+    object-fit: contain; border: none; border-radius: 0; background: #000;
+  }
+  #fsbtn {
+    font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+    border-radius: 6px; padding: 4px 14px; cursor: pointer;
+  }
+  #fsbtn:hover { background: #34344a; }
   #help {
     max-width: 620px; text-align: center; color: #a9a9bd;
     background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
@@ -47,6 +58,7 @@
     any key) to sit down at your desk. <kbd>Space</kbd> runs the tool you're holding.
   </div>
   <div id="status">loading engine…</div>
+  <button id="fsbtn" type="button">Full screen</button>
 </div>
 <script>
   var statusEl = document.getElementById('status');
@@ -59,6 +71,16 @@
     onRuntimeInitialized: function () { statusEl.textContent = 'engine running — click the picture to begin'; }
   };
   window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+  document.getElementById('fsbtn').addEventListener('click', function () {
+    var c = document.getElementById('ttcanvas');
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (c.requestFullscreen) { c.requestFullscreen(); }
+    c.focus();   // keys keep flowing to the game either way
+  });
+  document.addEventListener('fullscreenchange', function () {
+    document.getElementById('fsbtn').textContent =
+      document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+  });
 </script>
 <script src="tt.js"></script>
 </body>

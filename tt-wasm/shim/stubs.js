@@ -122,6 +122,7 @@ addToLibrary({
   _Z16ReleaseStgMediumP12tagSTGMEDIUM: function(){ return 0; },
   _Z16get_IP_addressesP13IDirectPlay4AmRh: function(){ return 0; },
   _Z16receive_messagesv: function(){ return 0; },
+  _Z17DirectSoundCreatePK5_GUIDPP12IDirectSoundP8IUnknown: function(){ return 0; },
   _Z18mciGetErrorStringAmPcj: function(){ return 0; },
   _Z18message_queue_sizeP13IDirectPlay4A: function(){ return 0; },
   _Z19InternetCloseHandlePv: function(){ return 0; },

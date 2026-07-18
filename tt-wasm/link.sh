@@ -12,7 +12,7 @@ EMCC=/c/Users/toont/dev/emsdk/upstream/emscripten/emcc.exe
 mkdir -p build logs
 
 # 0. compile the shim .cpp that carry real code (COM data symbols, entry, MSXML DOM) into obj/
-for s in guids diformats entry msxml_impl ddraw_impl gdi_impl dunzip_impl; do
+for s in guids diformats entry msxml_impl ddraw_impl gdi_impl dunzip_impl dsound_impl; do
   if [ "shim/$s.cpp" -nt "obj/$s.o" ] || [ ! -f "obj/$s.o" ]; then
     echo "compiling shim/$s.cpp"
     "$EMCC" -std=gnu++14 -w -DWIN32 -sUSE_ZLIB=1 -c "shim/$s.cpp" -o "obj/$s.o" -I shim -I src 2>"logs/$s.err" \
