@@ -157,8 +157,13 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     if (!e.repeat) post(0x0100, e.keyCode, 0);
     else post(0x0100, e.keyCode, 0x40000000);   // bit 30: previous key state (autorepeat)
     if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0);
-    // arrows scroll the page in some browsers — the game consumes them
-    if (e.keyCode >= 37 && e.keyCode <= 40) e.preventDefault();
+    // The game owns these keys — stop the browser's defaults:
+    // arrows (page scroll), space (page scroll; runs tools/games), and F1-F12 (browser help /
+    // find / RELOAD on F5 / fullscreen / devtools — ToonTalk maps them: F1 Marty, F2 Dusty,
+    // F3 Pumpy, F4 Notebook, F5 Wand, F6 Tooly, F7 hurry up, F8 robots, F9 hide hand,
+    // F10 hide this, F11 no Bammer, F12 toss).
+    if ((e.keyCode >= 37 && e.keyCode <= 40) || e.keyCode === 32 ||
+        (e.keyCode >= 112 && e.keyCode <= 123)) e.preventDefault();
   });
   window.addEventListener('keyup', function (e) { delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0); });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
