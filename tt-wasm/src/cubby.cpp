@@ -2791,8 +2791,16 @@ MatchStatus Cubby::match(Cubby *other_cubby, SpritePointerPointer &suspension_ce
 					  };
 				  };
 				  */
-				  if (submatch_status != MATCH_GOOD) { 
-					  // condition below added on 210300 since at least 
+				  if (submatch_status != MATCH_GOOD) {
+#ifdef __EMSCRIPTEN__
+					  { // Pong debugging: which hole kills the match (Ken 2026-07-19)
+						  static int hm_log = 0;
+						  if (hm_log < 160) { hm_log++;
+							  printf("[tt] holefail: i=%d type=%d status=%d\n", i, (int)contents_type, (int)submatch_status); fflush(stdout);
+						  }
+					  }
+#endif
+					  // condition below added on 210300 since at least
 					  // if original_other_component is a container like object (e.g. Cubby)
 					  // then should leave the binding alone
 					  if (tt_cause_of_last_mismatch == NULL) {
@@ -2823,7 +2831,15 @@ MatchStatus Cubby::match(Cubby *other_cubby, SpritePointerPointer &suspension_ce
 //						  return(submatch_status);
 //					  };
 				} else {
-					if (tt_cause_of_last_mismatch == NULL && other_type == REMOTE_PICTURE) { 
+#ifdef __EMSCRIPTEN__
+					{ // Pong debugging: hole type mismatch (Ken 2026-07-19)
+						static int tm_log = 0;
+						if (tm_log < 160) { tm_log++;
+							printf("[tt] holetype: i=%d want=%d got=%d\n", i, (int)contents_type, (int)other_type); fflush(stdout);
+						}
+					}
+#endif
+					if (tt_cause_of_last_mismatch == NULL && other_type == REMOTE_PICTURE) {
 						// new on 131200 so suspends waiting for sensor to have an appearance
 						tt_cause_of_last_mismatch = original_other_component;
 					};
@@ -3414,7 +3430,7 @@ boolean describe_cubby2(SpriteType type, InputStream *pad_in, output_stream &tex
 			long next_string_id;
 			if (i > 12 && spoken_language() == BRAZILIAN_PORTUGUESE) { // new on 160600 
 				// first 13 ordinals have names
-				// so "26º buraco contenha" becomes "buraco 26 contenha"
+				// so "26ï¿½ buraco contenha" becomes "buraco 26 contenha"
 				text_out << "buraco " << (i+1) << " contenha ";
 				next_string_id = IDS_HOLE_CONTAINS2; // will be empty string anyway...
 			} else {

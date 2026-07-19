@@ -19,6 +19,14 @@ for s in guids diformats entry msxml_impl ddraw_impl gdi_impl dunzip_impl dsound
       || { echo "SHIM COMPILE FAILED: $s"; tail -25 "logs/$s.err"; exit 1; }
   fi
 done
+# 0b. real bignum arithmetic: mini-gmp/mini-mpq (C, -O2 — rational math is hot)
+for s in mini-gmp mini-mpq gmp_extra; do
+  if [ "shim/$s.c" -nt "obj/$s.o" ] || [ ! -f "obj/$s.o" ]; then
+    echo "compiling shim/$s.c"
+    "$EMCC" -w -O2 -c "shim/$s.c" -o "obj/$s.o" -I shim 2>"logs/$s.err" \
+      || { echo "SHIM COMPILE FAILED: $s"; tail -25 "logs/$s.err"; exit 1; }
+  fi
+done
 
 # 1. regenerate stubs.js = all imports NOT implemented in overrides.js OR in shim/*.cpp (cdefined.txt)
 KEYS=$(grep -oE '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*:' shim/overrides.js | tr -d ' :' | sort -u)

@@ -5912,6 +5912,20 @@ void Robot::really_try_clause() {
 	} else {
 		match_status = MATCH_GOOD;
 	};
+#ifdef __EMSCRIPTEN__
+	{ // Pong debugging: is the Serve robot trying/matching? (Ken 2026-07-19)
+		static int rob_log = 0;
+		if (rob_log < 240) {
+			character rn[max_resource_string_length];
+			name(rn);
+			boolean interesting = (strstr(rn,"Serve") != NULL || strstr(rn,"Score") != NULL);
+			if (interesting || match_status == MATCH_GOOD) { rob_log++;
+				printf("[tt] robtry: '%s' match=%d f=%ld\n", rn, (int)match_status, (long)tt_frame_number);
+				fflush(stdout);
+			}
+		}
+	}
+#endif
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 190499 || (tt_debug_target == debug_counter && tt_debug_mode != 261000)) {
 		debug_log(debug_counter);

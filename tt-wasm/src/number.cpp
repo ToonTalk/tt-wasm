@@ -6850,8 +6850,8 @@ void Remote_Integer::release_all_references() {
 };
 
 Sprite *Remote_Integer::copy(boolean also_copy_offsets) {
-	if (global()) { 
-		return(copy_for(controlee,also_copy_offsets)); 
+	if (global()) {
+		return(copy_for(controlee,also_copy_offsets));
 	};
    if (controlee != NULL && controlee->part_of_top_level_copy()) {
 		UnwindProtect<boolean> set(tt_copying_entire_thought_bubble,FALSE); 

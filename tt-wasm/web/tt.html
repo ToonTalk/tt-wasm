@@ -66,7 +66,16 @@
     // TTBUILDSTAMP is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
     locateFile: function (f) { return f + '?v=TTBUILDSTAMP'; },
-    print: function (t) { console.log(t); },
+    // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
+    // resets on navigation and resurrects stale lines, so automation reads this instead.
+    print: function (t) {
+      if (t && t.indexOf('[tt]') === 0) {
+        var l = (window.TT_log = window.TT_log || []);
+        l.push(t);
+        if (l.length > 3000) l.splice(0, 500);
+      }
+      console.log(t);
+    },
     printErr: function (t) { console.warn(t); },
     onRuntimeInitialized: function () { statusEl.textContent = 'engine running — click the picture to begin'; }
   };

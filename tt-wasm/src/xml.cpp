@@ -1483,7 +1483,15 @@ Sprite *xml_load_sprite(xml_node *node, Tag tag, Sprite *sprite, SpriteType type
 #if TT_DEBUG_ON
 				debug_this();
 #endif
-				tt_error_file() << "Couldn't find object with guid " << copy_narrow_string(guid_string) 
+#ifdef __EMSCRIPTEN__
+				{ // Pong debugging: GUID link misses break cross-references (Ken 2026-07-19)
+					static int lm_log = 0;
+					if (lm_log < 40) { lm_log++;
+						printf("[tt] linkmiss: guid=%s type=%d\n", copy_narrow_string(guid_string), (int)type); fflush(stdout);
+					}
+				}
+#endif
+				tt_error_file() << "Couldn't find object with guid " << copy_narrow_string(guid_string)
 									 << " during log segment " << tt_current_log_segment << endl;
 				::SysFreeString(guid_string);
 #if TT_DEBUG_ON

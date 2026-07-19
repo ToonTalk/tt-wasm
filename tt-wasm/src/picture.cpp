@@ -8481,7 +8481,7 @@ void Picture::update_remote(boolean regardless, UpdateStatus update_status) {
 			{ // new on 040302
 				RationalNumberValue new_value(current_user_value_double(X_REMOTE));
 				remote->broadcast_new_value(X_REMOTE,&new_value,NULL);
-			};		
+			};
 		};
 		if (regardless || old_lly != lly) {
 #if !TT_CORRECT_IMPLEMENTATION_OF_DISPLAY_X_AND_Y_AS_INTEGERS
