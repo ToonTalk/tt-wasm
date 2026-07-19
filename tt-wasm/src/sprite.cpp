@@ -5765,6 +5765,16 @@ boolean TTImage::display(long &width, long &height,
 	if (width == 0) {
 		width = (((long) pixel_width)*x_scale)>>8;
 	};
+#ifdef __EMSCRIPTEN__
+	if (code == BALL_SPRITE || code == PADDLE_SPRITE) { // Pong debugging incl. offscreen culls (Ken 2026-07-19)
+		static int pong_log_pre = 0;
+		if (pong_log_pre < 400) { pong_log_pre++;
+			printf("[tt] drawpre: code=%d mark=(%ld,%ld) w=%ld px=(%d,%d) xs=%u\n",
+			       (int)code, (long)tt_memory_graphics_mark_x, (long)tt_memory_graphics_mark_y,
+			       (long)width, (int)pixel_width, (int)pixel_height, (unsigned)x_scale); fflush(stdout);
+		}
+	}
+#endif
 	if (width <= 0) return(FALSE); // less than part added on 100400
 	if (tt_memory_graphics_mark_x+width <= 0 || // off the left side -- was just < prior to 251102
 		 tt_memory_graphics_mark_x >= tt_screen_width) {// or off the right -- was just > prior to 251102

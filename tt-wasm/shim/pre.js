@@ -218,7 +218,11 @@ Module['preRun'].push(function () {
     '[Defaults]',
     'Version=3',
     'WindowSize=1',
-    'MouseButtons=1',
+    // 2 = the retail "turn tools on and off by clicking the right mouse button" option
+    // (mousebut.htm). virtual_right_button() returns FALSE for non-sensor uses when the
+    // count is < 2, which silently disabled right-click-uses-held-tool. Browser mice
+    // always have 2+ buttons.
+    'MouseButtons=2',
     'SoundOn=1',
     'KindOfUser=1',
     'Language=1',

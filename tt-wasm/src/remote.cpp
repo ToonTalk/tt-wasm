@@ -333,9 +333,19 @@ void Remote::update_globals() {
 	if (//tt_game_switch_on && 
 		 (remotes_for(MOUSE_SPEED_X_REMOTE) != NULL ||
 		  remotes_for(MOUSE_SPEED_Y_REMOTE) != NULL)) {
-		city_coordinate delta_x, delta_y;  
+		city_coordinate delta_x, delta_y;
 		last_mouse_deltas(delta_x,delta_y);
       if (absolute_mouse_mode()) {
+#ifdef __EMSCRIPTEN__
+         { // Pong debugging: is the mouse-speed sensor registered and fed? (Ken 2026-07-19)
+            static int spd_log = 0;
+            long vy = ((delta_y-previous_mouse_delta_y)*1000)/tt_millisecond_delta;
+            if (spd_log < 120 && vy != 0) { spd_log++;
+               printf("[tt] mousespd: dy=%ld prev=%ld vy=%ld ms=%ld\n",
+                      (long)delta_y, (long)previous_mouse_delta_y, vy, (long)tt_millisecond_delta); fflush(stdout);
+            }
+         }
+#endif
          changed(MOUSE_SPEED_X_REMOTE,tt_screen->user_x(((delta_x-previous_mouse_delta_x)*1000)/tt_millisecond_delta));
          changed(MOUSE_SPEED_Y_REMOTE,tt_screen->user_y(((delta_y-previous_mouse_delta_y)*1000)/tt_millisecond_delta));
 		   previous_mouse_delta_x = delta_x;

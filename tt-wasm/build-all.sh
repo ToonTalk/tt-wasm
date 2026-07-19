@@ -7,7 +7,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE" || exit 1
 mkdir -p obj logs
 # dropped / not-standalone:
-EXCLUDE='(network|remote|ftp|ttftp|number_old_display)'
+EXCLUDE='(network|ftp|ttftp|number_old_display)'
 
 ls src/*.cpp | grep -vE "/$EXCLUDE\.cpp$" \
   | xargs -P 6 -I{} bash -c '
