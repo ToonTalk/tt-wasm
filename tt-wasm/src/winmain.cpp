@@ -2261,6 +2261,13 @@ void MainWindow::initialize_palette() {
 //		};
 		PALETTEENTRY pe[colors_count];
 		GetPaletteEntries(palette_handle,0,colors_count,pe);
+#ifdef __EMSCRIPTEN__
+		printf("[tt] palinit: hdr[2]=%d,%d,%d pe[2]=%d,%d,%d pe[20]=%d,%d,%d use=%d\n",
+			default_header->bmiColors[2].rgbRed, default_header->bmiColors[2].rgbGreen, default_header->bmiColors[2].rgbBlue,
+			pe[2].peRed, pe[2].peGreen, pe[2].peBlue, pe[20].peRed, pe[20].peGreen, pe[20].peBlue,
+			(int) GetSystemPaletteUse(visible_device_context));
+		fflush(stdout);
+#endif
 		tt_colors[tt_colors_available++] = tt_black; // ok really?
       int whiteness = pe[tt_white].peRed+pe[tt_white].peGreen+pe[tt_white].peBlue;
       int blackness = pe[tt_black].peRed+pe[tt_black].peGreen+pe[tt_black].peBlue;

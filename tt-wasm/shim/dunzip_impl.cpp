@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <sys/stat.h>
 #include <zlib.h>
 #include "dunzdll.h"
 
@@ -79,21 +80,35 @@ bool load_archive(const char *path) {
     return true;
 }
 
-/* case-insensitive match; the engine quotes names (quote_file_name), so strip quotes.
- * bare "*" matches anything. */
+/* case-insensitive wildcard match ('*' = any run, '?' = any char; '\' and '/' equivalent);
+ * the engine quotes names (quote_file_name), so strip quotes. "*.*" matches names without
+ * dots too (DOS convention). */
+char fold(char c) {
+    if (c >= 'A' && c <= 'Z') return (char)(c + 32);
+    if (c == '\\') return '/';
+    return c;
+}
+bool wild_match(const char *pat, const char *name) {
+    if (*pat == 0) return *name == 0;
+    if (*pat == '*') {
+        for (const char *n = name; ; n++) {
+            if (wild_match(pat + 1, n)) return true;
+            if (*n == 0) return false;
+        }
+    }
+    if (*name == 0) return false;
+    if (*pat == '?' || fold(*pat) == fold(*name)) return wild_match(pat + 1, name + 1);
+    return false;
+}
 bool name_match(const char *pat, const char *name) {
     char clean[300]; int j = 0;
     for (const char *s = pat; *s && j < 299; s++) if (*s != '"') clean[j++] = *s;
     clean[j] = 0;
     if (strcmp(clean, "*") == 0 || strcmp(clean, "*.*") == 0) return true;
-    const char *a = clean, *b = name;
-    for (;; a++, b++) {
-        char ca = *a, cb = *b;
-        if (ca >= 'A' && ca <= 'Z') ca += 32;
-        if (cb >= 'A' && cb <= 'Z') cb += 32;
-        if (ca != cb) return false;
-        if (!ca) return true;
-    }
+    /* DOS "x\*.*" idiom: also accept dotless names under x\ */
+    int len = j;
+    if (len >= 4 && strcmp(clean + len - 4, "*.*") == 0) clean[len - 2] = 0;   /* "...*.*" -> "...*" */
+    return wild_match(clean, name);
 }
 
 int find_member(const char *spec, unsigned index) {
@@ -173,6 +188,55 @@ extern "C" int dunzip(LPUNZIPCMDSTRUCT u) {
                 strncpy(u->pZinfoEx->szFileName, g_entries[k].name, MAX_PATH - 1);
             }
             return UE_OK;
+        }
+        case UNZIP_EXTRACT: {
+            /* extract matching members to lpszDestination (the private media directory —
+             * user pictures/sounds inside notebook zips live under "Media\..."; without this
+             * every media picture rendered black/invisible, e.g. the Pong game's background
+             * and ball). noDirectoryNamesFlag drops the archive's path components. */
+            if (!u->lpszDestination) return UE_NOFILE;
+            char destdir[600];
+            size_t dl = 0;
+            for (const char *d = u->lpszDestination; *d && dl < 570; d++) destdir[dl++] = (*d == '\\') ? '/' : *d;
+            if (dl > 0 && destdir[dl-1] != '/') destdir[dl++] = '/';
+            destdir[dl] = 0;
+            int wrote = 0, matched = 0;
+            for (int k = 0; k < g_entry_count; k++) {
+                if (!u->lpszFilespec || !u->lpszFilespec[0] || name_match(u->lpszFilespec, g_entries[k].name)) {
+                    matched++;
+                    if (g_entries[k].name[0] == 0) continue;
+                    if (g_entries[k].name[strlen(g_entries[k].name)-1] == '/') continue; /* directory entry */
+                    if (!extract_member(k)) continue;
+                    /* output name: strip path components when asked (the engine passes
+                     * preserve_path_names=FALSE for media) */
+                    const char *nm = g_entries[k].name;
+                    if (u->noDirectoryNamesFlag) {
+                        for (const char *s = nm; *s; s++) if (*s == '/' || *s == '\\') nm = s + 1;
+                    }
+                    char path[900];
+                    size_t pl = dl;
+                    memcpy(path, destdir, dl);
+                    for (const char *s = nm; *s && pl < 890; s++) path[pl++] = (*s == '\\') ? '/' : *s;
+                    path[pl] = 0;
+                    /* ensure intermediate dirs exist (when preserving paths) */
+                    for (size_t i = dl; i < pl; i++) {
+                        if (path[i] == '/') { path[i] = 0; mkdir(path, 0777); path[i] = '/'; }
+                    }
+                    if (!u->overWriteFlag) {
+                        FILE *probe = fopen(path, "rb");
+                        if (probe) { fclose(probe); continue; }
+                    }
+                    FILE *out = fopen(path, "wb");
+                    if (!out) continue;
+                    fwrite(g_mem, 1, g_mem_size, out);
+                    fclose(out);
+                    wrote++;
+                }
+            }
+            if (dz_log <= 80) {
+                printf("[tt] dunzip: EXTRACT matched=%d wrote=%d -> '%s'\n", matched, wrote, destdir); fflush(stdout);
+            }
+            return matched > 0 ? UE_OK : UE_NOFILE;
         }
         case UNZIP_FILETOMEM: {
             int k = find_member(u->lpszFilespec, u->index);

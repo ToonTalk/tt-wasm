@@ -44,7 +44,6 @@ addToLibrary({
   GetProcAddress: function(){ return 0; },
   GetProcessHeap: function(){ return 0; },
   GetShortPathNameA: function(){ return 0; },
-  GetSystemPaletteEntries: function(){ return 0; },
   GetTabbedTextExtentW: function(){ return 0; },
   GetTimeFormatA: function(){ return 0; },
   GetTimeZoneInformation: function(){ return 0; },

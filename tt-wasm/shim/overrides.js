@@ -100,6 +100,11 @@ addToLibrary({
   LoadStringA__deps: ['$TT_RES_STRINGS', '$TT_writeCStr'],
   LoadStringA: function(hInst, id, buf, maxLen) {
     var s = TT_RES_STRINGS[id];
+    if (s === undefined) {
+      // surface the gap: the engine falls back to "sorry I can't remember" (IDC_NO_SUCH_STRING)
+      var miss = (globalThis.TT_missingStrings = globalThis.TT_missingStrings || []);
+      if (miss.length < 200) { miss.push(id); console.log('[tt] resmiss: ' + id); }
+    }
     return TT_writeCStr(buf, maxLen, s === undefined ? '' : s);
   },
 
@@ -310,7 +315,7 @@ addToLibrary({
   // NUMCOLORS=24 RASTERCAPS=38 (RC_PALETTE=0x100) SIZEPALETTE=104.
   GetDeviceCaps: function(hdc, index) {
     switch (index) { case 12: return 8; case 38: return 0x100; case 104: return 256;
-                     case 24: return 256; case 8: return 1024; case 10: return 768;
+                     case 24: return 20; case 8: return 1024; case 10: return 768;
                      case 14: return 1; default: return 0; }
   },
   // windows95()/windows_2000_or_above() read this struct; the 0-stub left it as stack garbage.
@@ -346,7 +351,33 @@ addToLibrary({
   },
   // SYSPAL_NOSTATIC: no reserved system colors in a browser, so CreateIdentityPalette's
   // clean all-256-from-the-artwork branch runs instead of the static-color merge.
-  GetSystemPaletteUse: function() { return 2; },
+  // SYSPAL_STATIC (1), like real Windows: the us1 DAT palette leaves the 20 system-static
+  // slots (0-9, 246-255) as black placeholders and relies on CreateIdentityPalette's static
+  // branch to merge in the standard statics (and write them back into default_header — see
+  // Ken's "these colors match system colors" comment). Returning NOSTATIC skipped that merge,
+  // so every static-color feature rendered black: Pong's ColorIndex-2 green background, the
+  // red ball (static 249) on it, tool-button faces, etc.
+  GetSystemPaletteUse: function() { return 1; },
+  // The standard 20 static colors of an 8-bit Windows display, PALETTEENTRY layout
+  // (peRed,peGreen,peBlue,peFlags). Slots 10..245 are left zero — every caller overwrites
+  // the midrange from its own DIB palette.
+  GetSystemPaletteEntries__deps: ['$TT_sysStatics'],
+  GetSystemPaletteEntries: function(hdc, start, count, lppe) {
+    if (!lppe) return 0;
+    for (var i = 0; i < count && start + i < 256; i++) {
+      var idx = start + i, rgb = TT_sysStatics[idx] || [0, 0, 0];
+      HEAPU8[lppe + i*4] = rgb[0]; HEAPU8[lppe + i*4 + 1] = rgb[1];
+      HEAPU8[lppe + i*4 + 2] = rgb[2]; HEAPU8[lppe + i*4 + 3] = 0;
+    }
+    return Math.min(count, 256 - start);
+  },
+  $TT_sysStatics: {
+    0: [0,0,0], 1: [128,0,0], 2: [0,128,0], 3: [128,128,0], 4: [0,0,128],
+    5: [128,0,128], 6: [0,128,128], 7: [192,192,192], 8: [192,220,192], 9: [166,202,240],
+    246: [255,251,240], 247: [160,160,164], 248: [128,128,128], 249: [255,0,0],
+    250: [0,255,0], 251: [255,255,0], 252: [0,0,255], 253: [255,0,255],
+    254: [0,255,255], 255: [255,255,255]
+  },
   $TT_palettes: { next: 1, map: {} },
 
   // --- screen metrics + client rect (the engine sizes its window from these) ---

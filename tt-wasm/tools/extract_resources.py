@@ -14,24 +14,59 @@ STRINGS_H = r"C:\Users\toont\dev\tt-wasm\src\strings.h"
 OUT       = r"C:\Users\toont\dev\tt-wasm\shim\resstrings.js"
 
 # Order: UI/aux first, then static/debug last so the exe's authoritative table wins on any dup.
-RC_FILES = ["english.rc", "new.rc", "puzzle.rc", "sensors.rc", "sound.rc",
+# gap-fillers first (main-exe and helper STRINGTABLEs the first pass missed), then the
+# canonical english.rc and friends so they win on any duplicate id.
+RC_FILES = ["clickme.rc", "starttt.rc", "ttftp.rc", "toontalk.rc", "ttus.rc",
+            "english.rc", "new.rc", "puzzle.rc", "sensors.rc", "sound.rc",
             "common.rc", "extra.rc", "debug.rc", "static.rc"]
 
 def read(path):
     with open(path, encoding="latin-1") as f:
         return f.readlines()
 
-# 1) strings.h : #define SYMBOL <number>
+# 1) strings.h : #define SYMBOL <number>, plus simple arithmetic defines like
+#    #define IDS_BOOK_TYPE_PLURAL (PLURAL_OFFSET+IDS_BOOK_TYPE_INDEFINITE)
+#    (the whole *_TYPE_PLURAL/_DEFINITE/_PRONOUN family is computed this way —
+#    skipping them made Marty's type names fall back to "no such string")
 sym2num = {}
-defre = re.compile(r'^\s*#define\s+([A-Za-z_]\w*)\s+(\d+)\b')
+defre  = re.compile(r'^\s*#define\s+([A-Za-z_]\w*)\s+(\d+)\b')
+exprre = re.compile(r'^\s*#define\s+([A-Za-z_]\w*)\s+\(([A-Za-z_0-9+\-* ]+)\)')
+exprs = {}
 for line in read(STRINGS_H):
     m = defre.match(line)
     if m:
         sym2num[m.group(1)] = int(m.group(2))
+        continue
+    m = exprre.match(line)
+    if m:
+        exprs[m.group(1)] = m.group(2)
+for _ in range(6):  # iterate so chained definitions settle
+    for name, expr in exprs.items():
+        if name in sym2num:
+            continue
+        toks = re.findall(r'[A-Za-z_]\w*|\d+|[+\-*]', expr)
+        out, ok = [], True
+        for t in toks:
+            if t.isdigit() or t in '+-*':
+                out.append(t)
+            elif t in sym2num:
+                out.append(str(sym2num[t]))
+            else:
+                ok = False
+                break
+        if ok and out:
+            try:
+                sym2num[name] = int(eval(''.join(out)))
+            except Exception:
+                pass
 
 # 2) each .rc : pair a `SYMBOL,` line with the following `"value"` line
-symline = re.compile(r'^\s*([A-Za-z_]\w*)\s*,\s*(?://.*)?$')
-strline = re.compile(r'^\s*"(.*)"\s*(?://.*)?$')
+# RC string literal: doubled "" escapes a quote — match non-greedily so a trailing
+# // comment (which may itself contain quotes) is never swallowed into the value.
+RCSTR    = r'"((?:[^"]|"")*)"'
+symline  = re.compile(r'^\s*([A-Za-z_]\w*)\s*,?\s*(?://.*)?$')          # comma optional
+strline  = re.compile(r'^\s*' + RCSTR + r'\s*(?://.*)?$')
+oneliner = re.compile(r'^\s*([A-Za-z_]\w*)\s*,\s*' + RCSTR + r'\s*(?://.*)?$')   # SYMBOL,"value" on one line
 
 num2str, dups, unknown = {}, 0, 0
 for rc in RC_FILES:
@@ -46,13 +81,24 @@ for rc in RC_FILES:
         if st == "" or st.startswith("#") or st.startswith("//") \
            or st.startswith("STRINGTABLE") or st in ("{", "}"):
             continue
+        mo = oneliner.match(s)
+        if mo:
+            n = sym2num.get(mo.group(1))
+            if n is None:
+                unknown += 1
+            else:
+                if n in num2str:
+                    dups += 1
+                num2str[n] = mo.group(2).replace('""', '"')
+            pending = None
+            continue
         ms = symline.match(s)
         if ms:
             pending = ms.group(1)
             continue
         mv = strline.match(s)
         if mv and pending is not None:
-            sym, val = pending, mv.group(1)
+            sym, val = pending, mv.group(1).replace('""', '"')
             pending = None
             n = sym2num.get(sym)
             if n is None:

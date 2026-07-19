@@ -8,6 +8,11 @@ if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrob
 process.on('exit', function () {
   try { if (globalThis.TT_dumpErr) globalThis.TT_dumpErr(); } catch (e) {}
 });
+// TT_MAXSEC=N: self-terminate after N seconds (Windows `timeout` hard-kills node, losing exit hooks)
+if (process.env.TT_MAXSEC) setTimeout(function () {
+  console.log('[harness] TT_MAXSEC reached — exiting');
+  process.exit(0);
+}, parseInt(process.env.TT_MAXSEC) * 1000);
 // after pick_up (copyrobots hook), simulate the drop click on open floor
 if (process.env.TT_COPYROBOTS) setTimeout(function(){
   try { globalThis.TT_mouse_x = (process.env.TT_DROPX ? parseInt(process.env.TT_DROPX) : 200); globalThis.TT_mouse_y = (process.env.TT_DROPY ? parseInt(process.env.TT_DROPY) : 200);

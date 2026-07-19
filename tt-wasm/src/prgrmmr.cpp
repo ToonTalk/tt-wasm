@@ -2325,6 +2325,11 @@ void Programmer::em_enter_bootstrap_house() {
                   } else {
                      printf("[tt] copyrobots: robot has no bubble box to copy\n"); fflush(stdout);
                   }
+               } else if (runit && paf->pointer_to_tool_in_hand() != NULL) {
+                  // non-robot page item (e.g. page 24's Pong game picture): set it down on
+                  // the open floor so its rendering can be inspected
+                  paf->release_object(FALSE);
+                  printf("[tt] copyrobots: non-robot item dropped on floor\n"); fflush(stdout);
                } else if (!runit) {
                   // crash-regression mode: force the auto-save that trapped for Ken
                   printf("[tt] copyrobots: dumping Examples notebook...\n"); fflush(stdout);
