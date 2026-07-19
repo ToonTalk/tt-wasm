@@ -1645,6 +1645,50 @@ boolean Main::MessageLoopOnce() {
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+// One iteration of the message loop INCLUDING the replay-only exception handling below.
+// A .dmo demo is a time-travel archive: reaching the end of a segment's log throws
+// END_OF_LOG_FILE, and the handler jumps to the next segment — that is how a demo plays
+// through to its end. The browser loop used to call MessageLoopOnce() bare, so the first
+// segment boundary threw straight out of the frame callback and killed the run.
+// Mirrors the body of the native while(TRUE) loop; returns FALSE when the loop should stop.
+static boolean tt_message_loop_iteration() {
+	if (!replaying()) {
+		return(Main::MessageLoopOnce());
+	};
+	try {
+		return(Main::MessageLoopOnce());
+	} catch (CycleInterruptionReason reason) {
+		switch (reason) {
+			case EVENTS_COUNTER_TOO_LARGE:
+			case EVENTS_COUNTER_MISSING:
+			case UNRECOGNIZED_SPECIAL_EVENT_TOKEN:
+			case LOG_FILE_MISSING_CITY_FILE_NAME:
+			case EVENTS_COUNTER_NON_ZERO_WITH_NO_EVENT_QUEUE:
+			case LOG_FILE_CORRUPTED:
+			case UNABLE_TO_EXTRACT_CITY_FILE:
+				play_sound(PLOP_SOUND);
+				tt_error_file() << "Something went wrong re-running segment " << tt_current_log_segment
+									 << " reason code is " << (int) reason << endl;
+				tt_err_file_important = TRUE;
+				// and the following
+			case LOG_FILE_MISSING:
+			case END_OF_LOG_FILE:
+				if (!about_to_quit()) {
+					if (tt_current_log_segment < tt_youngest_log_segment) {
+						jump_to_log_segment(tt_current_log_segment+1,(reason == END_OF_LOG_FILE));
+					} else {
+						close_input_log(TRUE,FALSE);
+						if (tt_youngest_log_segment < 0) {
+							trouble_shoot(TROUBLE_SHOOT_BAD_DEMO,S(IDS_LOG_REPLAY_ERROR));
+							set_user_wants_to_quit(TRUE);
+						};
+					};
+				};
+				break;
+		};
+		return(TRUE); // loop around and try again, as the native loop does
+	};
+};
 #endif
 int Main::MessageLoop() {
 #if TT_DEBUG_ON
@@ -1664,7 +1708,7 @@ int Main::MessageLoop() {
 	// Browser focus/blur events can toggle this properly once input is wired up.
 	have_focus = TRUE;
 	emscripten_set_main_loop([]() {
-		if (!Main::MessageLoopOnce()) emscripten_cancel_main_loop();
+		if (!tt_message_loop_iteration()) emscripten_cancel_main_loop();
 	}, 0, 1);
 	return 0;
 #endif
@@ -10158,7 +10202,16 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 	// NOTHING_TAG's handler (City::handle_xml_tag) sets START_FLYING — its comment says "since no
 	// city this is the right starting status". load_city() does the same activation when a real
 	// city file exists, so this branch only runs for a fresh world.
-	if (tt_no_city_was_loaded) {
+	if (tt_no_city_was_loaded && (tt_jump_to_current_log_segment || tt_jump_to_youngest_log_segment)) {
+		// A .dmo TIME-TRAVEL ARCHIVE is pending (?demo=name -> "-I name"): open_log saw the PK
+		// cookie + 0.xml and armed the jump. Retail performs it when the titles sequence ends
+		// (Programmer_Titles_Flying::react sets tt_titles_just_ended); the web port has no titles,
+		// so raise the same flag here and let Main's archive block load the first recorded
+		// segment. Deliberately NOT activating a fresh world — the jump replaces it anyway.
+		printf("[tt] demo: archive pending — signalling titles-end so the segment jump runs\n");
+		fflush(stdout);
+		tt_titles_just_ended = TRUE;
+	} else if (tt_no_city_was_loaded) {
 		xml_document *fresh = document_from_string("<Nothing/>");
 		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
 		// Dev shortcut: tt.html?floor=1 boots straight onto the first house's floor (hand +

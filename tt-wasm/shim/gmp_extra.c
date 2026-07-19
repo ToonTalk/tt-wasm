@@ -29,14 +29,38 @@ mp_bitcnt_t mpz_remove (mpz_t rop, const mpz_t op, const mpz_t f)
   return count;
 }
 
-/* d in [0.5, 1) such that op = d * 2^exp2 — double conversion with explicit
- * exponent (display of huge numbers). frexp has exactly these semantics. */
+/* d in [0.5, 1) such that op ~= d * 2^exp2 — double conversion with explicit
+ * exponent (display of huge numbers). Exact GMP semantics for ANY size: take
+ * the top 53 bits via mpz division, so values beyond double range never
+ * overflow to inf (Ken 2026-07-19: keep exact precision, don't round-trip
+ * through a double). */
 double frexp (double value, int *exp); /* avoid pulling all of math.h into C89-ish code */
+double ldexp (double value, int exp);
 
 double mpz_get_d_2exp (signed long int *exp2, const mpz_t op)
 {
-  int e = 0;
-  double d = frexp (mpz_get_d (op), &e);
-  *exp2 = e;
-  return d;
+  size_t bits = mpz_sizeinbase (op, 2);
+  if (mpz_sgn (op) == 0)
+    {
+      *exp2 = 0;
+      return 0.0;
+    }
+  if (bits <= 53)
+    {
+      int e = 0;
+      double d = frexp (mpz_get_d (op), &e);
+      *exp2 = e;
+      return d;
+    }
+  else
+    {
+      mpz_t top;
+      double d;
+      mpz_init (top);
+      mpz_tdiv_q_2exp (top, op, bits - 53);   /* exact top 53 bits, fits a double */
+      d = ldexp (mpz_get_d (top), -53);       /* scale into [0.5, 1) */
+      mpz_clear (top);
+      *exp2 = (signed long int) bits;
+      return d;
+    }
 }

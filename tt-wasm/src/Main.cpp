@@ -1701,9 +1701,20 @@ boolean one_tt_cycle() {
 		tt_frame_number--; // so when debugging the frame numbers "line up"
 	};
 	tt_stop_all_pictures = FALSE; //  new on 161004 -- since already tried to move this cycle
+#ifdef __EMSCRIPTEN__
+	{ // demo (.dmo time-travel archive) replay: which gate stops us? (Ken 2026-07-19)
+		static int dm_log = 0;
+		if (dm_log < 12 && (tt_titles_just_ended || tt_jump_to_current_log_segment)) { dm_log++;
+			printf("[tt] demogate: titles_ended=%d jump_current=%d jump_youngest=%d tt_enabled=%d between=%ld f=%ld\n",
+			       (int)tt_titles_just_ended, (int)tt_jump_to_current_log_segment,
+			       (int)tt_jump_to_youngest_log_segment, (int)time_travel_enabled(),
+			       (long)tt_time_between_new_logs, (long)tt_frame_number); fflush(stdout);
+		}
+	}
+#endif
 	if (tt_titles_just_ended) { // new on 230803
 		// since the following was happening in the middle of a cycle - very confusing
-		if ((tt_jump_to_current_log_segment || tt_jump_to_youngest_log_segment) && read_counters_from_archive()) { 
+		if ((tt_jump_to_current_log_segment || tt_jump_to_youngest_log_segment) && read_counters_from_archive()) {
 			// new on 190703 since initialization discovered a DMO file that is a time travel archive
 			tt_next_new_log_time = max_long; // don't make new logs while replaying
 //		     set_replay_file_name(file_name_renumbered("log00000.dmo",tt_current_log_segment)); 

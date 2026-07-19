@@ -200,6 +200,13 @@ extern "C" int dunzip(LPUNZIPCMDSTRUCT u) {
             for (const char *d = u->lpszDestination; *d && dl < 570; d++) destdir[dl++] = (*d == '\\') ? '/' : *d;
             if (dl > 0 && destdir[dl-1] != '/') destdir[dl++] = '/';
             destdir[dl] = 0;
+            /* Create the destination tree itself — it usually does NOT exist yet (e.g.
+             * "/toontalk/My Documents/ToonTalk/Temporary File Cache/", where the engine
+             * extracts a demo archive's log segments). Without this every fopen below
+             * failed and extraction silently wrote nothing. */
+            for (size_t i = 1; i < dl; i++) {
+                if (destdir[i] == '/') { destdir[i] = 0; mkdir(destdir, 0777); destdir[i] = '/'; }
+            }
             int wrote = 0, matched = 0;
             for (int k = 0; k < g_entry_count; k++) {
                 if (!u->lpszFilespec || !u->lpszFilespec[0] || name_match(u->lpszFilespec, g_entries[k].name)) {

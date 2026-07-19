@@ -2296,6 +2296,30 @@ void Programmer::em_enter_bootstrap_house() {
             Sprite *item = ex->page_sprite(rp, TRUE);
             printf("[tt] copyrobots: page %d item=%p kind=%d — real pick_up...\n", rp, (void*)item,
                    item ? (int)item->kind_of() : -1); fflush(stdout);
+            // ?subpage=N: some Example pages hold a NESTED notebook (page 26 = the sentence
+            // maker's "Sentences" notebook) — descend into it and take ITS page N instead.
+            int sp = EM_ASM_INT({
+               var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null;
+               return m ? parseInt(m[1]) : 0;
+            });
+            if (sp > 0 && item != NULL && item->kind_of() == PROGRAM_PAD) {
+               Notebook *sub = (Notebook *) item;
+               for (int p = 1; p <= 12; p++) {   // what's on each page (kinds: 5=ROBOT 9=NOTEBOOK 10=BOX 14=TEXT)
+                  Sprite *pg = sub->page_sprite(p, TRUE);
+                  if (pg == NULL) continue;
+                  char nm[64]; nm[0] = 0;
+                  string t; long tl;
+                  if (pg->current_text(t,tl) && t != NULL) {
+                     int n = (int)((tl < 30) ? tl : 30);
+                     for (int k = 0; k < n; k++) nm[k] = (t[k] >= 32) ? t[k] : '/';
+                     nm[n] = 0;
+                  }
+                  printf("[tt] subpages: %d kind=%d '%s'\n", p, (int)pg->kind_of(), nm); fflush(stdout);
+               }
+               item = sub->page_sprite(sp, TRUE);
+               printf("[tt] copyrobots: subpage %d item=%p kind=%d\n", sp, (void*)item,
+                      item ? (int)item->kind_of() : -1); fflush(stdout);
+            }
             if (item != NULL) {
                Programmer_At_Floor *paf = (Programmer_At_Floor *) state;
                boolean picked = paf->pick_up(item);

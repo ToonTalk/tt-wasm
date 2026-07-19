@@ -2,7 +2,9 @@
 // which node lacks — polyfill it with setTimeout so frames pump headlessly.
 // (In the real browser target, the native rAF drives it.)
 if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=1" };
-if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrobots=1" + (process.env.TT_ROBOTPAGE ? "&robotpage=" + process.env.TT_ROBOTPAGE : "") + (process.env.TT_RUNROBOT ? "&runrobot=1" : "") };
+// TT_DEMO=<name>: replay a recorded .dmo demo (build/demos/<name>.dmo), same path as ?demo= in the browser
+if (process.env.TT_DEMO) globalThis.location = { search: "?demo=" + process.env.TT_DEMO };
+if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrobots=1" + (process.env.TT_ROBOTPAGE ? "&robotpage=" + process.env.TT_ROBOTPAGE : "") + (process.env.TT_SUBPAGE ? "&subpage=" + process.env.TT_SUBPAGE : "") + (process.env.TT_RUNROBOT ? "&runrobot=1" : "") };
 // dump the engine's error file at exit so tt_error_file() complaints are visible
 // (TT_dumpErr is installed by shim/pre.js, which runs inside the module scope where FS lives)
 process.on('exit', function () {

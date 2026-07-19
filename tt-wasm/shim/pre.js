@@ -151,22 +151,72 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // keys the engine polls (arrows 37-40, shift 16, control 17).
   if (c.tabIndex < 0) c.tabIndex = 0;
   globalThis.TT_keys = {};
+  // vk -> the character code the engine expects (constant.h: BACKSPACE=8 TAB=9 RETURN=13 ESCAPE=27)
+  var TT_charKeys = { 8: 8, 9: 9, 13: 13, 27: 27 };
   window.addEventListener('keydown', function (e) {
     resumeAudio();
     globalThis.TT_keys[e.keyCode] = 1;
     if (!e.repeat) post(0x0100, e.keyCode, 0);
     else post(0x0100, e.keyCode, 0x40000000);   // bit 30: previous key state (autorepeat)
     if (e.key && e.key.length === 1) post(0x0102, e.key.charCodeAt(0), 0);
+    // Control keys the engine reads as CHARACTERS (constant.h standard_keyboard): their
+    // e.key is a word ("Backspace"), not a character, so the length-1 test above skips them.
+    // Backspace = page BACK in a notebook (pad.cpp: '-' or BACKSPACE -> go_back_a_page) and
+    // deletes text in pads; Tab/Return/Escape are read the same way elsewhere.
+    else if (TT_charKeys[e.keyCode]) post(0x0102, TT_charKeys[e.keyCode], 0);
     // The game owns these keys — stop the browser's defaults:
     // arrows (page scroll), space (page scroll; runs tools/games), and F1-F12 (browser help /
     // find / RELOAD on F5 / fullscreen / devtools — ToonTalk maps them: F1 Marty, F2 Dusty,
     // F3 Pumpy, F4 Notebook, F5 Wand, F6 Tooly, F7 hurry up, F8 robots, F9 hide hand,
     // F10 hide this, F11 no Bammer, F12 toss).
+    // Backspace (history-back in some browsers) and Tab (moves focus off the canvas) are
+    // ToonTalk keys too: Backspace pages a notebook backwards, Tab is read as a character.
     if ((e.keyCode >= 37 && e.keyCode <= 40) || e.keyCode === 32 ||
+        e.keyCode === 8 || e.keyCode === 9 ||
         (e.keyCode >= 112 && e.keyCode <= 123)) e.preventDefault();
   });
   window.addEventListener('keyup', function (e) { delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0); });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
+})();
+
+// ?demo=<name> plays one of ToonTalk's recorded .dmo demos (Demos/US in the retail install).
+// The demos are NOT baked into tt.data — they total ~36MB — so fetch the one asked for and
+// write it into the FS before the engine starts, then hand the engine its own command-line
+// switch "-I <name>" (replay reproducing the original timing; utils.cpp interpret_command_line).
+globalThis.TT_cmdline = '';
+(function setUpDemo() {
+  if (typeof location === 'undefined') return;
+  var m = location.search.match(/[?&]demo=([A-Za-z0-9_]+)/);
+  if (!m) return;
+  var name = m[1];
+  globalThis.TT_cmdline = '-I ' + name;
+  Module['preRun'] = Module['preRun'] || [];
+  Module['preRun'].push(function () {
+    // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
+    // during initialization. (Blocking here only delays our own start-up.)
+    try {
+      var bytes;
+      if (typeof XMLHttpRequest !== 'undefined') {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'demos/' + name + '.dmo', false);
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        xhr.send(null);
+        if (xhr.status !== 200 && xhr.status !== 0) throw new Error('HTTP ' + xhr.status);
+        var s = xhr.responseText;
+        bytes = new Uint8Array(s.length);
+        for (var i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i) & 0xff;
+      } else {   // node harness (run.js): read it straight off disk
+        bytes = new Uint8Array(require('fs').readFileSync('demos/' + name + '.dmo'));
+      }
+      try { FS.mkdir('/toontalk'); } catch (e) {}
+      try { FS.mkdir('/toontalk/Demos'); } catch (e) {}
+      FS.writeFile('/toontalk/Demos/' + name + '.dmo', bytes);
+      console.log('[tt] demo: staged ' + name + '.dmo (' + bytes.length + ' bytes)');
+    } catch (e) {
+      console.warn('[tt] demo: could not fetch ' + name + '.dmo — ' + e.message);
+      globalThis.TT_cmdline = '';
+    }
+  });
 })();
 
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
@@ -247,8 +297,18 @@ Module['preRun'].push(function () {
   var ttNorm = function (path) {
     if (typeof path !== 'string' || (path.indexOf('\\') < 0 && path.indexOf('//') < 0)) return path;
     var p = path.replace(/\\/g, '/').replace(/\/+/g, '/');
-    var ix = p.toLowerCase().lastIndexOf('/toontalk/');
-    if (ix > 0) p = p.slice(ix);
+    // The engine sometimes prefixes MainDir to a path that is ALREADY absolute ("/toontalk/" +
+    // "/toontalk/pics/x" -> "/toontalk/toontalk/pics/x" once "//" collapses). Undo exactly that
+    // doubling — and only that. An earlier version searched for the LAST "/toontalk/" anywhere,
+    // which silently truncated legitimate paths containing the word again further along: the
+    // engine extracts demo segments to "/toontalk/My Documents\ToonTalk\Temporary File Cache\",
+    // so every extracted log became unopenable and .dmo replay skipped all 48 segments.
+    while (/^\/toontalk\/toontalk\//i.test(p)) p = '/' + p.slice(10);
+    // MainDir prepended to a Windows absolute path ("/toontalk/C:/.../toontalk/pics/x").
+    if (/^\/toontalk\/[a-z]:\//i.test(p)) {
+      var ix = p.toLowerCase().lastIndexOf('/toontalk/');
+      if (ix > 0) p = p.slice(ix);
+    }
     return p;
   };
   var origOpen = FS.open;

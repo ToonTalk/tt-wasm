@@ -3055,6 +3055,25 @@ ReleaseStatus Notebook::item_released_on_top(Sprite *item, Sprite *by, SpritePoi
 		 item->current_height() < ideal_screen_height) {
 		indicated_page_number = page_number_of_item(item->dereference()); // dereference added 120500 so pictures of text and numbers works fine as do sensors
 	};
+#ifdef __EMSCRIPTEN__
+	{ // sentence-maker debugging: robots navigate notebooks by dropping a naming text pad
+	  // (MakeExampleWorker: DropOn Notebook -> Grasp Notebook.2). (Ken 2026-07-19)
+		static int nb_log = 0;
+		if (nb_log < 60) { nb_log++;
+			char t[64]; t[0] = 0;
+			string txt; long tlen;
+			if (item->dereference()->current_text(txt,tlen) && txt != NULL) {
+				int n = (int)((tlen < 40) ? tlen : 40);
+				for (int i = 0; i < n; i++) t[i] = (txt[i] >= 32) ? txt[i] : '.';
+				t[n] = 0;
+			};
+			printf("[tt] nbdrop: kind=%d text='%s' page=%d pages_count=%d w=%ld h=%ld\n",
+			       (int)item->dereference()->kind_of(), t, (int)indicated_page_number,
+			       (int)pages_count, (long)item->current_width(), (long)item->current_height());
+			fflush(stdout);
+		}
+	}
+#endif
 	if (indicated_page_number < 0) { // didn't find a page
 		if (current_page != NULL && equal(current_page,item)) {
          ::completed(by);

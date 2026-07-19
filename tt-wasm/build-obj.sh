@@ -13,7 +13,7 @@ case "$ARG" in
   *)  if [ -f "$HERE/$ARG" ]; then TARGET="$HERE/$ARG"; else TARGET="$HERE/src/$ARG"; fi ;;
 esac
 B=$(basename "$TARGET" .cpp)
-if "$EMCC" -std=gnu++14 -w -DWIN32 -c "$TARGET" -o "$HERE/obj/$B.o" \
+if "$EMCC" -std=gnu++14 -fwasm-exceptions -w -DWIN32 -c "$TARGET" -o "$HERE/obj/$B.o" \
      -I "$HERE/shim" -I "$HERE/src" 2>"$HERE/logs/$B.err"; then
   echo "=== OK: obj/$B.o ($(stat -c %s "$HERE/obj/$B.o") bytes) ==="
 else

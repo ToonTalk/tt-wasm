@@ -12,7 +12,7 @@ EXCLUDE='(network|ftp|ttftp|number_old_display)'
 ls src/*.cpp | grep -vE "/$EXCLUDE\.cpp$" \
   | xargs -P 6 -I{} bash -c '
       f="{}"; b=$(basename "$f" .cpp)
-      if "'"$EMCC"'" -std=gnu++14 -w -DWIN32 -c "$f" -o "'"$HERE"'/obj/$b.o" \
+      if "'"$EMCC"'" -std=gnu++14 -fwasm-exceptions -w -DWIN32 -c "$f" -o "'"$HERE"'/obj/$b.o" \
            -I "'"$HERE"'/shim" -I "'"$HERE"'/src" 2>"'"$HERE"'/logs/$b.err"; then
         echo "OK   $b"
       else

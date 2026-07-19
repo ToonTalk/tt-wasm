@@ -819,6 +819,16 @@ void dump_city_to_log() {
 };
 
 void load_city_from_log() {
+#ifdef __EMSCRIPTEN__
+	{ // demo replay: is each segment's recorded city snapshot being loaded? (Ken 2026-07-19)
+		static int lc_log = 0;
+		if (lc_log < 6) { lc_log++;
+			printf("[tt] loadcity: version=%d (needs>=44) peek=%d (marker=%d) segment=%d\n",
+			       (int)tt_log_version_number, (int)log_in->peek(), (int)FILE_NAME_MARKER,
+			       (int)tt_current_log_segment); fflush(stdout);
+		}
+	}
+#endif
 	if (tt_log_version_number >= 44) { // on 040504 commented out && tt_current_log_segment != 0
 		// new on 030504
 		if (log_in->get() == FILE_NAME_MARKER) {
@@ -1870,6 +1880,15 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 				opened_ok = TRUE;
 			};
 		};
+#ifdef __EMSCRIPTEN__
+		{ // demo replay: which log path fails to open? (Ken 2026-07-19)
+			static int ol_log = 0;
+			if (ol_log < 8) { ol_log++;
+				printf("[tt] openlog: '%s' ok=%d archive=%s\n", new_log_file_name, (int)opened_ok,
+				       tt_log_in_archive ? tt_log_in_archive : "(none)"); fflush(stdout);
+			}
+		}
+#endif
 		if (!opened_ok) { // didn't help to re-open
 			if (warn_if_doesnt_exist || tt_debug_mode == 140103) {
 				stream << S(IDS_UNABLE_TO_OPEN_FILE) << space() << log_file_name 
@@ -2069,7 +2088,18 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 					if (tt_city != NULL) tt_city->set_stopped(stopped);
 					log_in->read((string) &debug_counter,sizeof(debug_counter)); // new on 170100
 					load_keep_every_data(log_in); // new on 180100
+#ifdef __EMSCRIPTEN__
+					{	// ON-DISK WIDTH: the recorded demos come from the 32-bit Windows build where
+						// time_t was 4 bytes; wasm's time_t is 8. Reading 8 here swallowed 4 bytes of
+						// the following fields, misaligning the rest of the segment (the log then ran
+						// to EOF and no recorded city was ever loaded).
+						unsigned long recorded_date = 0;
+						log_in->read((string) &recorded_date,sizeof(recorded_date));
+						date_and_time_log_created = (time_t) recorded_date;
+					}
+#else
 					log_in->read((string) &date_and_time_log_created,sizeof(date_and_time_log_created));
+#endif
 					tt_martian_automatically_appears = (boolean) log_in->get(); // experiment on 020703
 //					log_in->read((string) &tt_martian_automatically_appears,sizeof(tt_martian_automatically_appears));
 					if (tt_log_version_number > 20) { 
