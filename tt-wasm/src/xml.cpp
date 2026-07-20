@@ -932,7 +932,20 @@ xml_document *xml_from_stream(InputStream *stream, long length) { // new on 0901
 	};
 	if (length <= 0) return(NULL); // changed == to <= on 140603
 	wide_string node_text = new wide_character[length+1]; // add 1 for terminating NULL
+#ifdef __EMSCRIPTEN__
+	// ON-DISK WIDTH: recorded logs/demos come from the 32-bit MSVC build where wide_character
+	// (WCHAR) was 2 bytes; ours is 4-byte wchar_t. Read the UTF-16 chars one at a time and widen.
+	// NOTE: this is one of MANY wide-char read sites in the log-replay format (read_history /
+	// read_user_parameters also read wide strings) — the whole preface needs the same treatment,
+	// or a -fshort-wchar build, before a segment's recorded city loads. See the wasm-port memory.
+	for (long i = 0; i < length; i++) {
+		unsigned short u16 = 0;
+		stream->read((string) &u16, 2);
+		node_text[i] = (wide_character) u16;
+	}
+#else
 	stream->read((string) node_text,length*sizeof(wide_character));
+#endif
    if (node_text == NULL) {
       return(NULL);
    };
@@ -971,7 +984,11 @@ void ignore_xml_from_stream(InputStream *stream, long length) { // new on 170803
 		stream->read((string) &length, sizeof(length));
 	};
 	if (length <= 0) return;
+#ifdef __EMSCRIPTEN__
+	stream->ignore(length*2);   // 2-byte on-disk wide chars (see xml_from_stream)
+#else
 	stream->ignore(length*sizeof(wide_character));
+#endif
 };
 
 void xml_debug_node(xml_node *node, wide_string label) {

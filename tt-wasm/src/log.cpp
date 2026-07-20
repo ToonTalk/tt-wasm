@@ -823,8 +823,8 @@ void load_city_from_log() {
 	{ // demo replay: is each segment's recorded city snapshot being loaded? (Ken 2026-07-19)
 		static int lc_log = 0;
 		if (lc_log < 6) { lc_log++;
-			printf("[tt] loadcity: version=%d (needs>=44) peek=%d (marker=%d) segment=%d\n",
-			       (int)tt_log_version_number, (int)log_in->peek(), (int)FILE_NAME_MARKER,
+			printf("[tt] loadcity: version=%d (needs>=44) tellg=%d peek=%d (marker=%d) segment=%d\n",
+			       (int)tt_log_version_number, (int)log_in->tellg(), (int)log_in->peek(), (int)FILE_NAME_MARKER,
 			       (int)tt_current_log_segment); fflush(stdout);
 		}
 	}
@@ -2118,7 +2118,7 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 					};
 					ignore_log_growth(4);
 //					unsigned long growth_block_length = 0;
-					//  for growth without breaking old 
+					//  for growth without breaking old
 //					log_in.read((bytes) &growth_block_length,sizeof(growth_block_length)); // new on 241199
 //					if (growth_block_length > 0) {
 //						log("Something wrong with log.",TRUE,TRUE);
