@@ -2251,8 +2251,14 @@ void Programmer::em_enter_bootstrap_house() {
       city_view_x = door_x - 5*tile_width;
       city_view_y = door_y - tile_height;
       if (empty_helicopter == NULL) {
-         empty_helicopter_x = door_x + 6*tile_width;
-         empty_helicopter_y = door_y - 2*tile_height;
+         // Helicopters belong ON THE STREET (Ken saw one drawn on top of a house). Start from
+         // just outside the door, then let the city snap it into the nearest traffic lane —
+         // the same nearest_lane() the engine uses when you actually land and walk out.
+         city_coordinate copter_x = door_x + 6*tile_width;
+         city_coordinate copter_y = door_y - 2*tile_height;
+         tt_city->nearest_lane(copter_x, copter_y, NORTH);
+         empty_helicopter_x = copter_x;
+         empty_helicopter_y = copter_y;
          add_empty_helicopter(FALSE);   // city extra only; the screen shows the floor right now
       };
       printf("[tt] bootstrap: door=(%ld,%ld) saved_city=(%ld,%ld) copter=(%ld,%ld) %p\n",
