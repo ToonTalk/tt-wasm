@@ -98,13 +98,37 @@
     if (!document.fullscreenElement && document.exitPointerLock) document.exitPointerLock();
   });
   document.addEventListener('pointerlockchange', function () {
-    var locked = document.pointerLockElement === document.getElementById('ttcanvas');
+    var c = document.getElementById('ttcanvas');
+    var locked = document.pointerLockElement === c;
     if (Module && Module._em_set_mouse_mode) {
       // 0 = relative everywhere (original fullscreen), 1 = absolute everywhere (windowed web)
       Module._em_set_mouse_mode(locked ? 0 : 1);
     }
-    if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; }
+    if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; return; }
+    // Lock lost while still full screen — that is Escape. A browser will not let us swallow
+    // Escape, but it releases the POINTER LOCK first and only leaves full screen on a second
+    // press, so this is where Escape gets its meaning:
+    //   on the floor  -> stand up (the engine's standup accelerator) and stay in full screen
+    //   walking/flying -> leave full screen and show the options (incl. the Full screen button)
+    if (document.fullscreenElement === c) {
+      var onFloor = Module && Module._em_on_floor && Module._em_on_floor();
+      if (onFloor) {
+        ttStandUp();
+        try { c.requestPointerLock(); } catch (e) {}   // resume mouse tracking
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
   });
+  // Stand up = the engine's STANDUP_IF_HAND_EMPTY keyboard accelerator (the 4th letter of the
+  // accelerator string "duhupffd" -> 'u'; prgrmmr.cpp At_Floor::react). Sent as a character so
+  // it takes exactly the path a typed key would.
+  function ttStandUp() {
+    var q = window.TT_msgq; if (!q) return;
+    q.push({ message: 0x0100, wParam: 85, lParam: 0 });   // WM_KEYDOWN 'U'
+    q.push({ message: 0x0102, wParam: 117, lParam: 0 });  // WM_CHAR 'u'
+    q.push({ message: 0x0101, wParam: 85, lParam: 0 });   // WM_KEYUP
+  }
   // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
   // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
   if (/[?&]fps=1/.test(location.search)) {

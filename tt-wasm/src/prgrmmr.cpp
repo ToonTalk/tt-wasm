@@ -2290,8 +2290,12 @@ void Programmer::em_enter_bootstrap_house() {
       printf("[tt] textpad: fresh 'A' -> W=%ld H=%ld cw=%ld ch=%ld\n",
              (long)pad->current_width(), (long)pad->current_height(),
              (long)pad->return_character_width(), (long)pad->return_character_height()); fflush(stdout);
-      // TypeTo appends without clearing (what the sentence-maker worker does): type "Nouns"
-      // onto the placeholder "A" the way a robot's keystrokes arrive.
+      // Mirror the sentence-maker worker exactly: its first recorded TypeTo is KeyCode 8
+      // (BACKSPACE) to delete the stack pad's "A" placeholder, then the word itself.
+      pad->respond_to_keyboard((unsigned char)8, FALSE, FALSE, pad, FALSE, pad, FALSE);
+      { string t0; long tl0 = 0; pad->current_text(t0, tl0);
+        printf("[tt] textpad: after BACKSPACE -> len=%ld W=%ld H=%ld\n",
+               tl0, (long)pad->current_width(), (long)pad->current_height()); fflush(stdout); }
       const char *word = "Nouns";
       for (const char *c = word; *c; c++) {
          pad->respond_to_keyboard((unsigned char)*c, FALSE, FALSE, pad, FALSE, pad, FALSE);
@@ -2331,7 +2335,23 @@ void Programmer::em_enter_bootstrap_house() {
             });
             if (sp > 0 && item != NULL && item->kind_of() == PROGRAM_PAD) {
                Notebook *sub = (Notebook *) item;
-               for (int p = 1; p <= 12; p++) {   // what's on each page (kinds: 5=ROBOT 9=NOTEBOOK 10=BOX 14=TEXT)
+               { int pc = 0; sub->pointer_to_pages(pc);
+                 printf("[tt] subpages: notebook pages_count=%d\n", pc); fflush(stdout); }
+               // Does drop-to-navigate resolve? page_number_of_item prefix-matches a dropped
+               // text pad against each page's contents (pad.cpp). Test the names the
+               // sentence-maker robot drops.
+               {
+                  static const char *names[] = { "Nouns", "Verbs", "Box to Text",
+                                                 "Box\r\nto\r\nText", "Box", "ANouns", 0 };
+                  for (int n = 0; names[n]; n++) {
+                     Text *probe = new Text();
+                     probe->set_text((string) names[n]);
+                     printf("[tt] pagelookup: '%s' -> page %d\n", names[n], sub->page_number_of_item(probe));
+                     fflush(stdout);
+                     probe->destroy();
+                  }
+               }
+               for (int p = 1; p <= 32; p++) {   // what's on each page (kinds: 5=ROBOT 9=NOTEBOOK 10=BOX 14=TEXT)
                   Sprite *pg = sub->page_sprite(p, TRUE);
                   if (pg == NULL) continue;
                   char nm[64]; nm[0] = 0;
@@ -2411,6 +2431,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE void em_set_mouse_mode(int absolute_mode_code) {
    };
    printf("[tt] mousemode: code=%d -> tt_mouse_mode=%d\n", absolute_mode_code, (int)tt_mouse_mode);
    fflush(stdout);
+}
+
+// Is the programmer sitting at the floor (as opposed to walking the street or flying)?
+// The web front end asks so it can give Escape the right meaning in full screen: on the floor
+// Escape stands you up; walking or flying it leaves full screen and shows the options.
+extern "C" EMSCRIPTEN_KEEPALIVE int em_on_floor() {
+   return(tt_programmer != NULL && tt_programmer->kind_of() == PROGRAMMER_AT_FLOOR);
 }
 #endif
 
