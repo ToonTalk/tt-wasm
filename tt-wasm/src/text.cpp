@@ -1471,11 +1471,22 @@ void Text::good_size(city_coordinate &good_width, city_coordinate &good_height, 
 	// 8/3 and 4/3 in the following since set_font now uses character size not cell size (110102)
 //	if (need_wide_characters()) {
 	// made  8/3 (was 4/3) on 220102 
+#ifdef __EMSCRIPTEN__
+	// The v>=72 "much narrower" good_width (a single talk-balloon char width) looks wrong in the
+	// WASM port: a fresh text pad comes out a tall thin sliver and a typed word stays vertical
+	// (Ken's sentence-maker screenshot), because our GDI text metrics fill the narrow cell rather
+	// than drawing a proportional glyph inside it the way real Windows does. The pre-72 width
+	// (8/3 of a char) restores a normal pad aspect here. Confirmed visually: a free pad typed
+	// "Nouns" now reads horizontally like other pads. (Only the fresh-pad SEED — constrained
+	// notebook-page labels take a different path and are a separate, smaller issue.)
+	good_width = (8*default_talk_balloon_character_width())/3;
+#else
 	if (tt_log_version_number >= 72) {
 		good_width = default_talk_balloon_character_width(); // new on 210205 to look better by being much narrower
 	} else {
 		good_width = (8*default_talk_balloon_character_width())/3; // not sure why this looks better (new on 170102)
 	};
+#endif
 //	} else {
 //		good_width = (8*default_talk_balloon_character_width())/3;
 //	};
