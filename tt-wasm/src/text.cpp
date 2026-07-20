@@ -2080,9 +2080,23 @@ void Text::update_size_internal(TTRegion *region, city_coordinate adjusted_width
 ////					adjusted_text_height += 2*edge_size; // new version on 160102
 //				};
 //			};
-	if (old_adjusted_text_width != adjusted_text_width) { // || old_adjusted_text_height != adjusted_text_height) { 
+#ifdef __EMSCRIPTEN__
+	{ // text-pad geometry debugging: why do pads render tall+narrow? (Ken 2026-07-20)
+		static int tg_log = 0;
+		if (tg_log < 40 && text_length > 0 && text_length < 40) { tg_log++;
+			char t[48]; int n = (text_length < 40) ? text_length : 40;
+			for (int k = 0; k < n; k++) { wide_character c = wide_text ? wide_text[k] : 0; t[k] = (c >= 32 && c < 127) ? (char)c : '.'; }
+			t[n] = 0;
+			printf("[tt] padsize: '%s' len=%d lines=%d cw=%ld ch=%ld -> W=%ld H=%ld (textW=%ld textH=%ld)\n",
+			       t, (int)text_length, (int)number_of_lines, (long)character_width, (long)character_height,
+			       (long)adjusted_width, (long)adjusted_height, (long)adjusted_text_width, (long)adjusted_text_height);
+			fflush(stdout);
+		}
+	}
+#endif
+	if (old_adjusted_text_width != adjusted_text_width) { // || old_adjusted_text_height != adjusted_text_height) {
 //		if (leader == NULL && !held()) { // commented out on 121202 since causes pads to move on the floor if robots on back are changing number of characters
-//			move_by((width-adjusted_width)/2,0); 
+//			move_by((width-adjusted_width)/2,0);
 ////					if (adjusted_width < width) { // shrinking -- new on 170102 -- commented out conditional on 220102 since needs to happen regardless now
 //				// so since size is being changed while displaying the dirty region code gets confused so flush it
 //				tt_screen->invalidate_cache();

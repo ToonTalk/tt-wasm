@@ -48,6 +48,9 @@
 #if !defined(__TT_ROBOT_H)
 #include "robot.h"
 #endif
+#ifdef __EMSCRIPTEN__
+#include "text.h"   // ?textpad=1 dev hook types into a Text pad
+#endif
 #if !defined(__TT_THOUGHT_H)
 #include "thought.h"
 #endif
@@ -2273,6 +2276,30 @@ void Programmer::em_enter_bootstrap_house() {
       printf("[tt] wand: copier on floor at (%ld,%ld) w=%ld h=%ld\n",
              (long)wand->current_llx(), (long)wand->current_lly(),
              (long)wand->current_width(), (long)wand->current_height()); fflush(stdout);
+   };
+   // Dev repro hook (?textpad=1): a fresh text pad on the floor typed one char at a time,
+   // mirroring what a robot does (MoveTo TextPadStack; Grasp; TypeTo InHand x N). Ken saw
+   // robot-typed pads render tall+narrow; this reproduces the growth path directly.
+   if (EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; })) {
+      Text *pad = new Text();
+      pad->set_text("A"); // as the TextPadStack pad starts
+      pad->set_to_good_size(tt_toolbox);   // the real toolbox-stack sizing path
+      floor->add_item(pad, TRUE, TRUE);
+      pad->now_on_floor(floor, NULL);
+      pad->move_to(6*tile_width, 6*tile_height);
+      printf("[tt] textpad: fresh 'A' -> W=%ld H=%ld cw=%ld ch=%ld\n",
+             (long)pad->current_width(), (long)pad->current_height(),
+             (long)pad->return_character_width(), (long)pad->return_character_height()); fflush(stdout);
+      // TypeTo appends without clearing (what the sentence-maker worker does): type "Nouns"
+      // onto the placeholder "A" the way a robot's keystrokes arrive.
+      const char *word = "Nouns";
+      for (const char *c = word; *c; c++) {
+         pad->respond_to_keyboard((unsigned char)*c, FALSE, FALSE, pad, FALSE, pad, FALSE);
+         pad->update_size(TRUE);
+         printf("[tt] textpad: after '%c' -> W=%ld H=%ld cw=%ld ch=%ld\n", *c,
+                (long)pad->current_width(), (long)pad->current_height(),
+                (long)pad->return_character_width(), (long)pad->return_character_height()); fflush(stdout);
+      }
    };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages
    // are infinite stacks). Ken's take-out of an Examples robot trapped, so copy every page item
