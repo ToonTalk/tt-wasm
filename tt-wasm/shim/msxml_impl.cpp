@@ -475,7 +475,19 @@ HRESULT DomDocument::loadXML(BSTR xml, VARIANT_BOOL *ok) {
     err->code = 0;
     size_t n = xml ? SysStringLen(xml) : 0;
     if (n == 0) { if (ok) *ok = VARIANT_FALSE; err->code = 1; return S_OK; }
-    Parser parser(xml, n, this);
+    /* XML 1.0 §2.11 end-of-line handling: translate \r\n and lone \r to \n BEFORE parsing,
+     * exactly as real MSXML does. Without this, text loaded from CDATA kept literal \r\n
+     * while TYPED text canonicalizes Return to \n (text.cpp, 090802) — so dropping a
+     * multi-line text pad on a notebook never prefix-matched its page (Ken's "Box to Text"
+     * pad didn't navigate while a single-word "box" pad did). */
+    wstring norm;
+    norm.reserve(n);
+    for (size_t i = 0; i < n; i++) {
+        wchar_t c = xml[i];
+        if (c == L'\r') { norm += L'\n'; if (i + 1 < n && xml[i + 1] == L'\n') i++; }
+        else norm += c;
+    }
+    Parser parser(norm.data(), norm.size(), this);
     root = parser.parse_document();
     if (root) { if (ok) *ok = VARIANT_TRUE; return S_OK; }
     err->code = 1; if (ok) *ok = VARIANT_FALSE; return S_OK;

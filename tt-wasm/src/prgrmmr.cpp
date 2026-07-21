@@ -2347,8 +2347,9 @@ void Programmer::em_enter_bootstrap_house() {
                // text pad against each page's contents (pad.cpp). Test the names the
                // sentence-maker robot drops.
                {
-                  static const char *names[] = { "Nouns", "Verbs", "Box to Text",
-                                                 "Box\r\nto\r\nText", "Box", "ANouns", 0 };
+                  // "Box\nto\nText" is what a TYPED pad contains (Return -> '\n'); with the
+                  // XML end-of-line normalization in the msxml shim the page's text matches.
+                  static const char *names[] = { "Nouns", "Box\nto\nText", "Box", "ANouns", 0 };
                   for (int n = 0; names[n]; n++) {
                      Text *probe = new Text();
                      probe->set_text((string) names[n]);
