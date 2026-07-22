@@ -235,7 +235,17 @@ static FontPick pick_font(GdiDC *dc) {
     return p;
 }
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
-    if (ch < 32 || ch > 255) { if (ch == 0 || ch == '\r' || ch == '\n') return; ch = '?'; }   /* Latin-1 coverage */
+    if (ch < 32 || ch > 255) {
+        if (ch == 0 || ch == '\r' || ch == '\n') return;
+        /* Ken 2026-07-22: a held long pad rendered as all '?'s — every substitution here means
+         * the caller handed us a bogus code unit (dangling/misread string). Log the raw value
+         * so the next occurrence identifies the call site and pattern. */
+        { static int qm_log = 0;
+          if (qm_log < 40) { qm_log++;
+            printf("[tt] glyph?: ch=0x%x cw=%d chh=%d at(%d,%d)\n", ch, p.cw, p.ch, x, y);
+            fflush(stdout); } }
+        ch = '?';
+    }   /* Latin-1 coverage */
     int i = (int)ch - 32;
     int bw = (p.base == 2) ? TT_FONT32_W : (p.base == 1) ? TT_FONT16_W : TT_FONT8_W;
     int bh = (p.base == 2) ? TT_FONT32_H : (p.base == 1) ? TT_FONT16_H : TT_FONT8_H;

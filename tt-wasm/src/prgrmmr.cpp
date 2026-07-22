@@ -963,6 +963,26 @@ boolean Programmer::react(Screen *screen) {
 		case CITY_WALKING: {
 //			play_sound(RUNNING_SOUND,1,TRUE);
 			stop_sound(FALSE);
+#ifdef __EMSCRIPTEN__
+			// Touching down outside the street grid strands the programmer: the engine
+			// deliberately lets low flight drift far out over the water
+			// (Programmer_City_Landing::react: "you can fly far out over the water this
+			// way"), but the walking camera clamps to the city extent, so a walk-out
+			// there marches straight off-screen — empty terrain, no copter, clicks look
+			// dead (Ken 2026-07-22). Snap such touchdowns to the nearest street lane,
+			// the engine's own placement for out-of-band parking.
+			printf("[tt] walkout: touchdown (%ld,%ld) city=(%ld..%ld,%ld..%ld) neareststreets=(%ld,%ld)\n",
+			       (long)x,(long)y,(long)tt_city->min_x(),(long)tt_city->max_x(),
+			       (long)tt_city->min_y(),(long)tt_city->max_y(),
+			       (long)tt_city->nearest_y_street(x),(long)tt_city->nearest_x_street(y)); fflush(stdout);
+			if (labs(x - tt_city->nearest_y_street(x)) > tt_block_width/2 ||
+			    labs(y - tt_city->nearest_x_street(y)) > tt_block_height/2) {
+				printf("[tt] walkout: touchdown (%ld,%ld) outside the street grid — snapping\n",
+				       (long)x,(long)y); fflush(stdout);
+				tt_city->nearest_lane(x,y,NORTH);
+				pointer_to_appearance()->move_to(x,y);
+			};
+#endif
 			empty_helicopter = pointer_to_appearance();
          empty_helicopter->set_priority_fixed(FALSE);
 			empty_helicopter->set_parameter(HELICOPTER_EMPTY);
@@ -979,6 +999,15 @@ boolean Programmer::react(Screen *screen) {
 			empty_helicopter_y = y;
 		   tt_city->add_extra(empty_helicopter,x,y);
 			tt_screen->add(empty_helicopter);
+#ifdef __EMSCRIPTEN__
+			{ city_coordinate px2, py2;
+			  pointer_to_appearance()->lower_left_corner(px2, py2);
+			  TTRegion *vr = tt_screen->viewing_region();
+			  printf("[tt] walkout: person=(%ld,%ld) copter=(%ld,%ld) view=(%ld..%ld,%ld..%ld) person_px=(%ld,%ld)\n",
+			         (long)px2,(long)py2,(long)x,(long)y,
+			         (long)vr->min_x,(long)vr->max_x,(long)vr->min_y,(long)vr->max_y,
+			         (long)tt_screen->screen_x(px2),(long)tt_screen->screen_y(py2)); fflush(stdout); }
+#endif
 //			empty_helicopter->set_priority_function_of_lly(TRUE);
 //			empty_helicopter_screen = screen;
 /*
@@ -2304,12 +2333,24 @@ void Programmer::em_enter_bootstrap_house() {
         printf("[tt] textpad: after BACKSPACE -> len=%ld W=%ld H=%ld\n",
                tl0, (long)pad->current_width(), (long)pad->current_height()); fflush(stdout); }
       const char *word = "Nouns";
+      // ?textpad=1&padlong=1 — Ken 2026-07-22: a LONG held pad turned into all '?'s while
+      // the hand moved. Type a long single-line text and pick the pad up so the harness
+      // can wiggle the mouse (hand+pad follow in absolute mode) and dump the framebuffer.
+      boolean pad_long = EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; }) != 0;
+      if (pad_long) word = "the quick brown fox jumps";
       for (const char *c = word; *c; c++) {
          pad->respond_to_keyboard((unsigned char)*c, FALSE, FALSE, pad, FALSE, pad, FALSE);
          pad->update_size(TRUE);
-         printf("[tt] textpad: after '%c' -> W=%ld H=%ld cw=%ld ch=%ld\n", *c,
+         if (!pad_long) printf("[tt] textpad: after '%c' -> W=%ld H=%ld cw=%ld ch=%ld\n", *c,
                 (long)pad->current_width(), (long)pad->current_height(),
                 (long)pad->return_character_width(), (long)pad->return_character_height()); fflush(stdout);
+      }
+      if (pad_long) {
+         Programmer_At_Floor *paf2 = (Programmer_At_Floor *) state;
+         boolean picked2 = paf2->pick_up(pad);
+         string lt; long ltl = 0; pad->current_text(lt, ltl);
+         printf("[tt] textpad: long pad picked=%d len=%ld W=%ld H=%ld\n", (int)picked2,
+                ltl, (long)pad->current_width(), (long)pad->current_height()); fflush(stdout);
       }
    };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages

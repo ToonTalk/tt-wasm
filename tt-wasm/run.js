@@ -5,6 +5,9 @@ if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=1" };
 // TT_DEMO=<name>: replay a recorded .dmo demo (build/demos/<name>.dmo), same path as ?demo= in the browser
 if (process.env.TT_DEMO) globalThis.location = { search: "?demo=" + process.env.TT_DEMO };
 if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrobots=1" + (process.env.TT_ROBOTPAGE ? "&robotpage=" + process.env.TT_ROBOTPAGE : "") + (process.env.TT_SUBPAGE ? "&subpage=" + process.env.TT_SUBPAGE : "") + (process.env.TT_RUNROBOT ? "&runrobot=1" : "") };
+// TT_PADLONG=1: repro for Ken's held-long-pad '?' corruption — long typed pad picked into
+// the hand, then the mouse wiggles so the held pad re-renders while moving
+if (process.env.TT_PADLONG) globalThis.location = { search: "?floor=1&textpad=1&padlong=1" };
 // dump the engine's error file at exit so tt_error_file() complaints are visible
 // (TT_dumpErr is installed by shim/pre.js, which runs inside the module scope where FS lives)
 process.on('exit', function () {
@@ -105,6 +108,21 @@ if (process.env.TT_TRACKRED) setTimeout(function () {
     process.exit(0);
   }, 55000);
 }, 4000);
+// Touchdown detector for TT_LANDSEA: the engine's LEAVE_HELICOPTER trace goes through
+// console.log in node; flag it so the harness releases the 'd' key immediately.
+{
+  const origLog = console.log;
+  console.log = function () {
+    try {
+      const s = arguments[0];
+      if (typeof s === 'string' && s.indexOf('LEAVE_HELICOPTER') >= 0 && !globalThis.TT_landed) {
+        globalThis.TT_landed = true;
+        origLog.call(console, '[harness] touchdown detected — releasing d');
+      }
+    } catch (e) {}
+    return origLog.apply(console, arguments);
+  };
+}
 let t0 = Date.now();
 let frames = 0;
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
@@ -113,6 +131,53 @@ globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
   // Headless auto-descend: after boot, descend until the helicopter lands and hands over to
   // walking. TT_AUTODESCEND=1 holds the LEFT BUTTON (the primary control); TT_AUTODESCEND=d
   // holds the 'd' key (the DOWN_IF_IN_HELICOPTER accelerator) — both must land.
+  // TT_PADLONG wiggle: after the pad is in hand, sweep the cursor so the hand carries the
+  // pad around (absolute mode tracks the cursor each frame)
+  if (process.env.TT_PADLONG && frames >= 200 && frames < 1400) {
+    var ang = (frames - 200) * 0.05;
+    globalThis.TT_mouse_x = Math.round(400 + 250 * Math.cos(ang));
+    globalThis.TT_mouse_y = Math.round(300 + 180 * Math.sin(ang));
+    if (frames === 200) console.log('[harness] wiggling held pad');
+  }
+  // TT_FLYOUT=1: repro for Ken's "ended up over water, no city, couldn't fly": tap-to-fly
+  // east repeatedly until far past the city edge, keep tapping, watch fnav + the frame
+  if (process.env.TT_FLYOUT && frames >= 300 && frames < 2400) {
+    globalThis.TT_msgq = globalThis.TT_msgq || [];
+    if ((frames % 90) === 0) {
+      globalThis.TT_mouse_x = 780; globalThis.TT_mouse_y = 300;
+      globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0});
+      if (frames === 300) console.log('[harness] tapping east repeatedly');
+    }
+    if ((frames % 90) === 8) globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0});
+  }
+  // TT_LANDSEA=1: after the eastward taps, hold 'd' until touchdown — does landing over the
+  // edge water strand the programmer (Ken's "couldn't fly anywhere, helicopter not visible")?
+  // Stop the instant LEAVE_HELICOPTER appears: on foot 'd' hits a DIFFERENT accelerator
+  // (teleports to the desk) and poisons the repro. Touchdown is detected via the console.log
+  // intercept installed below (TT_landed).
+  if (process.env.TT_LANDSEA && frames >= 2400 && !globalThis.TT_landed) {
+    globalThis.TT_msgq = globalThis.TT_msgq || [];
+    if ((frames % 2) === 0 && globalThis.TT_msgq.length < 4)
+      globalThis.TT_msgq.push({ message: 0x0102, wParam: 100, lParam: 0 }); // WM_CHAR 'd' autorepeat
+    if (frames === 2400) console.log('[harness] holding d — descending to land');
+  }
+  // TT_GRABNEST=<x>,<y>: in the sentence-demo run, walk to the nest, grab the delivered
+  // sentence pad off it, then carry it around (repro for Ken's '?' pad)
+  if (process.env.TT_GRABNEST) {
+    var gxy = process.env.TT_GRABNEST.split(','); var gx = parseInt(gxy[0]) || 430, gy = parseInt(gxy[1]) || 330;
+    globalThis.TT_msgq = globalThis.TT_msgq || [];
+    if (frames === 2200) { globalThis.TT_mouse_x = gx; globalThis.TT_mouse_y = gy; console.log('[harness] moving to nest'); }
+    if (frames === 2300) { globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0}); }
+    if (frames === 2310) { globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0}); console.log('[harness] grab click 1'); }
+    if (frames === 2500) { globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0}); }
+    if (frames === 2510) { globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0}); console.log('[harness] grab click 2'); }
+    if (frames >= 2700 && frames < 3600) {
+      var ang2 = (frames - 2700) * 0.04;
+      globalThis.TT_mouse_x = Math.round(400 + 230 * Math.cos(ang2));
+      globalThis.TT_mouse_y = Math.round(300 + 170 * Math.sin(ang2));
+      if (frames === 2700) console.log('[harness] wiggling grabbed sentence');
+    }
+  }
   if (process.env.TT_AUTODESCEND && frames >= 150 && frames < 1400) {
     globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
     globalThis.TT_msgq = globalThis.TT_msgq || [];
