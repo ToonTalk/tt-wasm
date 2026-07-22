@@ -3506,6 +3506,16 @@ void Nest::about_to_put_stack_back() { // new on 170703
 };
 
 void Nest::accept_contents(boolean by_bird, Sprite *item, int retries) {
+#ifdef __EMSCRIPTEN__
+	{ static int ac_log = 0;
+	  int k = item ? (int)item->kind_of() : -1;
+	  // always log TEXT deliveries (the sentences); rate-limit the box traffic
+	  if (ac_log < 400 || k == 14) { ac_log++;
+		printf("[tt] nestacc: nest=%p item=%p kind=%d bybird=%d floor=%p f=%ld\n",
+			(void*)this,(void*)item,k,(int)by_bird,
+			(void*)floor,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 //#if TT_DEBUG_ON
 //	if (item != NULL && !item->selectable()) {
 //		debug_this();
@@ -5231,6 +5241,14 @@ Sprite *Bird::selected(SelectionReason reason, Sprite *by) {
 Sprite *Bird::released(Sprite *by, boolean top_level, SpecialDrop special_drop) {
 	// do this first to update priority etc.
 	Sprite *released_item = Sprite::released(by,top_level,special_drop);
+#ifdef __EMSCRIPTEN__
+	{ static int rel_log = 0;
+	  if (rel_log < 40) { rel_log++;
+		printf("[tt] birdrel: this=%p nest=%p prim=%d leader=%p lkind=%d f=%ld\n",
+			(void*)this,(void*)nest,(int)primitive(),(void*)leader,
+			leader?(int)leader->kind_of():-1,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (nest == NULL && !primitive() && (leader == NULL || leader->kind_of() != COPIER)) {
 		// last condition new on 160304 in case copying bird w/o nest with wand -- since the wand assumes the attached doesn't go away here
 		// release should not start this since bird will end up
@@ -5325,6 +5343,13 @@ Sprite *Bird::used(Sprite *, Sprite *by,
 
 void Bird::build_nest(Sprite *by) {
 	// create_nest() has already been called
+#ifdef __EMSCRIPTEN__
+	{ static int bn_log = 0;
+	  if (bn_log < 40) { bn_log++;
+		printf("[tt] birdnest: build this=%p leader=%p floor=%p dur=%ld f=%ld\n",
+			(void*)this,(void*)leader,(void*)floor,(long)default_duration(),(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 //	city_coordinate new_height;
 //	if (saved_height == 0) {
 //		new_height = 3*height/2;
@@ -5456,6 +5481,13 @@ boolean Bird::create_nest(Sprite *by) {
 void Bird::show_nest_and_return() {
 	set_parameter(BIRD_MAKE_NEST);
 	set_selectable(FALSE);
+#ifdef __EMSCRIPTEN__
+	{ static int sn_log = 0;
+	  if (sn_log < 40) { sn_log++;
+		printf("[tt] birdnest: show this=%p showing=%d f=%ld\n",
+			(void*)this,(int)showing_on_a_screen(),(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (showing_on_a_screen()) {
 		set_cycle_stopped_callback(NEST_IS_MADE_CALLBACK);
 	} else { // new on 080799
@@ -5484,6 +5516,13 @@ void Bird::set_inside_vacuum(boolean new_flag, boolean recur) { // new on 030803
 };
 
 void Bird::nest_is_made() {
+#ifdef __EMSCRIPTEN__
+	{ static int nm_log = 0;
+	  if (nm_log < 40) { nm_log++;
+		printf("[tt] birdnest: made this=%p nest=%p floor=%p f=%ld\n",
+			(void*)this,(void*)nest,(void*)floor,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (floor == NULL) return; // added 121199 to be more robust
 	floor->add_item(nest);
 //	nest->move_to(llx+width/2,lly);
@@ -5745,6 +5784,21 @@ boolean Bird::receive_item(Sprite *item, Sprite *who_by, millisecond duration, S
 #endif
       };
    };
+#ifdef __EMSCRIPTEN__
+	{ static int bl_log = 0;
+	  if (bl_log < 200) { bl_log++;
+		int n = 0; Sprites *r2 = nests;
+		while (r2 != NULL && n < 12) { n++; r2 = r2->rest(); }
+		printf("[tt] birdcast: bird=%p mynest=%p nests_n=%d", (void*)this, (void*)nest, n);
+		r2 = nests; int i2 = 0;
+		while (r2 != NULL && i2 < 4) {
+			Sprite *nn = r2->first();
+			printf(" [%d]=%p bg=%p", i2, (void*)nn, nn?(void*)nn->pointer_to_background():NULL);
+			i2++; r2 = r2->rest();
+		}
+		printf(" f=%ld\n", (long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (nests == NULL) {
 		// commented out the following on 250399 since it was a bad policy
 		// why should a robot stop just because a nest has been vacuum - it should be like a "sink"
@@ -6340,6 +6394,14 @@ void Bird::just_fly_to_nest(millisecond duration) {
       };
 	};
 	boolean same_floor = (nests_floor == floor);
+#ifdef __EMSCRIPTEN__
+	{ static int jf_log = 0;
+	  if (jf_log < 60) { jf_log++;
+		printf("[tt] birdjfn: this=%p dur=%ld floor=%p nestsfloor=%p same=%d status=%d item=%p f=%ld\n",
+			(void*)this,(long)duration,(void*)floor,(void*)nests_floor,(int)same_floor,
+			(int)delivery_status,(void*)item_to_deliver,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	Background *true_floor = floor;
 	if (!same_floor && duration == 0) { // maybe I'm on the flipside of a picture
 		// why duration == 0 ??
@@ -6444,6 +6506,13 @@ void Bird::shrink_to_tiny() {
 };
 
 void Bird::set_down_message() {
+#ifdef __EMSCRIPTEN__
+	{ static int sd_log = 0;
+	  if (sd_log < 40) { sd_log++;
+		printf("[tt] birdsdm: this=%p item=%p floor=%p f=%ld\n",
+			(void*)this,(void*)item_to_deliver,(void*)floor,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
   // set down message and then fly back to nest and remove contents
   if (item_to_deliver != NULL && item_to_deliver->pointer_to_leader() == this) {
      remove_follower(item_to_deliver);
@@ -6939,6 +7008,14 @@ void Bird::deliver_to_another_house() { // without flying inside
 	Background *new_floor = pointer_to_nests_background();
    millisecond duration = 0;
    if (new_floor != NULL) duration = new_floor->default_duration();
+#ifdef __EMSCRIPTEN__
+	{ static int dh_log = 0;
+	  if (dh_log < 60) { dh_log++;
+		printf("[tt] birddel: house this=%p nest=%p newfloor=%p dur=%ld out=%d status=%d item=%p f=%ld\n",
+			(void*)this,(void*)nest,(void*)new_floor,(long)duration,(int)flying_outside(),
+			(int)delivery_status,(void*)item_to_deliver,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
    if (flying_outside()) {
 #if TT_DEBUG_ON
       if (floor != tt_city && floor != NULL && floor->pointer_to_picture() == NULL) { 
@@ -7215,6 +7292,14 @@ void Bird::returned_to_house(boolean instantly) {
 };
 
 void Bird::really_go_back(boolean instantly) {
+#ifdef __EMSCRIPTEN__
+	{ static int gb_log = 0;
+	  if (gb_log < 40) { gb_log++;
+		printf("[tt] birdgo: this=%p inst=%d rc=%p rf=%p floor=%p nohome=%d f=%ld\n",
+			(void*)this,(int)instantly,(void*)return_cubby,(void*)return_floor,
+			(void*)floor,(int)no_home_to_return_to,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	millisecond duration;
    if (instantly) {
       duration = 0;
@@ -7366,6 +7451,13 @@ void Bird::show_anticipation() {
 void Bird::return_to_cubby() {
 //   tt_error_file() << "Return to cubby " << this << " frame=" << tt_frame_number << endl;
 //	release_bad_message(); // FALSE); // moved to the appropriate branches below on 210104
+#ifdef __EMSCRIPTEN__
+	{ static int rtc_log = 0;
+	  if (rtc_log < 40) { rtc_log++;
+		printf("[tt] birdrtc: this=%p path=%p rc=%p f=%ld\n",
+			(void*)this,(void*)return_path,(void*)return_cubby,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (return_path == NULL) { // added for robustness on 110203 - not clear how it happens
 		action_aborted();
 		release_bad_message(); // copied here on 210104
@@ -7390,6 +7482,14 @@ void Bird::return_to_cubby() {
 		return;
 	};
 	Sprite *home = embedded_cubby->component(last_index); // removed (cubby_index) coerecion on 070203
+#ifdef __EMSCRIPTEN__
+	{ static int rh_log = 0;
+	  if (rh_log < 40) { rh_log++;
+		printf("[tt] birdrtc: home=%p idx=%ld cubby=%p suck=%d f=%ld\n",
+			(void*)home,(long)last_index,(void*)embedded_cubby,
+			(int)embedded_cubby->suck_up_in_progress(),(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (home == NULL && // still empty
        !embedded_cubby->suck_up_in_progress()) {
       remove_from_floor(FALSE,TRUE,FALSE);

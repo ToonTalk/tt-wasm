@@ -464,6 +464,11 @@ void Floor::initial_contents(Robot *robot, Cubby *cubby) {
 
 void Floor::house_built() {
 	cubby_is_not_busy();
+#ifdef __EMSCRIPTEN__
+	{ static int fb_log = 0; if (fb_log < 30) { fb_log++;
+		printf("[tt] house: floor_built robot=%p fully_defined=%d\n", (void*)initial_robot,
+		       (int)(initial_robot ? initial_robot->fully_defined() : -1)); fflush(stdout); } }
+#endif
 	if (initial_robot != NULL && initial_robot->fully_defined()) {
 		// all this delay stuff not so important now -- is it?
 		// problem is to approximate fairness between on screen

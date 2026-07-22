@@ -1498,7 +1498,17 @@ boolean one_tt_cycle() {
 #if TT_DEBUG_ON
 	add_to_log_if_interesting_error();
 #endif
-	if (tt_running_robots != NULL && !tt_city->stopped() && (tt_frame_number > tt_titles_ended_on_frame 
+#ifdef __EMSCRIPTEN__
+	{ // sentence-stream debugging: is the running-robots list consumed? (Ken 2026-07-22)
+		static int rr_log = 0;
+		if (tt_running_robots != NULL && rr_log < 20) { rr_log++;
+			printf("[tt] runlist: n=%d stopped=%d frame=%ld titles_ended=%ld\n",
+			       (int)tt_running_robots->length(), (int)tt_city->stopped(),
+			       (long)tt_frame_number, (long)tt_titles_ended_on_frame); fflush(stdout);
+		}
+	}
+#endif
+	if (tt_running_robots != NULL && !tt_city->stopped() && (tt_frame_number > tt_titles_ended_on_frame
 		 || (tt_frame_number == tt_titles_ended_on_frame && (tt_log_version_number < 51 || time_travel_enabled())))) {
 		// on 161004 experimented with changing (tt_log_version_number < 51 || time_travel_enabled()) 
 		// to tt_log_version_number < 51 but

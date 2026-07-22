@@ -50,6 +50,7 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #include "text.h"   // ?textpad=1 dev hook types into a Text pad
+#include "truck.h"  // dev hook nudges a page-copied truck to drive (Demo #2 repro)
 #endif
 #if !defined(__TT_THOUGHT_H)
 #include "thought.h"
@@ -2378,6 +2379,17 @@ void Programmer::em_enter_bootstrap_house() {
                Programmer_At_Floor *paf = (Programmer_At_Floor *) state;
                boolean picked = paf->pick_up(item);
                printf("[tt] copyrobots: pick_up returned %d\n", (int)picked); fflush(stdout);
+               // The real flow takes items from a notebook standing open on the floor, so
+               // the in-hand item and its followers carry the room's floor pointer. This
+               // synthetic pick_up starts from a closed notebook -> floor==NULL all the way
+               // down, which makes a nestless bird's hatch (Bird::released -> build_nest ->
+               // nest_is_made) die instantly at release time (default_duration()==0 runs the
+               // whole chain synchronously and nest_is_made early-returns on floor==NULL,
+               // leaving the bird in limbo and the cargo hole empty forever). Mirror the
+               // real in-hand state so release behaves as it does for a user drop.
+               if (paf->pointer_to_tool_in_hand() != NULL) {
+                  paf->pointer_to_tool_in_hand()->set_background(floor, TRUE, FALSE);
+               }
                if (runit && paf->pointer_to_tool_in_hand() != NULL
                          && paf->pointer_to_tool_in_hand()->kind_of() == ROBOT) {
                   // full run ceremony: drop the robot, copy its thought-bubble box,
@@ -2406,8 +2418,20 @@ void Programmer::em_enter_bootstrap_house() {
                } else if (runit && paf->pointer_to_tool_in_hand() != NULL) {
                   // non-robot page item (e.g. page 24's Pong game picture): set it down on
                   // the open floor so its rendering can be inspected
+                  Sprite *dropped = paf->pointer_to_tool_in_hand();
                   paf->release_object(FALSE);
-                  printf("[tt] copyrobots: non-robot item dropped on floor\n"); fflush(stdout);
+                  // A hand-dropped item is live; a page copy can come out inactive, and an
+                  // inactive loaded TRUCK spins forever in drive_away_and_build's !active()
+                  // do_after loop without ever driving. Activate like a real drop does.
+                  dropped->set_active(TRUE);
+                  printf("[tt] copyrobots: non-robot item dropped on floor (kind=%d active=%d)\n",
+                         (int)dropped->kind_of(), (int)dropped->active()); fflush(stdout);
+                  if (dropped->kind_of() == TRUCK) {
+                     // During this synthetic release, now_on_floor's drive_away ran BEFORE the
+                     // base class assigned the floor member and gave up (floor==NULL). Retry
+                     // now that the release has completed and the truck really is on the floor.
+                     ((Truck_Inside *) dropped)->drive_away_and_build();
+                  }
                } else if (!runit) {
                   // crash-regression mode: force the auto-save that trapped for Ken
                   printf("[tt] copyrobots: dumping Examples notebook...\n"); fflush(stdout);

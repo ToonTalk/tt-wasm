@@ -139,6 +139,16 @@ House::House(city_coordinate center_x, city_coordinate center_y,
 //   decoration_from_above(NULL),
 //   decoration_from_side(NULL) {
 	house_counter++;
+#ifdef __EMSCRIPTEN__
+	{ // sentence-stream debugging: does a truck-built house finish building? (Ken 2026-07-22)
+		static int hb_log = 0;
+		if (hb_log < 30) { hb_log++;
+			printf("[tt] house: ctor instantly=%d inside=%d visible=%d\n", (int)instantly,
+			       (int)tt_screen->inside_a_house(),
+			       (int)tt_screen->visible_region(min_x,max_x,min_y,max_y)); fflush(stdout);
+		}
+	}
+#endif
 	if (instantly || tt_screen->inside_a_house() || !tt_screen->visible_region(min_x,max_x,min_y,max_y)) {
 		// houses are built instantly if I'm inside or looking at a different
       // part of the city

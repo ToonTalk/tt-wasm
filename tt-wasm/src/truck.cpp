@@ -1284,6 +1284,15 @@ void Truck_Inside::remove_item(Sprite *item, SelectionReason reason, boolean add
 };
 
 void Truck_Inside::now_on_floor(Background *floor, Sprite *by) {
+#ifdef __EMSCRIPTEN__
+	{ static int nof_log = 0;
+	  if (nof_log < 30) { nof_log++;
+		printf("[tt] truck: now_on_floor this=%p cubby=%p holes=%d c0=%p robot=%p\n",
+			(void*)this,(void*)cubby,
+			cubby?(int)cubby->current_number_of_holes():-1,
+			cubby?(void*)cubby->component(0):NULL,(void*)robot);
+		fflush(stdout); } }
+#endif
    if (cubby != NULL) {
       cubby->released(by); // not quite true but will hatch birds, etc.
 //#if TT_DEBUG_ON
@@ -1308,6 +1317,16 @@ void Truck_Inside::now_on_floor(Background *floor, Sprite *by) {
 };
 
 void Truck_Inside::drive_away_and_build() {
+#ifdef __EMSCRIPTEN__
+	{ // sentence-stream debugging: which gate stops a loaded truck? (Ken 2026-07-22)
+		static int tk_log = 0;
+		if (tk_log < 60) { tk_log++;
+			printf("[tt] truck: drive_away this=%p cubby=%p robot=%p held=%d floor=%p busy=%d active=%d stopped=%d\n",
+			       (void*)this, (void*)cubby, (void*)robot, (int)held(), (void*)floor,
+			       (int)(cubby ? cubby->is_busy() : -1), (int)active(), (int)tt_city->stopped()); fflush(stdout);
+		}
+	}
+#endif
 	if (cubby == NULL || robot == NULL || held() || floor == NULL) {
       // e.g., programmer took it out or has grabbed whole truck
 //		completed(saved_action_status); // shouldn't it abort?
@@ -1359,6 +1378,16 @@ void Truck_Inside::drive_away_and_build() {
 };
 
 void Truck_Inside::replace_truck_and_build() {
+#ifdef __EMSCRIPTEN__
+	{ // sentence-stream debugging: did the drive animation complete and which build path runs?
+		static int rb_log = 0;
+		if (rb_log < 40) { rb_log++;
+			printf("[tt] truck: replace+build this=%p cubby=%p robot=%p inside_house=%d finishing=%d\n",
+			       (void*)this, (void*)cubby, (void*)robot,
+			       (int)tt_programmer->pointer_to_appearance()->inside_a_house(), (int)finishing_instantly()); fflush(stdout);
+		}
+	}
+#endif
    if (cubby == NULL || robot == NULL) { // taken out after started
       action_completed();
       return;
@@ -1443,6 +1472,11 @@ void Truck_Inside::replace_truck_and_build() {
 			return;
 		};
       House *new_house = tt_city->new_house_nearest(avenue_number,street_number,new_house_style);
+#ifdef __EMSCRIPTEN__
+		{ static int nh_log = 0; if (nh_log < 40) { nh_log++;
+			printf("[tt] truck: new_house=%p at ave=%d st=%d -> %s\n", (void*)new_house,
+			       (int)avenue_number, (int)street_number, new_house ? "fill_house" : "CITY FULL / none"); fflush(stdout); } }
+#endif
       if (new_house != NULL) {
          fill_house(new_house);
 			destroy(); // new on 161204 to fix a truck leak -- e.g. exploding houses

@@ -21,6 +21,34 @@ if (process.env.TT_COPYROBOTS) setTimeout(function(){
         globalThis.TT_msgq.push({message:0x0201,wParam:0,lParam:0});
         setTimeout(function(){ globalThis.TT_msgq.push({message:0x0202,wParam:0,lParam:0}); console.log('[harness] drop click sent'); }, 1500);
   } catch(e) {} }, 30000);
+// TT_DUMPFB=<path.pgm>: at exit, write the last presented frame as binary PGM (palette-index
+// grayscale is useless — expand through the palette to a P6 PPM instead for real colors)
+if (process.env.TT_DUMPFB) setTimeout(function () {
+  var orig2 = globalThis.TT_present;
+  globalThis.TT_present = function (ptr, w, h, palPtr) {
+    orig2(ptr, w, h, palPtr);
+    try {
+      var HEAPU8 = globalThis.TT_HEAPU8 ? globalThis.TT_HEAPU8() : null;
+      if (!HEAPU8) return;
+      globalThis.TT_lastfb = { pix: HEAPU8.slice(ptr, ptr + w * h), pal: HEAPU8.slice(palPtr, palPtr + 1024), w: w, h: h };
+    } catch (e) {}
+  };
+  process.on('exit', function () {
+    try {
+      var fb = globalThis.TT_lastfb;
+      if (!fb) return;
+      var rgb = Buffer.alloc(fb.w * fb.h * 3);
+      for (var i = 0; i < fb.w * fb.h; i++) {
+        var pi = fb.pix[i] * 4;
+        rgb[i*3] = fb.pal[pi]; rgb[i*3+1] = fb.pal[pi+1]; rgb[i*3+2] = fb.pal[pi+2];
+      }
+      var fs2 = require('fs');
+      fs2.writeFileSync(process.env.TT_DUMPFB,
+        Buffer.concat([Buffer.from('P6\n' + fb.w + ' ' + fb.h + '\n255\n'), rgb]));
+      console.log('[harness] framebuffer dumped to ' + process.env.TT_DUMPFB);
+    } catch (e) { console.log('[harness] fb dump failed: ' + e); }
+  });
+}, 1000);
 // TT_TRACKRED=1: per-present red-body bbox of the copter (frame-accurate, no tab throttling)
 if (process.env.TT_TRACKRED) setTimeout(function () {
   var orig = globalThis.TT_present;

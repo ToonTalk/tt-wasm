@@ -736,6 +736,13 @@ void Cubby::initialize_hole(int hole_index, Sprite *item, boolean geometry_needs
 #endif
 	};
 	// following shouldn't be needed when called by loading XML
+#ifdef __EMSCRIPTEN__
+	{ static int hf_log = 0;
+	  if (hf_log < 60) { hf_log++;
+		printf("[tt] holefill: cubby=%p idx=%d item=%p cell=%p f=%ld\n",
+			(void*)this,hole_index,(void*)item,(void*)&(contents[hole_index]),(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (tt_suspensions != NULL) tt_suspensions->retry(&(contents[hole_index]));
 //	tt_error_file() << "Putting " << item << " in hole " << hole_index
 //					<< " of " << this << " on frame " << tt_frame_number << endl; 

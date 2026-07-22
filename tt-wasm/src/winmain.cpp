@@ -10211,7 +10211,15 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 		printf("[tt] demo: archive pending — signalling titles-end so the segment jump runs\n");
 		fflush(stdout);
 		tt_titles_just_ended = TRUE;
+		tt_titles_ended_on_frame = tt_frame_number;
 	} else if (tt_no_city_was_loaded) {
+		// The web port has no titles sequence, so the "titles are over" frame marker stays at
+		// its max_long initial value — which permanently gates OFF the tt_running_robots
+		// consumer in one_tt_cycle (`tt_frame_number > tt_titles_ended_on_frame`). That list is
+		// how robots delivered to NEW houses start (Floor::house_built), so every truck-built
+		// house sat idle: Ken's sentence-maker demo produced one sentence and the recursive
+		// truck chain never continued. Declare the titles over at boot, as finishing them would.
+		tt_titles_ended_on_frame = tt_frame_number;
 		xml_document *fresh = document_from_string("<Nothing/>");
 		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
 		// Dev shortcut: tt.html?floor=1 boots straight onto the first house's floor (hand +

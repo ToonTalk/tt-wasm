@@ -5753,6 +5753,19 @@ void Robot::really_try_clause() {
       tt_error_file() << endl; 
 	};
 #endif
+#ifdef __EMSCRIPTEN__
+	{ // sentence-stream debugging: why does a fresh house's robot bail? (Ken 2026-07-22)
+		static int rt_log = 0;
+		if (rt_log < 30) { rt_log++;
+			Picture *fp = (floor != NULL) ? floor->pointer_to_picture() : NULL;
+			printf("[tt] rtry: this=%p top=%p stopped=%d susp=%d vac=%d held=%d floor=%p pict=%p bg=%p topbg=%p\n",
+			       (void*)this, (void*)top_cubby, (int)tt_city->stopped(), (int)suspended(),
+			       (int)(top_cubby ? top_cubby->inside_vacuum() : -1), (int)current_held_status(),
+			       (void*)floor, (void*)fp, (void*)pointer_to_background(),
+			       (void*)(top_cubby ? top_cubby->pointer_to_background() : NULL)); fflush(stdout);
+		}
+	}
+#endif
 	if (top_cubby == NULL) {
 		// prior to 090203 this also added to tt_running_robots as below
 		return;
@@ -5913,16 +5926,13 @@ void Robot::really_try_clause() {
 		match_status = MATCH_GOOD;
 	};
 #ifdef __EMSCRIPTEN__
-	{ // Pong debugging: is the Serve robot trying/matching? (Ken 2026-07-19)
+	{ // robot matching trace (Pong 2026-07-19; widened for the sentence stream 2026-07-22)
 		static int rob_log = 0;
-		if (rob_log < 240) {
+		if (rob_log < 3000) { rob_log++;
 			character rn[max_resource_string_length];
 			name(rn);
-			boolean interesting = (strstr(rn,"Serve") != NULL || strstr(rn,"Score") != NULL);
-			if (interesting || match_status == MATCH_GOOD) { rob_log++;
-				printf("[tt] robtry: '%s' match=%d f=%ld\n", rn, (int)match_status, (long)tt_frame_number);
-				fflush(stdout);
-			}
+			printf("[tt] robtry: '%s' match=%d f=%ld\n", rn, (int)match_status, (long)tt_frame_number);
+			fflush(stdout);
 		}
 	}
 #endif
@@ -6064,10 +6074,20 @@ void Robot::really_try_clause() {
      case MATCH_SUSPENDED_ON_TRUCK: // something missing from truck
 		  // prior to 120399 team_leader() was "this" - but since the user can change anything the first of the team makes more sense
 		  // commented out conditional on 140405 since if there isn't enough information then the team should suspend
-//		  if (next_robot == NULL && saved_next_robot == NULL) { 
+//		  if (next_robot == NULL && saved_next_robot == NULL) {
 		  // new on 170703 since the other teammates may not care about this empty hole
 		  {
 			  Robot *unstable_robot = first_team_member_to_fail_for_unstable_reasons();
+#ifdef __EMSCRIPTEN__
+			  { static int sc_log = 0;
+			    if (sc_log < 30) { sc_log++;
+				printf("[tt] suspcase: unstable=%p touched=%d queue=%p inq=%d cell=%p first_in_line=%p\n",
+					(void*)unstable_robot,(int)tt_touched_a_remote_that_can_change_to_match_failure,
+					(void*)tt_queue,
+					(tt_queue!=NULL&&unstable_robot!=NULL)?(int)tt_queue->robot_already_in_queue(unstable_robot):-1,
+					(void*)suspension_cell,(void*)first_in_line);
+				fflush(stdout); } }
+#endif
 			  if (tt_touched_a_remote_that_can_change_to_match_failure && unstable_robot == NULL) {
 				  // new on 291004 since while suspended it may fail (see issue 568)
 				  unstable_robot = this;
@@ -6075,6 +6095,14 @@ void Robot::really_try_clause() {
 			  if (unstable_robot == NULL) { // conditional new on 131200
 				  Robot *the_team_leader = team_leader();
 				  if (tt_suspensions->remove_and_stop_if_different_robot_waiting_on_same_cell(the_team_leader,suspension_cell)) {
+#ifdef __EMSCRIPTEN__
+					  { static int su_log = 0;
+					    if (su_log < 40) { su_log++;
+						printf("[tt] robsusp: robot=%p cell=%p cellval=%p f=%ld\n",
+							(void*)the_team_leader,(void*)suspension_cell,
+							suspension_cell?(void*)*suspension_cell:NULL,(long)tt_frame_number);
+						fflush(stdout); } }
+#endif
 					  tt_suspensions->add(new Suspensions(the_team_leader,suspension_cell));
 					  suspended_on = *suspension_cell; // for giving help
 #if TT_POST3187
