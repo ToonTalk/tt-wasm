@@ -80,24 +80,51 @@
     onRuntimeInitialized: function () { statusEl.textContent = 'engine running — click the picture to begin'; }
   };
   window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+  // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like
+  // "input dead after re-entering full screen" comes with the exact event trail.
+  function ttNote(s) {
+    var l = (window.TT_log = window.TT_log || []);
+    l.push('[tt] ui: ' + s);
+    if (l.length > 3000) l.splice(0, 500);
+  }
+  // Chrome refuses a pointer-lock request made too soon after the user ESCAPED the previous
+  // lock (an anti-abuse latch, ~1.5s). The .catch below sees that rejection and retries once
+  // the latch expires — otherwise re-entering full screen silently comes up WITHOUT the lock
+  // and the mouse doesn't drive the game (Ken: "after returning to full screen it ignored
+  // mouse... actions").
+  function ttRequestLock(c, retried) {
+    var p;
+    try { p = c.requestPointerLock({ unadjustedMovement: false }); } catch (e) { p = null; }
+    if (p && p.catch) {
+      p.then(function () { ttNote('pointer lock OK'); }).catch(function (err) {
+        ttNote('pointer lock REJECTED: ' + err.name + (retried ? ' (retry failed)' : ' — retrying in 1.6s'));
+        if (!retried) setTimeout(function () {
+          if (document.fullscreenElement === c && document.pointerLockElement !== c) ttRequestLock(c, true);
+        }, 1600);
+      });
+    }
+  }
   document.getElementById('fsbtn').addEventListener('click', function () {
     var c = document.getElementById('ttcanvas');
-    if (document.fullscreenElement) { document.exitFullscreen(); }
+    if (document.fullscreenElement) { ttNote('fsbtn: exiting'); document.exitFullscreen(); }
     else if (c.requestFullscreen) {
       // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
       // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
       // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
       // (press-AND-HOLD Esc remains the browser's own exit).
+      ttNote('fsbtn: entering');
       c.requestFullscreen().then(function () {
-        try { c.requestPointerLock(); } catch (e) {}
+        ttRequestLock(c, false);
         if (navigator.keyboard && navigator.keyboard.lock) {
-          navigator.keyboard.lock(['Escape']).catch(function () {});
+          navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
+                                             .catch(function (e) { ttNote('keyboard lock FAILED: ' + e.name); });
         }
-      });
+      }).catch(function (e) { ttNote('requestFullscreen FAILED: ' + e.name); });
     }
     c.focus();   // keys keep flowing to the game either way
   });
   document.addEventListener('fullscreenchange', function () {
+    ttNote('fullscreenchange: ' + (document.fullscreenElement ? 'IN' : 'OUT'));
     document.getElementById('fsbtn').textContent =
       document.fullscreenElement ? 'Exit full screen' : 'Full screen';
     if (!document.fullscreenElement) {
@@ -107,12 +134,14 @@
   });
   document.addEventListener('pointerlockchange', function () {
     var locked = document.pointerLockElement === document.getElementById('ttcanvas');
+    ttNote('pointerlockchange: ' + (locked ? 'LOCKED' : 'unlocked'));
     if (Module && Module._em_set_mouse_mode) {
       // 0 = relative everywhere (original fullscreen), 1 = absolute everywhere (windowed web)
       Module._em_set_mouse_mode(locked ? 0 : 1);
     }
     if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; }
   });
+  document.addEventListener('pointerlockerror', function () { ttNote('pointerlockerror'); });
   // Escape in full screen (Ken's spec = the ORIGINAL behavior): on the floor Escape STANDS
   // YOU UP — the engine handles that itself (At_Floor::react, case VK_ESCAPE -> get_up());
   // walking or flying it leaves full screen, showing the options + Full screen button.
@@ -125,9 +154,11 @@
     if (e.key !== 'Escape' || !document.fullscreenElement) return;
     e.preventDefault();
     var onFloor = (typeof Module !== 'undefined') && Module._em_on_floor && Module._em_on_floor();
+    ttNote('Esc in fullscreen: on_floor=' + (onFloor ? 1 : 0) +
+           (onFloor ? ' -> engine stands up' : ' -> exiting fullscreen'));
     if (onFloor) {
       var c = document.getElementById('ttcanvas');
-      if (document.pointerLockElement !== c) { try { c.requestPointerLock(); } catch (er) {} }
+      if (document.pointerLockElement !== c) ttRequestLock(c, false);
     } else if (document.exitFullscreen) {
       document.exitFullscreen();
     }
