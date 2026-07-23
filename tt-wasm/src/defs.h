@@ -22,7 +22,13 @@ class Picture; // new on 231102
 #if TT_MICROSOFT
 typedef __int64 int64;
 #else
+#ifdef __EMSCRIPTEN__
+// wasm32 'long int' is 32 bits — the engine's int64-based overflow guards (e.g. the
+// long-text clip in Screen::text_out) silently degrade without a true 64-bit type
+typedef long long int64;
+#else
 typedef long int int64; // best I can do??
+#endif
 
 #endif
 

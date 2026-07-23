@@ -1398,12 +1398,19 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 #ifdef __EMSCRIPTEN__
 		if (code == HELIOLND || code == HELIOFLY) {
 			static int oc_log = 0;
-			if (oc_log < 40) { oc_log++;
-				printf("[tt] offcomp: code=%d xo=%ld old=%ld xs=%u cs=%ld gs=%ld dx+=%ld llx=%ld pixw=%ld\n",
-				       (int)code, (long)x_offset, (long)old_x_offset, (unsigned)x_scale,
+			static int oc_hi_log = 0;
+			boolean hi = (current_scale > 1000);
+			if ((!hi && oc_log < 40) || (hi && oc_hi_log < 60)) { if (hi) oc_hi_log++; else oc_log++;
+				int64 pdy = (int64)(y_offset-old_y_offset)*y_scale;
+				if (tt_screen_height > tt_graphics_video_mode_height) {
+					pdy = (pdy*tt_graphics_video_mode_height)/tt_screen_height;
+				};
+				printf("[tt] offcomp: code=%d xo=%ld oldx=%ld yo=%ld oldy=%ld xs=%u ys=%u cs=%ld gs=%ld dy+=%ld lly=%ld idx=%d\n",
+				       (int)code, (long)x_offset, (long)old_x_offset, (long)y_offset, (long)old_y_offset,
+				       (unsigned)x_scale, (unsigned)y_scale,
 				       (long)current_scale, (long)ground_scale,
-				       (long)(((x_offset-old_x_offset)*x_scale)/256), (long)llx,
-				       current_image ? (long)current_image->width_without_scaling() : -1L); fflush(stdout);
+				       (long)(pdy/256), (long)lly,
+				       (int)current_index); fflush(stdout);
 			}
 		}
 #endif
@@ -1415,8 +1422,23 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 		// image change overshot by screen/640, a rotor-locked vibration (Ken: "the helicopter
 		// vibrated as descending"). Compensate with the ungrown scale so the llx adjustment
 		// exactly cancels the art registration difference at any camera zoom.
-		delta_x += shrink_width_from_640x480_screen_size(((x_offset-old_x_offset)*x_scale))/256;
-		delta_y += shrink_height_from_640x480_screen_size(((y_offset-old_y_offset)*y_scale))/256;
+		// 64-bit throughout: at high camera scale the scaled offsets reach millions, and
+		// offset*y_scale*480 overflowed 32 bits inside shrink_height — the compensation came
+		// back with the WRONG SIGN, so each rotor-frame swap ratcheted the copter upward
+		// (Ken 2026-07-22: climbed to the limit, then the helicopter drifted off the top
+		// and the view ended up out over the water).
+		{
+			int64 dx64 = (int64)(x_offset-old_x_offset)*x_scale;
+			int64 dy64 = (int64)(y_offset-old_y_offset)*y_scale;
+			if (tt_screen_width > tt_graphics_video_mode_width) {
+				dx64 = (dx64*tt_graphics_video_mode_width)/tt_screen_width;
+			};
+			if (tt_screen_height > tt_graphics_video_mode_height) {
+				dy64 = (dy64*tt_graphics_video_mode_height)/tt_screen_height;
+			};
+			delta_x += (city_coordinate)(dx64/256);
+			delta_y += (city_coordinate)(dy64/256);
+		}
 #else
 		delta_x += ((x_offset-old_x_offset)*x_scale)/256;
 		delta_y += ((y_offset-old_y_offset)*y_scale)/256;
