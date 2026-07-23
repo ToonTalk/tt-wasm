@@ -355,18 +355,36 @@ UseProfile use_profile;
 void read_use_profile(InputStream *history_file) {
 //  following worked but was compiler dependent due to byte boundaries (14 bytes vs 16)
 //    history_file.read((string) &use_profile, sizeof(use_profile));
+#ifdef __EMSCRIPTEN__
+	 // On-disk format: 32-bit MSVC time_t = 4 bytes; wasm time_t is 8. Reading
+	 // sizeof(time_t) over-consumed 12 bytes here, shifting the whole log/USR preface
+	 // (segment city snapshots then read from a failed stream — demo replay broke).
+	 { long t32;
+	   history_file->read((string) &t32, 4); use_profile.first_use = t32;
+	   history_file->read((string) &t32, 4); use_profile.last_use = t32;
+	   history_file->read((string) &t32, 4); use_profile.seconds_used = t32; }
+#else
     history_file->read((string) &use_profile.first_use, sizeof(time_t));
     history_file->read((string) &use_profile.last_use, sizeof(time_t));
     history_file->read((string) &use_profile.seconds_used, sizeof(time_t));
+#endif
 	 history_file->read((string) &use_profile.use_count, sizeof(short int));
 };
 
 void write_use_profile(output_stream &history_file) {
 //  following worked but was compiler dependent due to byte boundaries (14 bytes vs 16)
 //    history_file.write((char *) &use_profile, sizeof(use_profile));
+#ifdef __EMSCRIPTEN__
+	 // keep recordings byte-compatible with the original 4-byte time_t format
+	 { long t32;
+	   t32 = (long) use_profile.first_use;    history_file.write((string) &t32, 4);
+	   t32 = (long) use_profile.last_use;     history_file.write((string) &t32, 4);
+	   t32 = (long) use_profile.seconds_used; history_file.write((string) &t32, 4); }
+#else
     history_file.write((string) &use_profile.first_use, sizeof(time_t));
     history_file.write((string) &use_profile.last_use, sizeof(time_t));
     history_file.write((string) &use_profile.seconds_used, sizeof(time_t));
+#endif
 	 history_file.write((string) &use_profile.use_count, sizeof(short int));
 };
 

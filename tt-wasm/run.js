@@ -36,21 +36,28 @@ if (process.env.TT_DUMPFB) setTimeout(function () {
       globalThis.TT_lastfb = { pix: HEAPU8.slice(ptr, ptr + w * h), pal: HEAPU8.slice(palPtr, palPtr + 1024), w: w, h: h };
     } catch (e) {}
   };
+  function TT_writefb(path) {
+    var fb = globalThis.TT_lastfb;
+    if (!fb) return;
+    var rgb = Buffer.alloc(fb.w * fb.h * 3);
+    for (var i = 0; i < fb.w * fb.h; i++) {
+      var pi = fb.pix[i] * 4;
+      rgb[i*3] = fb.pal[pi]; rgb[i*3+1] = fb.pal[pi+1]; rgb[i*3+2] = fb.pal[pi+2];
+    }
+    require('fs').writeFileSync(path,
+      Buffer.concat([Buffer.from('P6\n' + fb.w + ' ' + fb.h + '\n255\n'), rgb]));
+    console.log('[harness] framebuffer dumped to ' + path);
+  }
   process.on('exit', function () {
-    try {
-      var fb = globalThis.TT_lastfb;
-      if (!fb) return;
-      var rgb = Buffer.alloc(fb.w * fb.h * 3);
-      for (var i = 0; i < fb.w * fb.h; i++) {
-        var pi = fb.pix[i] * 4;
-        rgb[i*3] = fb.pal[pi]; rgb[i*3+1] = fb.pal[pi+1]; rgb[i*3+2] = fb.pal[pi+2];
-      }
-      var fs2 = require('fs');
-      fs2.writeFileSync(process.env.TT_DUMPFB,
-        Buffer.concat([Buffer.from('P6\n' + fb.w + ' ' + fb.h + '\n255\n'), rgb]));
-      console.log('[harness] framebuffer dumped to ' + process.env.TT_DUMPFB);
-    } catch (e) { console.log('[harness] fb dump failed: ' + e); }
+    try { TT_writefb(process.env.TT_DUMPFB); } catch (e) { console.log('[harness] fb dump failed: ' + e); }
   });
+  // TT_DUMPEVERY=N: additionally write a numbered frame every N seconds (path gets .NNN suffix)
+  if (process.env.TT_DUMPEVERY) {
+    var iv = parseInt(process.env.TT_DUMPEVERY) * 1000, seq = 0;
+    setInterval(function () {
+      try { TT_writefb(process.env.TT_DUMPFB + '.' + ('00' + (++seq)).slice(-3)); } catch (e) {}
+    }, iv);
+  }
 }, 1000);
 // TT_TRACKRED=1: per-present red-body bbox of the copter (frame-accurate, no tab throttling)
 if (process.env.TT_TRACKRED) setTimeout(function () {
