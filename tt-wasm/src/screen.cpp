@@ -2256,7 +2256,12 @@ boolean Screen::text_out(const_string text, int length,
 		// above rewriten on 070202 since the above assumes you are on the floor
 		length -= characters_to_skip;
 		if (text_is_wide) {
-			text += 2*characters_to_skip; 
+			// text is a char* here; advance whole wide characters. The literal 2 assumed
+			// Windows' 2-byte WCHAR — under Emscripten wchar_t is 4 bytes, so 2* advanced
+			// only HALF a character per skip: odd skips landed mid-character and every
+			// code unit read as ch<<16 (rendered as all '?'s — Ken 2026-07-22, long
+			// sentence pad hanging past the left screen edge, flickering with hand moves).
+			text += sizeof(wide_character)*characters_to_skip;
 		} else {
 			text += characters_to_skip;
 		};

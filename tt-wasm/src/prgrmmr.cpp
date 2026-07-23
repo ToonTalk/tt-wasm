@@ -4391,8 +4391,18 @@ ProgrammerStatus Programmer_City_Flying::react(boolean new_user_input,
 			};
 			flush_input_events();
 			appearance->set_scale(scale);
-			scale_changed = TRUE;			
-		} else if (move_down) { 
+			scale_changed = TRUE;
+#ifdef __EMSCRIPTEN__
+			{ static int cl_log = 0;
+			  if (cl_log < 200) { cl_log++;
+				city_coordinate ax3, ay3;
+				appearance->lower_left_corner(ax3, ay3);
+				printf("[tt] climb: scale=%ld app=(%ld,%ld) dxy_in=(%ld,%ld) c=(%ld,%ld) offs=(%ld,%ld) f=%ld\n",
+					(long)scale,(long)ax3,(long)ay3,(long)delta_x,(long)delta_y,
+					(long)center_x,(long)center_y,(long)old_x_offset,(long)old_y_offset,
+					(long)tt_frame_number); fflush(stdout); } }
+#endif
+		} else if (move_down) {
 //			growth = exp(-duration*scale_growth);
 //			scale *= growth;
 			if (duration > 750) duration = 750; // limit change if long duration

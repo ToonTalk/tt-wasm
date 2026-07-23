@@ -139,6 +139,15 @@ globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
     globalThis.TT_mouse_y = Math.round(300 + 180 * Math.sin(ang));
     if (frames === 200) console.log('[harness] wiggling held pad');
   }
+  // TT_CLIMB=1: hold 'u' (climb) well past max scale — Ken: "flew high and when I reached
+  // the limit the helicopter drifted off the top of the screen and the city drifted
+  // upwards too"; watch [tt] climb/fnav for unbounded y growth at pinned scale
+  if (process.env.TT_CLIMB && frames >= 300 && frames < 3000) {
+    globalThis.TT_msgq = globalThis.TT_msgq || [];
+    if ((frames % 2) === 0 && globalThis.TT_msgq.length < 4)
+      globalThis.TT_msgq.push({ message: 0x0102, wParam: 117, lParam: 0 }); // WM_CHAR 'u' autorepeat
+    if (frames === 300) console.log('[harness] holding u — climbing');
+  }
   // TT_FLYOUT=1: repro for Ken's "ended up over water, no city, couldn't fly": tap-to-fly
   // east repeatedly until far past the city edge, keep tapping, watch fnav + the frame
   if (process.env.TT_FLYOUT && frames >= 300 && frames < 2400) {
