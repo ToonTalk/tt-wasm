@@ -2495,6 +2495,15 @@ void Programmer::em_enter_bootstrap_house() {
 // is normally only called on state changes).
 void set_mouse_mode(MouseMode new_mode);   // defined below
 extern "C" EMSCRIPTEN_KEEPALIVE void em_set_mouse_mode(int absolute_mode_code) {
+   if (replaying()) {
+      // .dmo replay interprets the RECORDED cursor stream through the current mouse mode;
+      // the recordings assume the original's default relative mode. The browser's pointer-
+      // lock/fullscreen handlers must not flip the mode mid-replay (it sent the intro's
+      // avatar wandering onto the grass instead of into the house).
+      printf("[tt] mousemode: code=%d ignored — replaying\n", absolute_mode_code);
+      fflush(stdout);
+      return;
+   };
    set_absolute_mouse_mode(absolute_mode_code);
    if (tt_programmer != NULL && tt_programmer->kind_of() == PROGRAMMER_AT_FLOOR) {
       set_mouse_mode(tt_mouse_mode_on_floor);

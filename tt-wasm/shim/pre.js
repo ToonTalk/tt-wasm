@@ -237,7 +237,11 @@ Module['preRun'].push(function () {
     // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
     // which the web can only fake with Pointer Lock — and without the lock the cursor offset
     // acts as a stuck joystick (the helicopter drifted/climbed on its own and could never land).
-    'AbsoluteMouseMode=1',
+    // EXCEPT during .dmo replay: the recordings were made and replayed under the original's
+    // default RELATIVE mode (AbsoluteMouseMode is not a log-recorded option), and replay
+    // interprets the recorded cursor stream through the CURRENT mode — forcing absolute made
+    // the avatar wander and sit on the grass instead of entering the house (Ken 2026-07-24).
+    'AbsoluteMouseMode=' + (globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0 ? '0' : '1'),
     '',
     '[Directories]',
     'MainDir=/toontalk/',
