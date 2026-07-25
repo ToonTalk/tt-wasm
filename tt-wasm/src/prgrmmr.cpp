@@ -2940,13 +2940,19 @@ void Programmer::titles_over() {
 //	if (!replaying() && !time_travel_enabled()) { // new on 300104
 //		tt_current_time = 0; // experiment 310104
 //	} else
-	if (tt_initial_current_time >= 0) { // && !tt_logging && !replaying()) { // new on 131202 -- 
+	if (tt_initial_current_time >= 0) { // && !tt_logging && !replaying()) { // new on 131202 --
 		// !tt_logging && !replaying() new on 280104 to fix a timing bug in non-time travel demos -- not sure this helps...
 		 tt_current_time = tt_initial_current_time;
 		 if (tt_current_log_segment == tt_oldest_log_segment) { // condition new on 200304
 			 tt_current_time_at_beginning_of_first_segment = tt_current_time; // new on 010304
 		 };
 	};
+#ifdef __EMSCRIPTEN__
+	printf("[tt] titlesover: initial=%ld cur_seg=%d oldest_seg=%d now=%ld base=%ld f=%ld\n",
+	       (long)tt_initial_current_time,(int)tt_current_log_segment,(int)tt_oldest_log_segment,
+	       (long)tt_current_time,(long)tt_current_time_at_beginning_of_first_segment,
+	       (long)tt_frame_number); fflush(stdout);
+#endif
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 40803) {
 //		tt_debug_mode = 0; // experiment on 280104

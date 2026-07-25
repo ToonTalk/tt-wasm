@@ -875,6 +875,13 @@ void load_city_from_log() {
 					string full_city_file_name = extract_file_from_archive(city_file_name,tt_log_in_archive);
 					if (full_city_file_name != NULL) {
 						tt_city->load_city(full_city_file_name,TRUE);
+						// NOTE (2026-07-25): do NOT anchor tt_current_time_at_beginning_of_first_segment
+						// here. The .ust cue times are RAW recorded-clock values (the first cue's
+						// 1412 < InitialTime means "fire immediately, over the titles") and both
+						// synchronize_subtitles and reset_next_subtitle_time are self-consistent
+						// only with base 0 — anchoring it desynchronizes the segment resync and
+						// stalls the cue cursor. Retail demos ran with base 0 too (the engine's
+						// two base assignments never fire for these archives).
 #ifdef __EMSCRIPTEN__
 						{ // where are the loaded city's doors? (replay never enters the house — Ken 2026-07-25)
 						  static int hd_log = 0;

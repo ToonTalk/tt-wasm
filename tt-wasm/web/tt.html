@@ -77,7 +77,11 @@
       console.log(t);
     },
     printErr: function (t) { console.warn(t); },
-    onRuntimeInitialized: function () { statusEl.textContent = 'engine running — click the picture to begin'; }
+    onRuntimeInitialized: function () {
+      statusEl.textContent = /[?&]demo=/.test(location.search)
+        ? 'demo playing — click once for sound; after that, a click pauses and resumes'
+        : 'engine running — click the picture to begin';
+    }
   };
   window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
   // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like

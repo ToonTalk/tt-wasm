@@ -141,8 +141,26 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     window.addEventListener(ev, resumeAudio, true);
   });
   // Buttons -> WM_[LR]BUTTONDOWN/UP (position is read separately via GetCursorPos).
-  c.addEventListener('mousedown', function (e) { e.preventDefault(); if (c.focus) c.focus(); resumeAudio(); post(e.button === 2 ? 0x0204 : 0x0201, 0, 0); });
-  c.addEventListener('mouseup', function (e) { e.preventDefault(); post(e.button === 2 ? 0x0205 : 0x0202, 0, 0); });
+  // During .dmo replay the engine treats ANY button as pause/resume (original feature),
+  // but the browser also needs one click as the Web-Audio gesture — swallow that first
+  // click (audio only) so starting the sound doesn't silently pause the demo.
+  // Lazy: TT_cmdline is assigned by the ?demo= block BELOW this attach function, so the
+  // flag must be read at click time, not at attach time.
+  var demoReplay = function () {
+    return globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0;
+  };
+  var firstClickSwallowed = false;
+  c.addEventListener('mousedown', function (e) {
+    e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
+    if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
+    if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
+    post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
+  });
+  c.addEventListener('mouseup', function (e) {
+    e.preventDefault();
+    if (firstClickSwallowed === 'down') { firstClickSwallowed = true; return; } // matching up
+    post(e.button === 2 ? 0x0205 : 0x0202, 0, 0);
+  });
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
   // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.

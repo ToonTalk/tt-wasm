@@ -426,7 +426,7 @@ boolean Background::handle_xml(xml_document *document) { // new interface as of 
 		// was tt_initial_current_time prior to 080103 - restored 140703
       tt_frame_number = xml_get_attribute_int(background_element,L"FrameNumber",tt_frame_number);
 		// commented out on 200304 since this gave the wrong frame number on replay
-//		if (tt_current_log_segment == 1) { // on 240803 changed from tt_frame_number != current_frame_number -- 
+//		if (tt_current_log_segment == 1) { // on 240803 changed from tt_frame_number != current_frame_number --
 		// initial value is 0 so not clear this accomplishes anything
 //			tt_frame_number--; // since will be incremented before used - new on 230803
 //		} else {
