@@ -1397,6 +1397,16 @@ boolean one_tt_cycle() {
 		//	tt_millisecond_delta = 1000;
 		};
 	};
+#ifdef __EMSCRIPTEN__
+	{ static millisecond em_last_subgate = 0;
+	  if (replaying() && tt_current_time - em_last_subgate > 5000) { em_last_subgate = tt_current_time;
+		extern flag subtitles_initialized;
+		extern millisecond next_subtitle_time;
+		printf("[tt] subgate: speed=%d titles_ended=%ld frame=%ld init=%d next_time=%ld now=%ld base=%ld\n",
+		       (int)tt_subtitles_speed,(long)tt_titles_ended_on_frame,(long)tt_frame_number,
+		       (int)subtitles_initialized,(long)next_subtitle_time,(long)tt_current_time,
+		       (long)tt_current_time_at_beginning_of_first_segment); fflush(stdout); } }
+#endif
    if (tt_subtitles_speed > 0 && tt_titles_ended_on_frame <= tt_frame_number) { // added tt_titles_ended_on_frame on 100204
       synchronize_subtitles();
    };

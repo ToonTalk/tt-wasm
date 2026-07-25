@@ -304,6 +304,42 @@ void update_subtitles_file_name(ascii_string log_file_name) {
       subtitles_extension = ASC(IDS_SUBTITLES_FILE_SUFFIX);
    };
    subtitles_file_name = add_extension(log_file_name,TRUE,subtitles_extension,FALSE);
+#ifdef __EMSCRIPTEN__
+   // The narration/subtitle script (<name>.ust: timestamped text + <SoundFile> entries)
+   // ships INSIDE the .dmo archive — retail never had it loose on disk, so the lookup
+   // above fails and synchronize_subtitles silently never starts (Ken: "the narration
+   // is missing"). Extract it from the archive like the segment logs and cities.
+   if ((subtitles_file_name == NULL || !file_exists(subtitles_file_name,TRUE))
+       && tt_log_in_archive != NULL && subtitles_extension != NULL) {
+      const char *base = log_file_name;
+      for (const char *p2 = log_file_name; *p2; p2++)
+         if (*p2 == '\\' || *p2 == '/') base = p2+1;
+      char member[MAX_PATH];
+      int bi = 0;
+      while (base[bi] != 0 && base[bi] != '.' && bi < MAX_PATH-8) { member[bi] = base[bi]; bi++; };
+      member[bi] = 0;
+      strcat(member,".");
+      strcat(member,subtitles_extension);
+      string extracted = extract_file_from_archive(member,tt_log_in_archive);
+      printf("[tt] subtitles: '%s' from archive -> %s\n", member,
+             extracted != NULL ? extracted : "(not found)"); fflush(stdout);
+      if (extracted != NULL) {
+         // subtitles_file is a raw std::ifstream (no Win32-shim path normalization):
+         // MEMFS needs forward slashes, and unlike Windows it is CASE-SENSITIVE — the
+         // extractor writes the member's STORED name (lowercase in these 2004 archives)
+         // while the resource suffix is "UST". Normalize the basename to lowercase.
+         string base2 = extracted;
+         for (string p3 = extracted; *p3; p3++) {
+            if (*p3 == '\\') *p3 = '/';
+            if (*p3 == '/') base2 = p3+1;
+         };
+         for (string p4 = base2; *p4; p4++)
+            if (*p4 >= 'A' && *p4 <= 'Z') *p4 = (character)(*p4+32);
+         if (subtitles_file_name != NULL) delete [] subtitles_file_name;
+         subtitles_file_name = extracted;
+      };
+   };
+#endif
    delete [] subtitles_extension;
 };
 
@@ -839,6 +875,26 @@ void load_city_from_log() {
 					string full_city_file_name = extract_file_from_archive(city_file_name,tt_log_in_archive);
 					if (full_city_file_name != NULL) {
 						tt_city->load_city(full_city_file_name,TRUE);
+#ifdef __EMSCRIPTEN__
+						{ // where are the loaded city's doors? (replay never enters the house — Ken 2026-07-25)
+						  static int hd_log = 0;
+						  if (hd_log < 3) { hd_log++;
+							for (block_number bx = 0; bx < tt_city->return_number_of_x_streets(); bx++)
+							  for (block_number by = 0; by < tt_city->return_number_of_y_streets(); by++) {
+								Block *b = tt_city->block_at(bx,by,FALSE);
+								if (b == NULL) continue;
+								for (int hi = 0; hi < tt_houses_to_a_block; hi++) {
+								  House *h = b->house_at((short int) hi);
+								  if (h == NULL) continue;
+								  city_coordinate dx2, dy2;
+								  h->exit_point(dx2,dy2);
+								  printf("[tt] cityhouse: block=(%d,%d) lot=%d exit=(%ld,%ld)\n",
+										 (int)bx,(int)by,hi,(long)dx2,(long)dy2);
+								};
+							  };
+							fflush(stdout); }
+						}
+#endif
 						delete [] full_city_file_name;
 					} else {
 						tt_error_file() << "Was not able to extract " << city_file_name << " from " << (tt_log_in_archive||"Null") 
@@ -1190,7 +1246,11 @@ xml_document *read_and_process_rest_of_xml(string read_so_far, int length, int m
 	const int chunk_growth = 4096; // who knows what is best?
 	const int minimum_chunk_size = 1024;
 	while (!file.fail()) { // was `!= NULL`: pre-C++11 istream void* test
-		if (file.peek() == '\n') { // found an empty line
+		if (file.peek() == '\n'
+#ifdef __EMSCRIPTEN__
+		    || file.peek() == '\r' // CRLF file without Windows text-mode translation
+#endif
+		    ) { // found an empty line
 			xml_document *document = document_from_string(read_so_far,length);
 			delete [] read_so_far;
 			return(document);
@@ -1512,6 +1572,10 @@ void get_next_subtitle_time() {
 void synchronize_subtitles() {
    if (!subtitles_initialized) {
       if (!initialize_subtitles()) { // can't initialize
+#ifdef __EMSCRIPTEN__
+         printf("[tt] subspeed: initialize_subtitles FAILED (name=%s)\n",
+                subtitles_file_name != NULL ? subtitles_file_name : "(null)"); fflush(stdout);
+#endif
          tt_subtitles_speed = 0;
          return;
       };      

@@ -1652,6 +1652,18 @@ boolean Main::MessageLoopOnce() {
 // segment boundary threw straight out of the frame callback and killed the run.
 // Mirrors the body of the native while(TRUE) loop; returns FALSE when the loop should stop.
 static boolean tt_message_loop_iteration() {
+	{
+		// Replay pacing: REPLAY_REPRODUCE_TIMING calls sleep() (Main.cpp) to hold the
+		// demo to the recorded clock, but the browser loop cannot block — sleep()
+		// (utils.cpp) instead records a wake deadline and we skip whole iterations
+		// until it passes. Without this the demo free-runs at requestAnimationFrame
+		// speed (Ken: "titles and flying sped up a good deal").
+		extern millisecond tt_em_sleep_until;
+		if (tt_em_sleep_until > 0) {
+			if ((millisecond) timeGetTime() < tt_em_sleep_until) return(TRUE);
+			tt_em_sleep_until = 0;
+		};
+	}
 	if (!replaying()) {
 		return(Main::MessageLoopOnce());
 	};
@@ -10258,6 +10270,9 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
                                  max_long-tt_current_time); // about 2 million seconds
          delete [] line;
          // this turns off ordinary subtitles
+#ifdef __EMSCRIPTEN__
+         printf("[tt] subspeed: autodemo zeroed it\n"); fflush(stdout);
+#endif
          tt_subtitles_speed = 0;
       };
    };

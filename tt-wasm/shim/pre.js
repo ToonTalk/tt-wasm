@@ -232,7 +232,9 @@ Module['preRun'].push(function () {
     'GenerateRobotNames=1',
     'MaximumNumberOfHoles=2048',
     'RobotCounter=50',
-    'DelayBetweenTitles=0',
+    // Skip title-screen dwell for normal boots; during .dmo replay keep the engine's
+    // default pacing so the recorded titles read at the intended speed.
+    (globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0 ? '' : 'DelayBetweenTitles=0'),
     // A browser is an absolute pointing device: use ToonTalk's native absolute-mouse mode
     // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
     // which the web can only fake with Pointer Lock — and without the lock the cursor offset

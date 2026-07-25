@@ -3276,9 +3276,14 @@ void Programmer_State::colliding_with(Sprite *other,
 #endif
 		}; 
 		break;
-	  case DOOR: { // open it 
+	  case DOOR: { // open it
         Door *door = (Door *) other;
         House *house = door->pointer_to_room()->pointer_to_house();
+#ifdef __EMSCRIPTEN__
+        { static int dc_log = 0;
+          if (dc_log < 20) { dc_log++;
+            printf("[tt] doorhit: closed door f=%ld\n", (long)tt_frame_number); fflush(stdout); } }
+#endif
         if (tt_system_mode != PUZZLE || ok_to_enter_house(house)) {
 			  house->door_sound();
 			  door->open_door();
@@ -3296,6 +3301,13 @@ void Programmer_State::colliding_with(Sprite *other,
 		 break;
 					 };
 	  case OPEN_DOOR: // go in if close enough
+#ifdef __EMSCRIPTEN__
+		  { static int od_log = 0;
+		    if (od_log < 20) { od_log++;
+			printf("[tt] doorhit: OPEN door gap=%ld (need<%ld) f=%ld\n",
+				(long)(region.min_y-my_region.max_y),(long)tile_width,(long)tt_frame_number);
+			fflush(stdout); } }
+#endif
 		  if (region.min_y-my_region.max_y < tile_width //&& (
 //#if TT_BETA
 //            tt_running_old_demos ||

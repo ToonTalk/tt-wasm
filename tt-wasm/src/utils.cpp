@@ -395,6 +395,13 @@ time_t return_last_use() { // obsolete??
 void read_user_parameters(InputStream *file, Parameters &parameters, boolean using_default_user_profile) {
    parameters.video_mode = file->get();
    parameters.programmer_head = file->get();
+#ifdef __EMSCRIPTEN__
+   { static int up_log = 0;
+     if (up_log < 8) { up_log++;
+       printf("[tt] userparams: video_mode=%d (current art mode %dx%d)\n",
+              (int)parameters.video_mode, (int)tt_graphics_video_mode_width,
+              (int)tt_graphics_video_mode_height); fflush(stdout); } }
+#endif
 	if (using_default_user_profile) { 
 		// new on 160301 - profile created with right name - just don't clobber it here
 //		unsigned char buffer[256];
@@ -1305,8 +1312,22 @@ ascii_string copy_ascii_string(const_ascii_string source, int length) {
 //};
 //#endif
 
+#ifdef __EMSCRIPTEN__
+millisecond tt_em_sleep_until = 0; // browser loop skips iterations until this deadline (see winmain.cpp)
+#endif
+
 void sleep(millisecond duration) {
 	if (tt_skip_titles) return;
+#ifdef __EMSCRIPTEN__
+	// Can't block the browser thread: record the deadline; the main-loop wrapper
+	// (tt_message_loop_iteration) skips whole iterations until it passes, which is
+	// what Sleep() did to the native message loop.
+	if (duration > 0) {
+		millisecond wake = (millisecond) timeGetTime() + duration;
+		if (wake > tt_em_sleep_until) tt_em_sleep_until = wake;
+	};
+	return;
+#endif
 #if TT_DEBUG_ON 
 	if (duration < 0) {
 		log(_T("Trying to sleep a negative amount."),FALSE,TRUE);
@@ -11016,6 +11037,9 @@ void interpret_command_line(int argc, char *argv[]) { // , boolean ) { -- moved 
   if (!tt_subtitles_set) {
 //     string entry = ini_entry("Executables","SubtitlesSuffix");
      tt_subtitles_speed = (unsigned short int) ini_int(AC(IDC_SWITCHES),AC(IDC_SUBTITLES_SPEED),FALSE,100); // re-written 110101
+#ifdef __EMSCRIPTEN__
+     printf("[tt] subspeed: default path -> %d\n", (int)tt_subtitles_speed); fflush(stdout);
+#endif
 //	  GetPrivateProfileIntG(AC(IDC_SWITCHES),AC(IDC_SUBTITLES_SPEED),100,AC(IDC_TT_INI));
 //        delete [] entry;
   };
@@ -11741,9 +11765,17 @@ int non_failing_getline(input_stream &stream, string buffer, int max_characters_
 		if (stream.fail()) return(-1); // was `== NULL`: pre-C++11 istream void* test
 		if (c == '\n') { // reached new line
 			return(i);
-		} else {
-			buffer[i] = c;
 		};
+#ifdef __EMSCRIPTEN__
+		// Windows text-mode streams translate \r\n -> \n; Emscripten's don't. Without
+		// this the demos' CRLF .ust files never yield an empty line, so the subtitle
+		// parser swallowed the whole narration script into its first XML block.
+		if (c == '\r' && stream.peek() == '\n') {
+			stream.get();
+			return(i);
+		};
+#endif
+		buffer[i] = c;
 	};
 	if (stream.peek() == '\n') {
 		stream.get(); // if ended after max characters then gobble up the new line

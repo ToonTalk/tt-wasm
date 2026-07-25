@@ -1033,6 +1033,15 @@ void Screen::subtitle_need_not_wait_for_speech() {
 };
 
 void Screen::set_subtitle(string line, short int length, millisecond duration) {
+#ifdef __EMSCRIPTEN__
+	{ static int st_log = 0;
+	  if (st_log < 20) { st_log++;
+		char nb[80]; int ni = 0;
+		for (; ni < length && ni < 79; ni++) nb[ni] = (char) line[ni];
+		nb[ni] = 0;
+		printf("[tt] subtitle: '%s' dur=%ld f=%ld\n", nb, (long)duration, (long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	for (int i = 0; i < length; i++) { // new on 100204 to permit blank (invisible) lines
 		if (line[i] != ' ') break;
 		if (i+1 == length) { // all white space so ignore
