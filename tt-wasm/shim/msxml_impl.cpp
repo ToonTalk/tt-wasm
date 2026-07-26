@@ -18,6 +18,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>   /* DomDocument::load reads the file itself */
 
 #ifndef S_OK
 #define S_OK 0
@@ -257,7 +258,7 @@ struct DomDocument : public IXMLDOMDocument {
     HRESULT createAttribute(BSTR nm, IXMLDOMAttribute **a) { DomNode *n = mint(NODE_ATTRIBUTE); if (nm) n->name = nm; *a = (IXMLDOMAttribute *)n; return S_OK; }
     HRESULT getElementsByTagName(BSTR tagName, IXMLDOMNodeList **resultList) { if (root) return root->getElementsByTagName(tagName, resultList); *resultList = new DomNodeList(); return S_OK; }
     HRESULT get_parseError(IXMLDOMParseError **e) { *e = err; if (err) err->AddRef(); return S_OK; }
-    HRESULT load(VARIANT, VARIANT_BOOL *ok) { if (ok) *ok = VARIANT_FALSE; return S_FALSE; }
+    HRESULT load(VARIANT src, VARIANT_BOOL *ok);
     HRESULT loadXML(BSTR xml, VARIANT_BOOL *ok);
     HRESULT save(VARIANT) { return S_OK; }
 };
@@ -491,6 +492,45 @@ HRESULT DomDocument::loadXML(BSTR xml, VARIANT_BOOL *ok) {
     root = parser.parse_document();
     if (root) { if (ok) *ok = VARIANT_TRUE; return S_OK; }
     err->code = 1; if (ok) *ok = VARIANT_FALSE; return S_OK;
+}
+
+/* Load from a file path carried in a VT_BSTR VARIANT — real MSXML resolves
+ * paths/URLs itself. The only ToonTalk caller is document_from_file (xml.cpp)
+ * for non-zip XML files, most importantly the per-demo city snapshots
+ * (cityNNNNN.cty). Read the bytes and hand them to loadXML. */
+HRESULT DomDocument::load(VARIANT src, VARIANT_BOOL *ok) {
+    if (ok) *ok = VARIANT_FALSE;
+    if (src.vt != VT_BSTR || !src.bstrVal) return S_FALSE;
+    char path[1024]; size_t n = 0;
+    for (const OLECHAR *w = src.bstrVal; *w && n + 1 < sizeof(path); w++) {
+        char c = (char)*w;
+        if (c == '\\') c = '/';           /* MEMFS separators */
+        path[n++] = c;
+    }
+    path[n] = 0;
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return S_FALSE;
+    fseek(fp, 0, SEEK_END); long size = ftell(fp); fseek(fp, 0, SEEK_SET);
+    if (size <= 0) { fclose(fp); return S_FALSE; }
+    unsigned char *bytes = new unsigned char[size];
+    size_t got = fread(bytes, 1, (size_t)size, fp);
+    fclose(fp);
+    wstring text;
+    size_t start = 0;
+    if (got >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE) { /* UTF-16LE BOM */
+        text.reserve((got - 2) / 2);
+        for (size_t i = 2; i + 1 < got; i += 2)
+            text += (wchar_t)(bytes[i] | (bytes[i + 1] << 8));
+    } else {                                               /* 8-bit XML */
+        if (got >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) start = 3; /* UTF-8 BOM */
+        text.reserve(got - start);
+        for (size_t i = start; i < got; i++) text += (wchar_t)bytes[i];
+    }
+    delete [] bytes;
+    BSTR b = bstr_of(text);
+    HRESULT hr = loadXML(b, ok);
+    SysFreeString(b);
+    return hr;
 }
 
 /* --------------------------------------------------------------- CoCreateInstance */

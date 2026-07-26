@@ -875,13 +875,6 @@ void load_city_from_log() {
 					string full_city_file_name = extract_file_from_archive(city_file_name,tt_log_in_archive);
 					if (full_city_file_name != NULL) {
 						tt_city->load_city(full_city_file_name,TRUE);
-						// NOTE (2026-07-25): do NOT anchor tt_current_time_at_beginning_of_first_segment
-						// here. The .ust cue times are RAW recorded-clock values (the first cue's
-						// 1412 < InitialTime means "fire immediately, over the titles") and both
-						// synchronize_subtitles and reset_next_subtitle_time are self-consistent
-						// only with base 0 — anchoring it desynchronizes the segment resync and
-						// stalls the cue cursor. Retail demos ran with base 0 too (the engine's
-						// two base assignments never fire for these archives).
 #ifdef __EMSCRIPTEN__
 						{ // positional-drift bisect (task #23): our avatar at each segment start,
 						  // to diff against the recorded cityNNNNN.cty programmer positions
@@ -1574,21 +1567,7 @@ boolean get_next_subtitle_line(short int &length) {
 		next_line_new_set = FALSE; // I think this simulates the old linear behavior
 		length = subtitle_lengths[current_index];
 		if (subtitle_xmls[current_index] != NULL) { // need to do something special
-#ifdef __EMSCRIPTEN__
-			// Each 5-second segment jump rewinds the cue cursor to "the group just
-			// before now" (reset_next_subtitle_time + the time-seek above), which
-			// re-executed the group's <SoundFile> and restarted Pat mid-sentence
-			// (Ken: "the narration sometimes repeats — even interrupting itself").
-			// Audio side-effects must run once per cue; the cursor may revisit.
-			{ static int em_max_xml_cue_played = -1;
-			  if (current_index > em_max_xml_cue_played) {
-				em_max_xml_cue_played = current_index;
-				process_demo_xml(subtitle_xmls[current_index]);
-			  };
-			}
-#else
 			process_demo_xml(subtitle_xmls[current_index]);
-#endif
 			return(get_next_subtitle_line(length));
 		};
 		subtitle_line = copy_string(subtitle_lines[current_index]);
@@ -1653,6 +1632,18 @@ void synchronize_subtitles() {
 		};
       short int length;
       if (get_next_subtitle_line(length)) {
+#ifdef __EMSCRIPTEN__
+         { static int em_cuefire_prints = 0;
+           if (em_cuefire_prints < 25) { em_cuefire_prints++;
+             printf("[tt] cuefire: idx=%d cue_t=%ld elapsed=%ld now=%ld base=%ld f=%ld\n",
+                    current_index,
+                    (current_index >= 0 && current_index < subtitle_count) ? (long)next_subtitle_times[current_index] : -1L,
+                    (long)(tt_current_time-tt_current_time_at_beginning_of_first_segment),
+                    (long)tt_current_time,(long)tt_current_time_at_beginning_of_first_segment,
+                    (long)tt_frame_number); fflush(stdout);
+           };
+         }
+#endif
          // short lines are quicker
 			int effective_length;
          if (length < 20) {//  // prior to Oct 10 '98 was != -1 which was wrong
@@ -2717,6 +2708,17 @@ boolean jump_to_log_segment(int version_number, boolean possibly_successive) {
 //		update_time_travel_buttons(); // commented out since next log could change everything anyway
 	};
 #if TT_ALPHA_FEATURE
+#ifdef __EMSCRIPTEN__
+	{ static int em_jumpseg_prints = 0;
+	  if (em_jumpseg_prints < 14) { em_jumpseg_prints++;
+	    printf("[tt] jumpseg: ver=%d cur_seg=%d time_travel=%d reset=%d now=%ld base=%ld f=%ld\n",
+	           version_number,(int)tt_current_log_segment,(int)tt_time_travel,
+	           (tt_time_travel != TIME_TRAVEL_ON || version_number != tt_current_log_segment+1) ? 1 : 0,
+	           (long)tt_current_time,(long)tt_current_time_at_beginning_of_first_segment,
+	           (long)tt_frame_number); fflush(stdout);
+	  };
+	}
+#endif
 	if (tt_time_travel != TIME_TRAVEL_ON || version_number != tt_current_log_segment+1) { // didn't just jump here
 		reset_next_subtitle_time(version_number); // new on 271003 to find the right subtitle when jumping in time
 	};

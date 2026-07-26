@@ -5473,9 +5473,14 @@ work_page UserImage::retrieve_image(int &transparent_color, int &bits_per_pixel,
 //	boolean treat_white_as_black = FALSE; // new on 121001
    if (!compute_full_file_name()) {
 #ifdef __EMSCRIPTEN__
-      printf("[tt] missing-art: no file for image '%s' (resIdx=%d code=%d)\n",
-        (resource_index >= 0 && tt_image_file_names && tt_image_file_names[resource_index]) ? tt_image_file_names[resource_index] : "(unnamed)",
-        resource_index, (int)code); fflush(stdout);
+      { static int em_missing_art_prints = 0;
+        if (em_missing_art_prints < 8) { em_missing_art_prints++;
+          printf("[tt] missing-art: no file for image '%s' (resIdx=%d code=%d)%s\n",
+            (resource_index >= 0 && tt_image_file_names && tt_image_file_names[resource_index]) ? tt_image_file_names[resource_index] : "(unnamed)",
+            resource_index, (int)code,
+            em_missing_art_prints == 8 ? " [further reports suppressed]" : ""); fflush(stdout);
+        };
+      }
 #endif
       return(NULL);
    };
@@ -5637,8 +5642,12 @@ work_page UserImage::retrieve_image(int &transparent_color, int &bits_per_pixel,
 		dib = DibOpenFile(full_file_name);
 #ifdef __EMSCRIPTEN__
 		if (dib == NULL) {
-			printf("[tt] missing-art: DibOpenFile failed for '%s' (resIdx=%d code=%d)\n",
-			  full_file_name ? full_file_name : "(null)", resource_index, (int)code); fflush(stdout);
+			static int em_dibfail_prints = 0;
+			if (em_dibfail_prints < 8) { em_dibfail_prints++;
+				printf("[tt] missing-art: DibOpenFile failed for '%s' (resIdx=%d code=%d)%s\n",
+				  full_file_name ? full_file_name : "(null)", resource_index, (int)code,
+				  em_dibfail_prints == 8 ? " [further reports suppressed]" : ""); fflush(stdout);
+			};
 		};
 #endif
 		if (dib != NULL) { // moved here on 290500

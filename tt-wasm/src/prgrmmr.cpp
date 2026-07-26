@@ -2940,7 +2940,16 @@ void Programmer::titles_over() {
 //	if (!replaying() && !time_travel_enabled()) { // new on 300104
 //		tt_current_time = 0; // experiment 310104
 //	} else
-	if (tt_initial_current_time >= 0) { // && !tt_logging && !replaying()) { // new on 131202 --
+	if (tt_initial_current_time >= 0
+#ifdef __EMSCRIPTEN__
+	    // In retail the world is frozen until titles_over, so resetting the clock
+	    // here is a no-op-in-effect. The port begins consuming the replay before
+	    // titles_over fires; once past the first segment, resetting the clock
+	    // would rewind a running replay (the anchor already happened at the
+	    // first-segment city load in load_city_from_log).
+	    && !(replaying() && tt_current_log_segment != tt_oldest_log_segment)
+#endif
+	    ) { // && !tt_logging && !replaying()) { // new on 131202 --
 		// !tt_logging && !replaying() new on 280104 to fix a timing bug in non-time travel demos -- not sure this helps...
 		 tt_current_time = tt_initial_current_time;
 		 if (tt_current_log_segment == tt_oldest_log_segment) { // condition new on 200304

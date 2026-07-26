@@ -909,6 +909,17 @@ boolean City::load_city(ascii_string city_name, boolean directly_loadable) {
    FileNameStatus file_status;
 	// added args on 180200 so this doesn't use path to find the city - OK?? - otherwise it looks for the users CTY file ...
    ascii_string full_name = existing_file_name(file_status,city_name,"cty","NewUsers",TRUE,FALSE,FALSE,FALSE,FALSE);
+#ifdef __EMSCRIPTEN__
+   { static int em_loadcity_prints = 0;
+     if (em_loadcity_prints < 5) { em_loadcity_prints++;
+       FILE *em_probe_fp = fopen(city_name,"rb");
+       printf("[tt] loadcityfn: name='%s' direct=%d resolved='%s' fopen=%s\n",
+              city_name,(int)directly_loadable,full_name != NULL ? full_name : "(NULL)",
+              em_probe_fp != NULL ? "OK" : "FAIL"); fflush(stdout);
+       if (em_probe_fp != NULL) fclose(em_probe_fp);
+     };
+   }
+#endif
    boolean xml_format = FALSE; // unless proven otherwise
 #if TT_XML
    if (full_name == NULL) { // new on 041102

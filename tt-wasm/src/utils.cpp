@@ -2932,6 +2932,13 @@ boolean toontalk_cdrom_available(int message_id) {
 };
 
 boolean is_relative_path(string name) {
+#ifdef __EMSCRIPTEN__
+	// MEMFS absolute paths begin with '/'. Without this, every extracted-file
+	// path ("/toontalk/...") is classified as relative, so existing_file_name
+	// never tries it as-is — which silently kept demo city snapshots
+	// (city00001.cty) from loading and left replays running on a default city.
+	if (name[0] == '/') return(FALSE);
+#endif
 	return(name[0] != '\\' && strchr(name,':') == NULL);
 };
 
@@ -11794,6 +11801,19 @@ string extract_file_from_archive(string relative_file_name, string archive_file_
 	//};
 	if (relative_file_name == NULL) return(NULL); // new on 300304 for robustness
 	string temp_file_name = append_strings(destination_directory,relative_file_name);
+#ifdef __EMSCRIPTEN__
+	// MEMFS only understands '/' separators. The composed name mixes them in:
+	// the temp-directory setting and archive member specs (e.g. "US\s01.wav")
+	// carry Windows backslashes, while extract_archive_to_directory normalizes
+	// when it writes. Without this, file_exists/fopen on the returned name fail
+	// even though the file was extracted — which silently prevented demo city
+	// snapshots (city00001.cty) from ever loading.
+	{ string p;
+	  for (p = temp_file_name; *p != '\0'; p++) {
+	    if (*p == '\\') *p = '/';
+	  };
+	}
+#endif
 	if (destination_directory != tt_extracted_file_temp_directory ||
 		 ((tt_file_temp_directory_is_up_to_date || relative_file_name_is_unique) && file_exists(temp_file_name,FALSE))) { 
 		// can trust tt_extracted_file_temp_directory to be up-to-date (or else the media directory)

@@ -11,6 +11,7 @@
 
 #include <objbase.h>
 #include <msxml.h>   /* the IXMLDOM* family ToonTalk's defs.h typedefs */
+#include <string.h>  /* strlen (CComVariant string constructors) */
 
 namespace ATL {
 
@@ -63,11 +64,17 @@ public:
     CComVariant(double v)         { vt = VT_R8;  dblVal = v; }
     CComVariant(float v)          { vt = VT_R4;  fltVal = v; }
     CComVariant(long long v)      { vt = VT_I8;  lVal = (long) v; }
-    CComVariant(const char *)     { vt = VT_BSTR; bstrVal = 0; }
-    CComVariant(const wchar_t *)  { vt = VT_BSTR; bstrVal = 0; }
-    CComVariant(const VARIANT &v) { *(VARIANT *)this = v; }
-    ~CComVariant() {}
-    HRESULT Clear() { vt = VT_EMPTY; return S_OK; }
+    /* String constructors must really store the text: document->load(VARIANT)
+     * receives a file name this way (xml.cpp document_from_file — city
+     * snapshots). Owning, freed in the destructor like real ATL. */
+    CComVariant(const char *s)    { vt = VT_BSTR; bstrVal = 0;
+        if (s) { size_t n = strlen(s); OLECHAR *w = new OLECHAR[n+1];
+                 for (size_t i = 0; i <= n; i++) w[i] = (OLECHAR)(unsigned char)s[i];
+                 bstrVal = SysAllocString(w); delete [] w; } }
+    CComVariant(const wchar_t *s) { vt = VT_BSTR; bstrVal = s ? SysAllocString(s) : 0; }
+    CComVariant(const VARIANT &v) { *(VARIANT *)this = v; if (vt == VT_BSTR) bstrVal = bstrVal ? SysAllocString(bstrVal) : 0; }
+    ~CComVariant() { if (vt == VT_BSTR) SysFreeString(bstrVal); }
+    HRESULT Clear() { if (vt == VT_BSTR) SysFreeString(bstrVal); vt = VT_EMPTY; return S_OK; }
 };
 
 /* CComModule: the global _Module object stdafx-style code declares. */

@@ -406,6 +406,13 @@ boolean Background::handle_xml(string file_name) { // new on 041102
 };
 
 boolean Background::handle_xml(xml_document *document) { // new interface as of 090103
+#ifdef __EMSCRIPTEN__
+   { static int em_hxml_prints = 0;
+     if (em_hxml_prints < 5) { em_hxml_prints++;
+       printf("[tt] handlexml: document=%s\n",document != NULL ? "OK" : "NULL"); fflush(stdout);
+     };
+   }
+#endif
    if (document != NULL) {
 //    boolean result = xml_entity(document,this);
       xml_node *background_element = first_node_that_is_an_element(document);
@@ -431,6 +438,16 @@ boolean Background::handle_xml(xml_document *document) { // new interface as of 
 //			tt_frame_number--; // since will be incremented before used - new on 230803
 //		} else {
 			tt_current_time = tt_initial_current_time; // new on 310803
+#ifdef __EMSCRIPTEN__
+		{ static int em_citytime_prints = 0;
+		  if (em_citytime_prints < 5) { em_citytime_prints++;
+		    printf("[tt] citytime: Time=%ld FrameNumber=%ld cur_seg=%d oldest=%d base=%ld\n",
+		           (long)tt_initial_current_time,(long)tt_frame_number,
+		           (int)tt_current_log_segment,(int)tt_oldest_log_segment,
+		           (long)tt_current_time_at_beginning_of_first_segment); fflush(stdout);
+		  };
+		}
+#endif
 //		};
 		tt_still_frame_count += tt_frame_number; 
 		// commented out the following on 090403 since cities should set the language
