@@ -6004,6 +6004,13 @@ xml_element *SpritePage::top_level_xml(xml_document *document, xml_element *pare
 	// prior to 190703 this did a very dangerous coercion
 	xml_element *XML_copy = xml_node_to_element(xml_clone_node(XML)); // was clone prior to 140603 - restored clone on 150603 since need element specific version
 //	XML->Release(); // new on 200804
+#ifdef __EMSCRIPTEN__
+	if (XML_copy == NULL) {
+		// a clone that comes back NULL used to trap on the AddRef below and take the tab with it
+		printf("[tt] xmlclone: sprite page clone failed (XML=%p) - page not saved\n",(void*)XML); fflush(stdout);
+		return(NULL); // a NULL page is already an expected outcome above
+	};
+#endif
 	if (parent != NULL) {
 #if TT_DEBUG_ON
 		int ref_count = // for debugging XML ref counts
@@ -6102,6 +6109,12 @@ xml_element *XMLPage::top_level_xml(xml_document *document, xml_element *parent,
 	};
 	xml_element *XML_copy = xml_node_to_element(xml_clone_node(XML)); // was clone prior to 140603
 //	XML->Release(); // new on 200804
+#ifdef __EMSCRIPTEN__
+	if (XML_copy == NULL) {
+		printf("[tt] xmlclone: xml page clone failed (XML=%p) - page not saved\n",(void*)XML); fflush(stdout);
+		return(NULL);
+	};
+#endif
 	if (parent != NULL) {
 #if TT_DEBUG_ON
 		int ref_count = // for debugging XML ref counts

@@ -1653,6 +1653,16 @@ boolean Main::MessageLoopOnce() {
 // Mirrors the body of the native while(TRUE) loop; returns FALSE when the loop should stop.
 static boolean tt_message_loop_iteration() {
 	{
+		// Heartbeat: the one reliable liveness signal from the browser. A still picture is not
+		// the same as a stopped engine, and pixel sampling cannot tell them apart.
+		static long beat = 0;
+		if ((++beat % 240) == 0) {
+			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d\n",
+			       beat,(long)tt_frame_number,(int)paused,(int)replaying());
+			fflush(stdout);
+		};
+	}
+	{
 		// Replay pacing: REPLAY_REPRODUCE_TIMING calls sleep() (Main.cpp) to hold the
 		// demo to the recorded clock, but the browser loop cannot block — sleep()
 		// (utils.cpp) instead records a wake deadline and we skip whole iterations
@@ -7772,6 +7782,11 @@ void toggle_pause(boolean interrupted, boolean shutting_down, boolean ask) {
 							 << " and ask is " << (int) ask << endl;
    };
 #endif
+#ifdef __EMSCRIPTEN__
+   printf("[tt] pausepath: toggle_pause toggling=%d init=%d paused=%d ask=%d shut=%d replaying=%d\n",
+          (int)toggling_pause,(int)initialization_completed,(int)paused,(int)ask,(int)shutting_down,(int)replaying());
+   fflush(stdout);
+#endif
    if (toggling_pause) return; // no recursive calls
    if (!initialization_completed) return; // too early
 //   if (waiting_for_user_dialog) return; // screen saver with dialog up does this
@@ -7982,7 +7997,10 @@ void toggle_pause(boolean interrupted, boolean shutting_down, boolean ask) {
 		   };
 #endif
 //         release_exclusive_control(); // experiment on 250602
-			ask_continue_or_quit(interrupted); 
+#ifdef __EMSCRIPTEN__
+			printf("[tt] pausepath: calling ask_continue_or_quit\n"); fflush(stdout);
+#endif
+			ask_continue_or_quit(interrupted);
 //         toggling_pause = TRUE; commented out on 250602
 //		} else {
 //       	CloseWindow(tt_main_window->get_handle()); // so dialog always easy to see
@@ -8280,7 +8298,10 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 				  } else 
 #endif
 				  {
-					  if (replaying()) { // && tt_titles_ended_on_frame <= tt_frame_number) { 
+#ifdef __EMSCRIPTEN__
+					  printf("[tt] keydisp: WM_CHAR case reached, replaying=%d\n",(int)replaying()); fflush(stdout);
+#endif
+					  if (replaying()) { // && tt_titles_ended_on_frame <= tt_frame_number) {
 						  // any character while running a demo // tt_titles_ended_on_frame new on 230304
 						  toggle_pause();
 						  break; // added 181000
@@ -8310,6 +8331,22 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 						  toggle_pause();
 					  } else if (tt_time_travel != TIME_TRAVEL_OFF) { // new on 210100
 						  boolean was_in_playback = (tt_time_travel == TIME_TRAVEL_ON); // new on 211003
+#ifdef __EMSCRIPTEN__
+						  // A .dmo replay always runs with time travel ON, so every key during a demo
+						  // reaches here (WM_CHAR is rewritten to VK_PAUSE above) and the original goes
+						  // to the time-travel pause -- "otherwise ends up in the old demo dialog".
+						  // The port has no time-travel button UI yet, so that branch would swallow the
+						  // key and leave the demo running. Until time travel is built, take the older
+						  // route the comment refers to: pause and offer the DEMO_PAUSED_DIALOG choices
+						  // (Back to Demo / Take Control / Leave Demo), which is what Ken asked Esc for.
+						  if (was_in_playback) {
+							  printf("[tt] pausepath: demo key -> pause chooser (time travel UI not ported)\n");
+							  fflush(stdout);
+							  toggle_pause();
+							  user_did(GLOBAL_HISTORY,USER_HAS_PAUSED);
+							  break;
+						  };
+#endif
 						  if (was_in_playback) { // new on 211003 since otherwise ends up in the old demo dialog
 							  tt_time_travel_after_display_updated = TRUE;
 						  } else {
@@ -9396,6 +9433,11 @@ int MainWindow::set_client_size(int width, int height) {
 // events here. Route straight to the main window's WndProc — the global WndProc below resolves
 // pWindow from the HWND via GetPointer, which our synthetic window never registered.
 extern "C" EMSCRIPTEN_KEEPALIVE long tt_dispatch_to_wndproc(unsigned message, unsigned wParam, long lParam) {
+	if (message == 0x0102 || message == 0x0100) { // WM_CHAR / WM_KEYDOWN
+		printf("[tt] keydisp: msg=%x wParam=%u main_window=%d ok_to_process=%d replaying=%d\n",
+		       message,wParam,(int)(tt_main_window != NULL),(int)tt_ok_to_process_windows_messages,(int)replaying());
+		fflush(stdout);
+	};
 	if (tt_main_window) return (long) tt_main_window->WndProc((UINT) message, (WPARAM) wParam, (LPARAM) lParam);
 	return 0;
 }
@@ -11218,9 +11260,61 @@ BOOL CALLBACK ask_continue_or_quit_dialog(HWND hDlg, UINT message, WPARAM wParam
 boolean inside_ask_continue_or_quit = FALSE; // new on 250602 to prevent this from being called recursively
 int edited_picture_counter = 2; // new on 220303
 
+#ifdef __EMSCRIPTEN__
+/* The demo-pause chooser. Any key or mouse button during a demo lands in toggle_pause and then
+ * here (winmain.cpp:8137 keys, :1308 buttons), and the original offers DEMO_PAUSED_DIALOG's three
+ * choices: Back to Demo, Take Control, Leave Demo. Both of the original's dialog mechanisms are
+ * dead in wasm -- DialogBoxA is one of the zero-stubbed Win32 imports and there is no ini entry
+ * for HTMLDemoPause -- and more fundamentally nothing may block the browser's main thread while
+ * waiting for a click. So the chooser is an HTML overlay: ask_continue_or_quit shows it and
+ * returns with ToonTalk still paused and waiting_for_user_dialog set (the state the modal dialog
+ * used to hold it in), and the answer arrives later here. The button numbers are the ones
+ * ask_continue_or_quit's own switch takes, so the bodies below are its case 5 / case 1. */
+static void tt_show_demo_pause_overlay() {
+	printf("[tt] demopause: chooser up on frame %ld\n",(long)tt_frame_number); fflush(stdout);
+	EM_ASM({ if (globalThis.TT_demoPause) globalThis.TT_demoPause(); });
+};
+
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
+	printf("[tt] demopause: choice %d\n",button_number); fflush(stdout);
+	waiting_for_user_dialog = FALSE;
+	inside_ask_continue_or_quit = FALSE; // the chooser is gone, so Esc may raise it again
+	switch (button_number) {
+		case 5: // take control -- ask_continue_or_quit's case 5 plus what IDQUITDEMO's handler does
+			close_input_log(TRUE,FALSE);
+			if (!tt_subtitles_and_narration_even_without_demo) {
+				// otherwise want to keep SPK and update DMO
+				stop_sound(TRUE);
+			};
+			unpause_toontalk();
+			// and fall through, as the original's case 5 does
+		case 1:
+			// TRUE, not the switch's FALSE: back_to_toontalk's `now` exists precisely so dialogs
+			// resume immediately instead of waiting for the exclusive-screen dance on a later
+			// cycle ("to be used by dialogs so there is no waiting until the next cycle"). With
+			// FALSE the port took the CloseWindow branch and stayed paused for good.
+			back_to_toontalk(TRUE);
+			break;
+		case 3: // leave the demo
+			close_input_log(TRUE,FALSE);
+			stop_sound(TRUE);
+			EM_ASM({ if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); });
+			break;
+		default:
+			back_to_toontalk(TRUE);
+			break;
+	};
+};
+#endif
+
 void ask_continue_or_quit(boolean interrupted) {
+#ifdef __EMSCRIPTEN__
+   printf("[tt] pausepath: ask_continue_or_quit shutting=%d trouble=%d inside=%d replaying=%d\n",
+          (int)tt_shutting_down,(int)trouble_shooting(),(int)inside_ask_continue_or_quit,(int)replaying());
+   fflush(stdout);
+#endif
    if (tt_shutting_down) return; // interrupted while quitting
-   if (trouble_shooting()) return; // don't ask 
+   if (trouble_shooting()) return; // don't ask
    if (inside_ask_continue_or_quit) return;
    inside_ask_continue_or_quit = TRUE;
 //   CloseWindow(tt_main_window->get_handle()); // new on 040602 since if HTML dialog don't want old window in the way 
@@ -11262,6 +11356,13 @@ void ask_continue_or_quit(boolean interrupted) {
 	};
 #endif
    tt_main_window->no_longer_handling_loss_of_focus(); // new on 250602
+#ifdef __EMSCRIPTEN__
+   if (replaying()) {
+      // the chooser answers later, through tt_demo_pause_choice; stay paused until it does
+      tt_show_demo_pause_overlay();
+      return; // inside_ask_continue_or_quit stays TRUE so a second key cannot stack a chooser
+   };
+#endif
    string from_dialog = show_html_dialog_named_in_ini_file(dialog_key); // ,tt_file_name
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 130502) {

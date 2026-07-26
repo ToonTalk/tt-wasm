@@ -3257,13 +3257,13 @@ boolean xml_release_document(xml_document *document) {
 };
 
 xml_node *xml_shallow_copy(xml_node *node) { // new on 150303
-   xml_node *node_clone;
+   xml_node *node_clone = NULL; // initialized for the port: never hand back a stack value if cloneNode fails
    node->cloneNode(VARIANT_FALSE,&node_clone);
    return(node_clone);
 };
 
 xml_node *xml_clone_node(xml_node *node) { // new on 311002
-   xml_node *node_clone;
+   xml_node *node_clone = NULL; // see xml_shallow_copy
    node->cloneNode(VARIANT_TRUE,&node_clone);
 #if TT_DEBUG_ON
    if (tt_debug_mode == 311002) {

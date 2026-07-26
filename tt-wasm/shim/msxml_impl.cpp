@@ -82,7 +82,12 @@ struct DomNode : public IXMLDOMElement {
     DomDocument *owner;
     ULONG rc;
 
-    DomNode(DOMNodeType k, DomDocument *d) : kind(k), parent(NULL), owner(d), rc(1) {}
+    /* rc counts CLIENT references only -- the document owns the storage outright and holds no
+     * reference of its own, so a freshly minted node starts at 0 and every hand-out AddRefs (COM
+     * rules: the createXxx factories and cloneNode return a reference the caller owns, and the
+     * engine does release it). Counting the mint as a reference would have made every parsed node
+     * look externally held; not counting the AddRef'd ones would free nodes the engine still uses. */
+    DomNode(DOMNodeType k, DomDocument *d) : kind(k), parent(NULL), owner(d), rc(0) {}
     virtual ~DomNode() {}
 
     int index_in_parent();
@@ -93,7 +98,7 @@ struct DomNode : public IXMLDOMElement {
     /* IUnknown */
     HRESULT QueryInterface(REFIID, void **ppv) { *ppv = (IXMLDOMElement *)this; AddRef(); return S_OK; }
     ULONG   AddRef() { return ++rc; }
-    ULONG   Release() { return rc ? --rc : 0; }   /* doc owns nodes; never self-delete */
+    ULONG   Release();                            /* doc owns nodes; never self-delete */
     /* IDispatch (unused by the engine) */
     HRESULT GetTypeInfoCount(UINT *) { return E_NOTIMPL; }
     HRESULT GetTypeInfo(UINT, LCID, void **) { return E_NOTIMPL; }
@@ -200,17 +205,47 @@ struct DomDocument : public IXMLDOMDocument {
     vector<DomNode *> all;         /* every node ever minted, for teardown */
     DomParseError *err;
     ULONG rc;
+    bool released;                 /* Release() drove rc to 0, but nodes are still held */
 
-    DomDocument() : root(NULL), rc(1) { err = new DomParseError(); }
+    DomDocument() : root(NULL), rc(1), released(false) { err = new DomParseError(); }
     DomNode *mint(DOMNodeType k) { DomNode *n = new DomNode(k, this); all.push_back(n); return n; }
+
+    /* In MSXML a node reference keeps its owner document's storage alive: `node->AddRef()`
+     * promises the node stays usable even after the document handle is released. The engine
+     * banks on that. SpritePage::top_level_xml (pad.cpp:5969) caches `XML = parent;
+     * XML->AddRef();` and Notebook::dump() then releases the document it just wrote; a later
+     * dump of the same page clones that cached node. Freeing the whole arena at document
+     * Release() left XML dangling, so the clone call dispatched through a garbage vptr and
+     * trapped as "null function" -- the mid-demo tab freeze Ken hit in intro_v2. Teardown now
+     * waits for the last outstanding node reference. */
+    bool nodes_still_referenced() const {
+        for (size_t i = 0; i < all.size(); i++) if (all[i]->rc > 0) return true;
+        return false;
+    }
+    void reclaim_if_unreferenced() {   /* may delete this and every node it minted */
+        if (!released || nodes_still_referenced()) return;
+        for (size_t i = 0; i < all.size(); i++) delete all[i];
+        if (err) err->Release();
+        delete this;
+    }
 
     HRESULT QueryInterface(REFIID, void **ppv) { *ppv = (IXMLDOMDocument *)this; AddRef(); return S_OK; }
     ULONG   AddRef() { return ++rc; }
     ULONG   Release() {
         if (rc && --rc == 0) {
-            for (size_t i = 0; i < all.size(); i++) delete all[i];
-            if (err) err->Release();
-            delete this; return 0;
+            released = true;
+            if (nodes_still_referenced()) {   /* the case that used to leave a dangling vptr */
+                static int reported = 0;
+                if (reported < 8) {
+                    reported++;
+                    printf("[tt] xmldoc: teardown deferred, %d nodes minted and some still held%s\n",
+                           (int)all.size(), reported == 8 ? " [further reports suppressed]" : "");
+                    fflush(stdout);
+                }
+                return 0;
+            }
+            reclaim_if_unreferenced();
+            return 0;
         }
         return rc;
     }
@@ -240,7 +275,7 @@ struct DomDocument : public IXMLDOMDocument {
     }
     HRESULT hasChildNodes(VARIANT_BOOL *b) { *b = root ? VARIANT_TRUE : VARIANT_FALSE; return S_OK; }
     HRESULT get_ownerDocument(IXMLDOMDocument **d) { *d = NULL; return S_FALSE; }
-    HRESULT cloneNode(VARIANT_BOOL, IXMLDOMNode **out) { *out = NULL; return E_NOTIMPL; }
+    HRESULT cloneNode(VARIANT_BOOL deep, IXMLDOMNode **out);
     HRESULT get_text(BSTR *t) { wstring s; if (root) root->gather_text(s); *t = bstr_of(s); return S_OK; }
     HRESULT put_text(BSTR) { return E_FAIL; }
     HRESULT get_xml(BSTR *x) { wstring s; if (root) root->serialize(s); *x = bstr_of(s); return S_OK; }
@@ -249,13 +284,14 @@ struct DomDocument : public IXMLDOMDocument {
     HRESULT get_nodeTypedValue(VARIANT *v) { VariantInit(v); v->vt = VT_NULL; return S_FALSE; }
     /* IXMLDOMDocument */
     HRESULT get_documentElement(IXMLDOMElement **e) { *e = root; if (root) root->AddRef(); return root ? S_OK : S_FALSE; }
-    HRESULT createElement(BSTR tag, IXMLDOMElement **e) { DomNode *n = mint(NODE_ELEMENT); if (tag) n->name = tag; *e = n; return S_OK; }
-    HRESULT createDocumentFragment(IXMLDOMNode **f) { *f = mint(NODE_DOCUMENT_FRAGMENT); return S_OK; }
-    HRESULT createTextNode(BSTR data, IXMLDOMText **t) { DomNode *n = mint(NODE_TEXT); n->name = L"#text"; if (data) n->text = data; *t = (IXMLDOMText *)n; return S_OK; }
-    HRESULT createComment(BSTR data, IXMLDOMComment **c) { DomNode *n = mint(NODE_COMMENT); n->name = L"#comment"; if (data) n->text = data; *c = (IXMLDOMComment *)n; return S_OK; }
-    HRESULT createCDATASection(BSTR data, IXMLDOMCDATASection **cd) { DomNode *n = mint(NODE_CDATA_SECTION); n->name = L"#cdata-section"; if (data) n->text = data; *cd = (IXMLDOMCDATASection *)n; return S_OK; }
-    HRESULT createProcessingInstruction(BSTR target, BSTR data, IXMLDOMProcessingInstruction **pi) { DomNode *n = mint(NODE_PROCESSING_INSTRUCTION); if (target) n->name = target; if (data) n->text = data; *pi = (IXMLDOMProcessingInstruction *)n; return S_OK; }
-    HRESULT createAttribute(BSTR nm, IXMLDOMAttribute **a) { DomNode *n = mint(NODE_ATTRIBUTE); if (nm) n->name = nm; *a = (IXMLDOMAttribute *)n; return S_OK; }
+    /* the createXxx factories hand the caller a reference it owns, so each AddRefs (see DomNode's rc) */
+    HRESULT createElement(BSTR tag, IXMLDOMElement **e) { DomNode *n = mint(NODE_ELEMENT); if (tag) n->name = tag; n->AddRef(); *e = n; return S_OK; }
+    HRESULT createDocumentFragment(IXMLDOMNode **f) { DomNode *n = mint(NODE_DOCUMENT_FRAGMENT); n->AddRef(); *f = n; return S_OK; }
+    HRESULT createTextNode(BSTR data, IXMLDOMText **t) { DomNode *n = mint(NODE_TEXT); n->name = L"#text"; if (data) n->text = data; n->AddRef(); *t = (IXMLDOMText *)n; return S_OK; }
+    HRESULT createComment(BSTR data, IXMLDOMComment **c) { DomNode *n = mint(NODE_COMMENT); n->name = L"#comment"; if (data) n->text = data; n->AddRef(); *c = (IXMLDOMComment *)n; return S_OK; }
+    HRESULT createCDATASection(BSTR data, IXMLDOMCDATASection **cd) { DomNode *n = mint(NODE_CDATA_SECTION); n->name = L"#cdata-section"; if (data) n->text = data; n->AddRef(); *cd = (IXMLDOMCDATASection *)n; return S_OK; }
+    HRESULT createProcessingInstruction(BSTR target, BSTR data, IXMLDOMProcessingInstruction **pi) { DomNode *n = mint(NODE_PROCESSING_INSTRUCTION); if (target) n->name = target; if (data) n->text = data; n->AddRef(); *pi = (IXMLDOMProcessingInstruction *)n; return S_OK; }
+    HRESULT createAttribute(BSTR nm, IXMLDOMAttribute **a) { DomNode *n = mint(NODE_ATTRIBUTE); if (nm) n->name = nm; n->AddRef(); *a = (IXMLDOMAttribute *)n; return S_OK; }
     HRESULT getElementsByTagName(BSTR tagName, IXMLDOMNodeList **resultList) { if (root) return root->getElementsByTagName(tagName, resultList); *resultList = new DomNodeList(); return S_OK; }
     HRESULT get_parseError(IXMLDOMParseError **e) { *e = err; if (err) err->AddRef(); return S_OK; }
     HRESULT load(VARIANT src, VARIANT_BOOL *ok);
@@ -326,8 +362,26 @@ static DomNode *tt_clone_node(DomNode *n, DomDocument *doc, bool deep) {
     return c;
 }
 HRESULT DomNode::cloneNode(VARIANT_BOOL deep, IXMLDOMNode **out) {
-    *out = tt_clone_node(this, owner, deep == VARIANT_TRUE);
+    DomNode *c = tt_clone_node(this, owner, deep == VARIANT_TRUE);
+    c->AddRef();   /* the clone is handed to the caller; its descendants stay document-owned */
+    *out = c;
     return S_OK;
+}
+/* Cloning a document yields a new document, deep => the whole tree (MSXML). xml_clone_node
+ * reaches this whenever the engine caches a document rather than an element; the E_NOTIMPL
+ * stub it replaces handed back NULL, straight into the QueryInterface trap above. */
+HRESULT DomDocument::cloneNode(VARIANT_BOOL deep, IXMLDOMNode **out) {
+    DomDocument *copy = new DomDocument();
+    if (root && deep == VARIANT_TRUE) copy->root = tt_clone_node(root, copy, true);
+    *out = (IXMLDOMNode *)copy;
+    return S_OK;
+}
+ULONG DomNode::Release() {
+    ULONG left = rc ? --rc : 0;
+    /* a node never frees itself, but dropping the last reference to one can be what finally
+     * lets an already-released owner document go */
+    if (left == 0 && owner) owner->reclaim_if_unreferenced();   /* may delete this */
+    return left;
 }
 HRESULT DomNode::appendChild(IXMLDOMNode *newChild, IXMLDOMNode **out) {
     DomNode *n = (DomNode *)newChild; if (n) { n->parent = this; kids.push_back(n); }

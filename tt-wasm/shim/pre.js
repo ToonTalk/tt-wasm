@@ -102,6 +102,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   var c = document.getElementById('ttcanvas');
   if (!c) { setTimeout(attachMouse, 100); return; }
   var post = function (message, wParam, lParam) {
+    if (globalThis.TT_pauseOverlay) return;   // the demo-pause chooser is modal: the game sees no input
     var q = globalThis.TT_msgq;
     q.push({ message: message, wParam: wParam | 0, lParam: lParam | 0 });
     // If the loop isn't draining (hidden/throttled tab), drop the oldest — replaying a backlog
@@ -195,6 +196,70 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   });
   window.addEventListener('keyup', function (e) { delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0); });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
+})();
+
+// ------------------------------------------------------------- demo pause chooser
+// Any key or mouse button during a .dmo replay pauses the demo and asks what to do next
+// (winmain.cpp:8137 for keys, :1308 for buttons -> toggle_pause -> ask_continue_or_quit). The
+// original shows the DEMO_PAUSED_DIALOG resource (ttus.rc): "Back to Demo" / "Take Control" /
+// "Leave Demo", left to right, with Back to Demo as the default button. Neither DialogBoxA nor
+// show_html_dialog_named_in_ini_file can work in wasm, and nothing may block the browser's main
+// thread, so ask_continue_or_quit calls TT_demoPause() and returns while ToonTalk stays paused;
+// the click answers back through _tt_demo_pause_choice using the button numbers the engine's own
+// switch already understands (1 back, 5 take control, 3 leave).
+(function () {
+  if (typeof document === 'undefined') return;
+  var box = null;
+  var answer = function (n) {
+    if (box && box.parentNode) box.parentNode.removeChild(box);
+    box = null;
+    globalThis.TT_pauseOverlay = false;
+    if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
+  };
+  globalThis.TT_demoPause = function () {
+    if (box) return;                        // a second Esc must not stack a second chooser
+    globalThis.TT_pauseOverlay = true;
+    box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;' +
+      'background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;' +
+      'font:13px "MS Sans Serif",Tahoma,sans-serif';
+    var panel = document.createElement('div');
+    panel.style.cssText = 'background:#d4d0c8;border:2px outset #f6f6f6;color:#000;min-width:330px';
+    var caption = document.createElement('div');
+    caption.textContent = 'ToonTalk Demo Paused';
+    caption.style.cssText = 'background:#000080;color:#fff;font-weight:bold;padding:3px 6px';
+    var text = document.createElement('div');
+    text.textContent = 'ToonTalk demo has been stopped.';
+    text.style.cssText = 'padding:20px 16px;text-align:center';
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:0 12px 14px;display:flex;gap:10px;justify-content:center';
+    [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]].forEach(function (b, i) {
+      var el = document.createElement('button');
+      el.textContent = b[0];
+      el.style.cssText = 'font:inherit;padding:4px 10px;min-width:96px;cursor:pointer';
+      el.onclick = function () { answer(b[1]); };
+      row.appendChild(el);
+      if (i === 0) setTimeout(function () { try { el.focus(); } catch (e) {} }, 0);  // DEFPUSHBUTTON
+    });
+    panel.appendChild(caption); panel.appendChild(text); panel.appendChild(row);
+    box.appendChild(panel);
+    // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
+    (document.fullscreenElement || document.body).appendChild(box);
+    // Closing the dialog (SC_CLOSE) is "Back to Demo" in the original's handler.
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); answer(1); }
+    });
+  };
+  // "Leave Demo": the original either reloads the pre-demo city or quits ToonTalk. Quitting a tab
+  // leaves a dead canvas, so the port drops the ?demo= parameter and comes back up in free play.
+  globalThis.TT_leaveDemo = function () {
+    try {
+      var u = new URL(location.href);
+      u.searchParams.delete('demo');
+      u.searchParams.set('cb', String(Date.now() % 100000));
+      location.href = u.toString();
+    } catch (e) { location.reload(); }
+  };
 })();
 
 // ?demo=<name> plays one of ToonTalk's recorded .dmo demos (Demos/US in the retail install).
