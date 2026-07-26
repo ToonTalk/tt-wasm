@@ -559,6 +559,54 @@ boolean speak_after_preprocessing(wide_string wide_text, int text_length) {
 
 flag spoken_successfully = FALSE;
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Marty's voice. The Windows build spoke through SAPI via gpITTSCentral; in wasm that is
+ * always NULL, so speak() failed immediately and Talk_Balloon::speak_next_sentence
+ * (martian.cpp:3778) fell through to a silent balloon on a fixed timer -- Ken: "Marty still
+ * isn't using text-to-speech". Marty always speaks unless ?tts=0 turns it off.
+ *
+ * Completion is deliberately NOT signalled while a demo is replaying: the recording carries
+ * tt_paragraph_id_just_finished as a special event (log.cpp:3699), so the engine already knows
+ * when Marty stopped talking and speaking must not be allowed to pull the replay out of sync.
+ * Off-demo there is no log to ask, so the utterance's onend supplies it. */
+EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
+  try {
+    if (typeof speechSynthesis === 'undefined') return 0;
+    if (globalThis.TT_ttsOff === undefined) {
+      globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0;
+    }
+    if (globalThis.TT_ttsOff) return 0;
+    var s = UTF8ToString(utf8);
+    if (!s || !s.length) return 0;
+    var u = new SpeechSynthesisUtterance(s);
+    /* Closest to the original: an English male voice. getVoices() is empty until the voice list
+     * loads, in which case the platform default is used rather than staying silent. */
+    if (!globalThis.TT_martyVoice) {
+      var vs = speechSynthesis.getVoices() || [];
+      for (var i = 0; i < vs.length; i++) {
+        var n = (vs[i].name || '').toLowerCase();
+        if ((vs[i].lang || '').indexOf('en') === 0 &&
+            (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 ||
+             n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; }
+      }
+    }
+    if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice;
+    u.pitch = 1.3;   /* Marty is a small martian, not a newsreader */
+    u.rate = 1.0;
+    if (!replaying_now) {
+      u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); };
+    }
+    speechSynthesis.speak(u);
+    return 1;
+  } catch (e) { return 0; }
+});
+
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_tts_finished(long id) {
+  tt_paragraph_id_just_finished = id;   /* Main.cpp:1413 picks this up next cycle */
+}
+#endif
+
 boolean speak(wide_string text, long id) { // changed to boolean on 110401 so it returns FALSE if unable to speak
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 60998) {
@@ -566,6 +614,20 @@ boolean speak(wide_string text, long id) { // changed to boolean on 110401 so it
 	};
 #endif
    if (text == NULL || text[0] == NULL) return(FALSE); // second disjunct new on 110505 in case text is ""
+#ifdef __EMSCRIPTEN__
+   {
+      string narrow = copy_narrow_string(text);
+      int started = (narrow != NULL) ? tt_tts_speak(narrow,id,replaying() ? 1 : 0) : 0;
+      if (narrow != NULL) delete [] narrow;
+      if (started) {
+         if (id < 0) speaks_in_progress++;   // as the SAPI path below does
+         paragraph_id = id;
+         printf("[tt] marty: speaking id=%ld\n",id); fflush(stdout);
+         return(TRUE);
+      };
+      return(FALSE); // no voices, or ?tts=0 -- fall back to the silent balloon on a timer
+   }
+#endif
    if (gpITTSCentral == NULL) turn_on_speech_and_sound_off();
    if (gpITTSCentral == NULL) return(FALSE);
    if (cant_start_speech) return(FALSE);
