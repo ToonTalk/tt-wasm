@@ -8332,20 +8332,15 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 					  } else if (tt_time_travel != TIME_TRAVEL_OFF) { // new on 210100
 						  boolean was_in_playback = (tt_time_travel == TIME_TRAVEL_ON); // new on 211003
 #ifdef __EMSCRIPTEN__
-						  // A .dmo replay always runs with time travel ON, so every key during a demo
-						  // reaches here (WM_CHAR is rewritten to VK_PAUSE above) and the original goes
-						  // to the time-travel pause -- "otherwise ends up in the old demo dialog".
-						  // The port has no time-travel button UI yet, so that branch would swallow the
-						  // key and leave the demo running. Until time travel is built, take the older
-						  // route the comment refers to: pause and offer the DEMO_PAUSED_DIALOG choices
-						  // (Back to Demo / Take Control / Leave Demo), which is what Ken asked Esc for.
-						  if (was_in_playback) {
-							  printf("[tt] pausepath: demo key -> pause chooser (time travel UI not ported)\n");
-							  fflush(stdout);
-							  toggle_pause();
-							  user_did(GLOBAL_HISTORY,USER_HAS_PAUSED);
-							  break;
-						  };
+						  // Two-stage Esc, and both stages are already here: the first key during a
+						  // demo (time travel is ON throughout a replay) arms the time-travel pause
+						  // below, and the second arrives with tt_time_travel == TIME_TRAVEL_PAUSED and
+						  // takes the toggle_pause branch above, which is what raises the three-way
+						  // chooser. Only the button UI is missing, so probe the state rather than
+						  // diverting the flow.
+						  printf("[tt] ttravel: demo key, state=%d was_in_playback=%d\n",
+						         (int)tt_time_travel,(int)was_in_playback);
+						  fflush(stdout);
 #endif
 						  if (was_in_playback) { // new on 211003 since otherwise ends up in the old demo dialog
 							  tt_time_travel_after_display_updated = TRUE;
@@ -11294,6 +11289,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
 			// cycle ("to be used by dialogs so there is no waiting until the next cycle"). With
 			// FALSE the port took the CloseWindow branch and stayed paused for good.
 			back_to_toontalk(TRUE);
+			// The first Esc left us frozen in the time-travel pause, and unpausing alone does not
+			// leave it -- in the original you press the time-travel PLAY button to resume. Until
+			// those buttons are drawn here, "Back to Demo" would dead-end on a frozen frame, so
+			// resume playback directly. Remove this once the button UI works.
+			if (replaying() && tt_time_travel != TIME_TRAVEL_OFF) {
+				time_travel(TIME_TRAVEL_ON);
+			};
 			break;
 		case 3: // leave the demo
 			close_input_log(TRUE,FALSE);

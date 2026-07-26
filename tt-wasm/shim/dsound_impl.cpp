@@ -147,7 +147,15 @@ struct TTSoundBuffer : public IDirectSoundBuffer {
     return DS_OK;
   }
   HRESULT Play(DWORD, DWORD, DWORD flags) {
-    looping = (flags & DSBPLAY_LOOPING) ? 1 : 0;
+    int want_loop = (flags & DSBPLAY_LOOPING) ? 1 : 0;
+    /* DirectSound: Play on a buffer that is already playing is a no-op -- it keeps going from
+     * where it is. The engine leans on that for repeating sounds: SndObjPlay hands the same
+     * single buffer back every cycle while the helicopter flies (dsutil.cpp:327, and
+     * SndObjGetFreeBuffer does not rotate when iAlloc == 1), so restarting the Web Audio source
+     * each time replayed the first few milliseconds forever -- Ken: "the helicopter sounds got
+     * stuck on repeat". Ignoring the redundant Play also stops us re-decoding the PCM per cycle. */
+    if (playing && want_loop == looping) return DS_OK;
+    looping = want_loop;
     tt_ds_play(id, store, (int) size, fmt.nChannels, (int) fmt.nSamplesPerSec,
                fmt.wBitsPerSample, looping, &playing);
     return DS_OK;
