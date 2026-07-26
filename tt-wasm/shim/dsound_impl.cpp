@@ -201,3 +201,81 @@ HRESULT DirectSoundCreate(const GUID *, LPDIRECTSOUND *ppDS, IUnknown *) {
   *ppDS = the_direct_sound;
   return DS_OK;
 }
+
+/* ------------------------------------------------------------------------- *
+ * sndPlaySound — the winmm single-channel player. The engine uses it for the
+ * demo NARRATION (play_sound_file: Pat's US/sNN.wav extracted from the .dmo
+ * archive) and for play_sound_bytes (in-memory WAV). It is entirely separate
+ * from the DirectSound buffer path, so the effects shim above never covered
+ * it — "sound effects are heard but not narration" (Ken 2026-07-26). Parses
+ * a PCM WAV (file or SND_MEMORY) and routes it through the same Web Audio
+ * player on reserved channel id 0; a new play (or NULL) replaces the
+ * previous, matching winmm semantics.                                        */
+
+namespace {
+
+char snd_channel_playing = 0;
+
+const unsigned char *wav_find_chunk(const unsigned char *p, long len,
+                                    const char *id, long &size_out) {
+  long i = 12; /* past RIFF....WAVE */
+  while (i + 8 <= len) {
+    long sz = (long) (p[i+4] | (p[i+5] << 8) | ((unsigned long) p[i+6] << 16) | ((unsigned long) p[i+7] << 24));
+    if (memcmp(p + i, id, 4) == 0) { size_out = sz; return p + i + 8; }
+    i += 8 + sz + (sz & 1);
+  }
+  return NULL;
+}
+
+BOOL snd_play_wav_bytes(const unsigned char *wav, long len) {
+  if (len < 44 || memcmp(wav, "RIFF", 4) != 0 || memcmp(wav + 8, "WAVE", 4) != 0) return FALSE;
+  long fmt_size = 0, data_size = 0;
+  const unsigned char *fmt = wav_find_chunk(wav, len, "fmt ", fmt_size);
+  const unsigned char *data = wav_find_chunk(wav, len, "data", data_size);
+  if (fmt == NULL || data == NULL || fmt_size < 16) return FALSE;
+  int tag      = fmt[0] | (fmt[1] << 8);
+  int channels = fmt[2] | (fmt[3] << 8);
+  long rate    = (long) (fmt[4] | (fmt[5] << 8) | ((unsigned long) fmt[6] << 16) | ((unsigned long) fmt[7] << 24));
+  int bits     = fmt[14] | (fmt[15] << 8);
+  if (tag != 1 /* PCM */ || channels < 1 || channels > 2 || (bits != 8 && bits != 16)) return FALSE;
+  if (data + data_size > wav + len) data_size = (long) (wav + len - data);
+  tt_ds_stop(0, &snd_channel_playing);
+  snd_channel_playing = 1;
+  /* tt_ds_play copies the PCM into the AudioBuffer synchronously, so the
+     caller's storage need not outlive this call */
+  tt_ds_play(0, data, (int) data_size, channels, (int) rate, bits, 0, &snd_channel_playing);
+  return TRUE;
+}
+
+} // namespace
+
+BOOL sndPlaySoundA(LPCSTR pszSound, UINT fuSound) {
+  if (pszSound == NULL) { /* winmm: stop whatever is playing */
+    tt_ds_stop(0, &snd_channel_playing);
+    return TRUE;
+  }
+  if (fuSound & 0x0004 /* SND_MEMORY */) {
+    const unsigned char *wav = (const unsigned char *) pszSound;
+    long len = 8 + (long) (wav[4] | (wav[5] << 8) | ((unsigned long) wav[6] << 16) | ((unsigned long) wav[7] << 24));
+    return snd_play_wav_bytes(wav, len);
+  }
+  /* file mode: MEMFS wants forward slashes */
+  char path[512];
+  int i = 0;
+  for (; pszSound[i] && i < 511; i++) path[i] = (pszSound[i] == '\\') ? '/' : pszSound[i];
+  path[i] = 0;
+  FILE *f = fopen(path, "rb");
+  if (!f) {
+    printf("[tt] sndplay: cannot open '%s'\n", path); fflush(stdout);
+    return FALSE;
+  }
+  fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+  unsigned char *buf = (unsigned char *) malloc(len > 0 ? len : 1);
+  if (!buf) { fclose(f); return FALSE; }
+  long got = (long) fread(buf, 1, len, f);
+  fclose(f);
+  BOOL ok = snd_play_wav_bytes(buf, got);
+  if (!ok) { printf("[tt] sndplay: bad/unsupported wav '%s' (%ld bytes)\n", path, got); fflush(stdout); }
+  free(buf);
+  return ok;
+}

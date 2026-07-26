@@ -102,7 +102,6 @@ addToLibrary({
   _Z13OleInitializePv: function(){ return 0; },
   _Z13ShellExecuteAPvPKcS1_S1_S1_i: function(){ return 0; },
   _Z13UuidToStringAP5_GUIDPPh: function(){ return 0; },
-  _Z13sndPlaySoundAPKcj: function(){ return 0; },
   _Z14DragQueryFileAPvjPcj: function(){ return 0; },
   _Z14DragQueryPointPvP8tagPOINT: function(){ return 0; },
   _Z14RevokeDragDropPv: function(){ return 0; },

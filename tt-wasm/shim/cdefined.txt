@@ -96,3 +96,4 @@ mpz_tdiv_q
 mpz_tdiv_qr
 mpz_ui_pow_ui
 mpz_xor
+_Z13sndPlaySoundAPKcj

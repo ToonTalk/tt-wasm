@@ -883,6 +883,22 @@ void load_city_from_log() {
 						// stalls the cue cursor. Retail demos ran with base 0 too (the engine's
 						// two base assignments never fire for these archives).
 #ifdef __EMSCRIPTEN__
+						{ // positional-drift bisect (task #23): our avatar at each segment start,
+						  // to diff against the recorded cityNNNNN.cty programmer positions
+						  static int sp_log = 0;
+						  if (sp_log < 60 && tt_programmer != NULL) { sp_log++;
+							Sprite *app2 = tt_programmer->pointer_to_appearance();
+							if (app2 != NULL) {
+								city_coordinate ax2, ay2;
+								app2->lower_left_corner(ax2, ay2);
+								printf("[tt] segpos: seg=%d app=(%ld,%ld) w=%ld now=%ld\n",
+								       (int)tt_current_log_segment,(long)ax2,(long)ay2,
+								       (long)app2->current_width(),(long)tt_current_time); fflush(stdout);
+							};
+						  };
+						}
+#endif
+#ifdef __EMSCRIPTEN__
 						{ // where are the loaded city's doors? (replay never enters the house — Ken 2026-07-25)
 						  static int hd_log = 0;
 						  if (hd_log < 3) { hd_log++;
@@ -1487,16 +1503,28 @@ void process_demo_xml(xml_document *document) {
 	xml_node *node = first_node_that_is_an_element(document);
 	Tag tag = tag_token(node);
 	switch (tag) {
-		case SOUND_FILE_TAG: 
-			if (tt_log_in_archive != NULL && tt_play_demo_sound_files) { 
+		case SOUND_FILE_TAG:
+			if (tt_log_in_archive != NULL && tt_play_demo_sound_files) {
 				// conditional new on 061103 - can be NULL if demo is over and tt_subtitles_and_narration_even_without_demo
 				// tt_play_demo_sound_files added on 210704
 				string file_name = xml_get_narrow_text_copy(node);
 				if (file_name != NULL) {
 					string full_file_name = extract_file_from_archive(file_name,tt_log_in_archive);
 					if (full_file_name != NULL) {
+#ifdef __EMSCRIPTEN__
+						{ static int nf_log = 0;
+						  if (nf_log < 12) { nf_log++;
+							boolean played = play_sound_file(full_file_name,99);
+							printf("[tt] narrwav: '%s' played=%d f=%ld\n",
+							       full_file_name,(int)played,(long)tt_frame_number); fflush(stdout);
+						  } else play_sound_file(full_file_name,99);
+						}
+#else
 						play_sound_file(full_file_name,99);
+#endif
 						delete [] full_file_name;
+					} else {
+						printf("[tt] narrwav: EXTRACT FAILED for '%s'\n", file_name); fflush(stdout);
 					};
 					delete [] file_name;
 				};
