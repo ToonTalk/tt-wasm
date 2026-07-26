@@ -11281,6 +11281,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
 				// otherwise want to keep SPK and update DMO
 				stop_sound(TRUE);
 			};
+			// Taking control has to leave the time-travel pause for good. close_input_log above
+			// has ended the replay, so the case-1 resume below no longer applies, and if time
+			// travel stayed paused the world would stay frozen with nothing to take control of.
+			time_travel(TIME_TRAVEL_OFF);
 			unpause_toontalk();
 			// and fall through, as the original's case 5 does
 		case 1:
@@ -11293,9 +11297,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
 			// leave it -- in the original you press the time-travel PLAY button to resume. Until
 			// those buttons are drawn here, "Back to Demo" would dead-end on a frozen frame, so
 			// resume playback directly. Remove this once the button UI works.
-			if (replaying() && tt_time_travel != TIME_TRAVEL_OFF) {
+			// No replaying() test: after "take control" above it is already FALSE, and the state
+			// test alone is what decides whether there is a pause left to leave.
+			if (tt_time_travel != TIME_TRAVEL_OFF) {
 				time_travel(TIME_TRAVEL_ON);
 			};
+			printf("[tt] demopause: after choice paused=%d time_travel=%d replaying=%d frame=%ld\n",
+			       (int)paused,(int)tt_time_travel,(int)replaying(),(long)tt_frame_number);
+			fflush(stdout);
 			break;
 		case 3: // leave the demo
 			close_input_log(TRUE,FALSE);
