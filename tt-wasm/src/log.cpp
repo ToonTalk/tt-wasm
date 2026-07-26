@@ -1574,7 +1574,21 @@ boolean get_next_subtitle_line(short int &length) {
 		next_line_new_set = FALSE; // I think this simulates the old linear behavior
 		length = subtitle_lengths[current_index];
 		if (subtitle_xmls[current_index] != NULL) { // need to do something special
+#ifdef __EMSCRIPTEN__
+			// Each 5-second segment jump rewinds the cue cursor to "the group just
+			// before now" (reset_next_subtitle_time + the time-seek above), which
+			// re-executed the group's <SoundFile> and restarted Pat mid-sentence
+			// (Ken: "the narration sometimes repeats — even interrupting itself").
+			// Audio side-effects must run once per cue; the cursor may revisit.
+			{ static int em_max_xml_cue_played = -1;
+			  if (current_index > em_max_xml_cue_played) {
+				em_max_xml_cue_played = current_index;
+				process_demo_xml(subtitle_xmls[current_index]);
+			  };
+			}
+#else
 			process_demo_xml(subtitle_xmls[current_index]);
+#endif
 			return(get_next_subtitle_line(length));
 		};
 		subtitle_line = copy_string(subtitle_lines[current_index]);
