@@ -72,6 +72,23 @@ EM_JS(void, tt_ds_stop, (int id, char *playing_flag), {
   HEAP8[playing_flag] = 0;
 });
 
+/* Silence every source, whatever the engine still has a handle on. stop_sound() walks the sound
+ * CACHE (sprite.cpp:11528) and only stops entries whose cache id still matches, so a looping sound
+ * whose entry was evicted plays on with nothing tracking it. That never showed while a redundant
+ * Play restarted the helicopter every cycle -- pausing simply starved it of cycles -- but now that
+ * looping is real, pausing left it running (Ken: "I typed Esc to it and it paused but the sound
+ * continues"). The engine's own `playing` flags are left alone; GetStatus re-reads them per buffer
+ * and a stopped Web Audio source cannot resume by itself. */
+EM_JS(void, tt_ds_stop_all, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.srcs) return;
+  for (var k in DS.srcs) {
+    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    delete DS.srcs[k];
+  }
+});
+extern "C" void tt_stop_all_web_audio() { tt_ds_stop_all(); }
+
 EM_JS(void, tt_ds_volume, (int id, double gain), {
   var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} });
   DS.vols[id] = gain;

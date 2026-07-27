@@ -1135,8 +1135,18 @@ void stop_sound_id(int id) {
 //#endif
 
 //#if TT_DIRECTX
+#ifdef __EMSCRIPTEN__
+extern "C" void tt_stop_all_web_audio(); // dsound_impl.cpp
+#endif
+
 boolean stop_sound(boolean narration_too) { // added narration_too (and removed an obsolete priority number) on 170204
    stop_all_sounds_in_cache();
+#ifdef __EMSCRIPTEN__
+   // The cache walk above misses any looping buffer whose cache entry was evicted, which left the
+   // helicopter droning through the time-travel pause. The shim owns the mixer, so enforce what
+   // stop_sound means there as well.
+   tt_stop_all_web_audio();
+#endif
 	if (narration_too) {
 		sndPlaySound(NULL,SND_SYNC); // might be playing narration for example made conditional on 170204 
 	};
