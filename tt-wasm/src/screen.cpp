@@ -810,7 +810,13 @@ void Screen::display_subtitles() { // abtracted on 250105
 	//tt_dirty_max_x = tt_screen_width-1;
 	//tt_dirty_max_y = tt_screen_height-1; // subtitle_character_height*number_of_lines; // tt_screen_height-1;
 	// rewrote the above on 111104 as
-	TTRegion dirty_region(min_x(),max_x(),min_y(),min_y()+(subtitle_character_height*number_of_lines*scale)/ground_scale);		
+	city_coordinate subtitle_top = min_y()+(subtitle_character_height*number_of_lines*scale)/ground_scale;
+#ifdef __EMSCRIPTEN__
+	// the band is lifted clear of the time-travel buttons (see show_subtitle), so the dirty
+	// region has to reach past them or the raised band goes unrepainted
+	subtitle_top += (ideal_vertical_units(time_travel_bottom_reserved_pixels())*scale)/ground_scale;
+#endif
+	TTRegion dirty_region(min_x(),max_x(),min_y(),subtitle_top);
 	save_city_region(dirty_region);
 };
 

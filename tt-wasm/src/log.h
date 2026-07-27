@@ -136,6 +136,9 @@ void time_travel_react_to_mouse_down(city_coordinate x, city_coordinate y);
 void release_time_travel_buttons();
 //void add_time_travel_buttons();
 void display_time_travel_buttons();
+#ifdef __EMSCRIPTEN__
+coordinate time_travel_bottom_reserved_pixels(); // so the subtitle band can clear the buttons
+#endif
 boolean display_time_travel_cursor();
 void undisplay_time_travel_cursor();
 void release_screen_patch_buffer();

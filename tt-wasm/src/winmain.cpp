@@ -6059,10 +6059,18 @@ BEGIN_GDI
 		tt_screen->screen_dirty(); // could be more clever about exactly which region is dirty
 	};
 	tt_screen->set_number_of_subtitle_lines_last_time(number_of_lines_left);
-	coordinate y = tt_screen_height-new_line_height*number_of_lines_left;
+	coordinate subtitle_bottom = tt_screen_height;
+#ifdef __EMSCRIPTEN__
+	/* Sit above the time-travel interface instead of under it. The original pins this band to
+	 * tt_screen_height and lets the buttons -- painted later in Screen::display -- overdraw it
+	 * (Ken: "the subtitles and buttons should not overlap"). Zero whenever the buttons are gone,
+	 * so ordinary play is untouched. */
+	subtitle_bottom -= time_travel_bottom_reserved_pixels();
+#endif
+	coordinate y = subtitle_bottom-new_line_height*number_of_lines_left;
    SelectObject(main_device_context,GetStockObject(BLACK_BRUSH));
    SelectObject(main_device_context,GetStockObject(NULL_PEN));
-   Rectangle(main_device_context,0,y,tt_screen_width+1,tt_screen_height+1); 
+   Rectangle(main_device_context,0,y,tt_screen_width+1,subtitle_bottom+1);
 	// added 1 to both on 210602 since without borders box is too high by a pixel
 //	int max_characters_to_a_line = ((tt_screen_width*subtitle_length)/extent)-5; // -5 to avoid just a bit too long lines
  	int max_length_this_line, length_this_line;

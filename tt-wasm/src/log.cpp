@@ -4577,6 +4577,35 @@ void repair_time_travel_button_animations() { // new on 041103
 
 #endif
 
+#ifdef __EMSCRIPTEN__
+/* Pixels of the screen bottom the time-travel interface is currently covering.
+ *
+ * The original lets these two collide: show_subtitle pins its black band to tt_screen_height
+ * (winmain.cpp) while the buttons pin to min_y (update_time_travel_buttons below), and since
+ * Screen::display paints the buttons AFTER display_subtitles (screen.cpp:780, :785) the buttons
+ * simply overdraw the subtitle. Natively that is rarely noticed because during playback the
+ * buttons auto-hide off screen after a few seconds of mouse idle. Ken asked for them not to
+ * overlap at all, so the port lifts the subtitle band clear by this much.
+ *
+ * Measured from the sprites' current positions rather than from a constant, so the reserve
+ * shrinks smoothly as the buttons slide off screen instead of snapping when the hidden flag
+ * flips. screen_y() is measured up from the bottom of the view, so the top edge of the block
+ * IS its height in pixels. */
+coordinate time_travel_bottom_reserved_pixels() {
+	if (tt_time_travel == TIME_TRAVEL_OFF || buttons == NULL || tt_screen == NULL) return(0);
+	city_coordinate top = buttons[0]->current_lly()+buttons[0]->current_height();
+	if (tt_time_travel != TIME_TRAVEL_ON && time_label != NULL) {
+		// the time label only shows when not in playback (see below), and it sits above the buttons
+		city_coordinate label_top = time_label->current_lly()+time_label->current_height();
+		if (label_top > top) top = label_top;
+	};
+	coordinate pixels = tt_screen->screen_y(top);
+	if (pixels < 0) return(0);                                  // slid off the bottom
+	if (pixels > tt_screen_height/2) return(tt_screen_height/2); // never eat half the screen
+	return(pixels);
+};
+#endif
+
 void display_time_travel_buttons() {
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 230803 || tt_debug_mode == 2308031) return; // since interferes with hashing or shows up as extra pictures
