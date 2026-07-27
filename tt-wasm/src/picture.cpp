@@ -10042,9 +10042,32 @@ void associate_image_and_file_name(UserImage *image, string file_name) { // abst
 	number_of_user_images++;
 };
 
-UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name, 
+UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name,
 										 boolean &ok, boolean warn, int pixel_width, int pixel_height) {
 	// removed , boolean share_images_with_same_file_name on 280403
+#ifdef __EMSCRIPTEN__
+	/* Ask for the BMP twin of any .gif. The retail art includes GIFs -- the time-travel buttons are
+	 * play.gif, pause.gif, back_n.gif and friends (log.cpp:4037) -- but the port only has a working
+	 * BMP decoder (wingutil.cpp DibReadBitmapInfoFromFileName); the GDI+ shim is compile-only. The
+	 * GIFs are converted to BMP into assets/toontalk/doc at stage time, so redirecting here is what
+	 * makes them load at all. Without it prepare_to_time_travel built seven image-less sprites whose
+	 * current_width()/height() were 0, which is why no buttons were visible and why the layout and
+	 * the drift distance (log.cpp:4508, 4784) collapsed to nothing. */
+	ascii_string gif_as_bmp = NULL;
+	if (original_file_name != NULL) {
+		int n = strlen(original_file_name);
+		if (n > 4 && stricmp(original_file_name+n-4,".gif") == 0) {
+			gif_as_bmp = copy_string(original_file_name);
+			strcpy(gif_as_bmp+n-4,".bmp");
+			original_file_name = gif_as_bmp;
+		};
+	};
+	struct FreeGifName { // so every return path below releases it
+		ascii_string p;
+		FreeGifName(ascii_string s) : p(s) {}
+		~FreeGifName() { if (p != NULL) delete [] p; }
+	} free_gif_name(gif_as_bmp);
+#endif
 #if TT_DEBUG_ON
 //	millisecond start_time = timeGetTime();
 	if (tt_debug_mode == 2609001) {
