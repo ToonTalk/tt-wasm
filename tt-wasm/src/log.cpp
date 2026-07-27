@@ -4433,6 +4433,16 @@ boolean prepare_to_time_travel() {
 ////			buttons[i]->add_follower(labels[i]);
 		};
 		fresh_button = buttons[0]->copy();
+#ifdef __EMSCRIPTEN__
+		{ TTImage *bi = buttons[0]->pointer_to_current_image();
+		  TTImage *fi = fresh_button->pointer_to_current_image();
+		  printf("[tt] ttmake: b0=%ldx%ld img=%d px=%ldx%ld | fresh=%ldx%ld img=%d px=%ldx%ld\n",
+			(long)buttons[0]->current_width(),(long)buttons[0]->current_height(),(int)(bi!=NULL),
+			bi?(long)bi->width_without_scaling():-1,bi?(long)bi->height_without_scaling():-1,
+			(long)fresh_button->current_width(),(long)fresh_button->current_height(),(int)(fi!=NULL),
+			fi?(long)fi->width_without_scaling():-1,fi?(long)fi->height_without_scaling():-1);
+		  fflush(stdout); }
+#endif
 		if (time_label == NULL) {
 //			time_label = variable_width_text_pad("",FALSE,tt_black); // is variable width a good idea? asked 110603
 			boolean ok;
@@ -4577,9 +4587,16 @@ void display_time_travel_buttons() {
 		if (mouse_moved()) {
 			time_of_last_mouse_movement = timeGetTime();
 			if (time_travel_buttons_hidden) {
+#ifdef __EMSCRIPTEN__
+				printf("[tt] ttrestore: frame=%ld\n",(long)tt_frame_number); fflush(stdout);
+#endif
 				restore_time_travel_buttons();
 			};
 		} else if ((millisecond) (timeGetTime()-time_of_last_mouse_movement) > tt_duration_to_trigger_auto_hide) {
+#ifdef __EMSCRIPTEN__
+			{ static int h = 0; if (h < 3) { h++;
+				printf("[tt] tthide: frame=%ld hidden=%d\n",(long)tt_frame_number,(int)time_travel_buttons_hidden); fflush(stdout); } }
+#endif
 			hide_time_travel_buttons();
 		};
 	} else {
@@ -4588,6 +4605,18 @@ void display_time_travel_buttons() {
 		};
 		time_of_last_mouse_movement = timeGetTime(); // so it is ignored unless in playback
 	};
+#ifdef __EMSCRIPTEN__
+	{ static long q = 0;
+	  if ((++q % 120) == 0 && buttons != NULL) {
+		printf("[tt] ttbuttons: state=%d hidden=%d vis=%d city=%ld,%ld %ldx%ld screen=%ld,%ld frame=%ld\n",
+			(int)tt_time_travel,(int)time_travel_buttons_hidden,(int)buttons[0]->visible(),
+			(long)buttons[0]->current_llx(),(long)buttons[0]->current_lly(),
+			(long)buttons[0]->current_width(),(long)buttons[0]->current_height(),
+			(long)tt_screen->screen_x(buttons[0]->current_llx()),
+			(long)tt_screen->screen_y(buttons[0]->current_lly()),
+			(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	for (int i = 0; i < number_of_buttons; i++) {
 		buttons[i]->update_display(); // new on 041103
 		if (buttons[i]->visible()) { // new on 041103
@@ -4673,6 +4702,13 @@ void undisplay_time_travel_cursor() { // new on 250404
 };
 
 boolean display_time_travel_cursor() {
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 12) { p++;
+		printf("[tt] ttcursor: cursor=%d hidden=%d frame=%ld\n",
+			(int)(pointing_cursor != NULL),(int)time_travel_buttons_hidden,(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (pointing_cursor == NULL || time_travel_buttons_hidden) return(FALSE); // new on 290404
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 300404 || tt_debug_mode == 290404) {
@@ -4783,6 +4819,17 @@ void update_time_travel_buttons(boolean regardless) { // regardless new arg on 0
 	// TO_OLDEST_SEGMENT is a typical button -- beginning 100603 using fresh_button instead
 	city_coordinate button_width = (fresh_button->current_width()*scale)/ground_scale;
 	city_coordinate button_height = (fresh_button->current_height()*scale)/ground_scale; // all same height
+#ifdef __EMSCRIPTEN__
+	{ static long q = 0;
+	  if ((++q % 60) == 1) {
+		TTImage *img = fresh_button->pointer_to_current_image();
+		printf("[tt] ttlayout: fresh=%ldx%ld scale=%ld ground=%ld -> %ldx%ld  x:%ld..%ld y:%ld..%ld img=%d px=%ldx%ld\n",
+			(long)fresh_button->current_width(),(long)fresh_button->current_height(),
+			(long)scale,(long)ground_scale,(long)button_width,(long)button_height,
+			(long)min_x,(long)max_x,(long)min_y,(long)max_y,(int)(img != NULL),
+			img?(long)img->width_without_scaling():-1,img?(long)img->height_without_scaling():-1);
+		fflush(stdout); } }
+#endif
 	city_coordinate time_label_height = button_height/2; // abstracted on 051103
 	city_coordinate total_width = 0;
 	int i;

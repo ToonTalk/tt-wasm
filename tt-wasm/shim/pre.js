@@ -335,6 +335,14 @@ Module['preRun'].push(function () {
     'PictureDir=/toontalk/pictures/',
     'ClippingDir=/toontalk/clippings/',
     'MediaDir=/toontalk/media/',
+    // The retail installer writes this (Starttt.cpp:955) and the engine relies on it: the
+    // time-travel buttons and the emulated pointing cursor are UserPictures asked for by BARE
+    // name (log.cpp:4037, :4049), and existing_file_name only finds a bare name in the user
+    // directory or on this search path. Without the entry every one of them failed name
+    // resolution (retrieve_image -> compute_full_file_name FALSE), which is why the buttons
+    // existed but had no image and pointing_cursor stayed NULL. '?' expands to MainDir
+    // (utils.cpp:3340), matching how the installer writes it.
+    'FileSearchPath=?doc',
     '',
     '[Versions]',
     'Language=American',

@@ -5271,7 +5271,20 @@ boolean UserImage::compute_dimensions(ascii_string initial_file_name, boolean wa
 #if TT_DIRECTX_TRANSFORM||TT_IMGSOURCE||TT_GDIPLUS
 	// this sure is a lot of work just to get its dimensions...
 //	if (tt_using_directx_transform_for_BMPs || !file_is_BMP) {
-		if (surface == NULL) {
+#ifdef __EMSCRIPTEN__
+		/* load_image_dimensions measures the file with GDI+ (winmain.cpp:13524) and there is no GDI+
+		 * in wasm: the stubbed Bitmap reports status Ok while GetWidth()/GetHeight() return 0, so
+		 * this "succeeded" with 0x0 and set file_read, which skipped the
+		 * DibReadBitmapInfoFromFileName measurement below. set_dimensions then clamped both to 1
+		 * (sprite.cpp:5391), so every image loaded from a real file came out one city unit across
+		 * and drew as nothing -- the time-travel buttons were laid out and blitted at 1x1. Same
+		 * reasoning as the guard in retrieve_image (sprite.cpp:6517): let the classic BMP path
+		 * measure it. */
+		const boolean ask_gdiplus_for_dimensions = FALSE;
+#else
+		const boolean ask_gdiplus_for_dimensions = TRUE;
+#endif
+		if (surface == NULL && ask_gdiplus_for_dimensions) {
 			int surface_width, surface_height;
 			file_read = load_image_dimensions(full_file_name,surface_width,surface_height);
 			pixel_width = surface_width;

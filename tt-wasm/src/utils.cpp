@@ -9393,9 +9393,18 @@ void initialize_tt_file_search_path() { // new on 160200
 	};
 	delete [] path;
 	if (tt_private_media_directory != NULL) { // should be
-		add_directory_to_file_search_path(copy_string(tt_private_media_directory)); 
+		add_directory_to_file_search_path(copy_string(tt_private_media_directory));
 		// new on 080403 - though only needed for those things made by versions 2.83 thru 2.87
 	};
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 4) { p++;
+		printf("[tt] searchpath: %d entries\n",(int)tt_file_search_path_length);
+		for (int j = 0; j < tt_file_search_path_length; j++) {
+			printf("[tt] searchpath[%d] = '%s'\n",j,tt_file_search_path[j]);
+		};
+		fflush(stdout); } }
+#endif
 };
 
 string new_title_for_window(string name) { // abstracted on 221103

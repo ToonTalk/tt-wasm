@@ -1250,7 +1250,14 @@ boolean Main::MessageLoopOnce() {
       tt_current_trouble = DONT_TROUBLE_SHOOT;
 	};
 //	boolean time_travel_cursor_moved = FALSE;
-	if (have_focus && tt_time_travel == TIME_TRAVEL_PAUSED && !IsIconic(tt_main_window->get_handle())) { // new on 230404 
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 12 && tt_time_travel == TIME_TRAVEL_PAUSED) { p++;
+		printf("[tt] frozengate: focus=%d state=%d iconic=%d frame=%ld\n",
+			(int)have_focus,(int)tt_time_travel,(int)IsIconic(tt_main_window->get_handle()),(long)tt_frame_number);
+		fflush(stdout); } }
+#endif
+	if (have_focus && tt_time_travel == TIME_TRAVEL_PAUSED && !IsIconic(tt_main_window->get_handle())) { // new on 230404
 		// added IsIconic(tt_main_window->get_handle()) test on 070904 since it seems it can happen (issue 551)
 		if (display_time_travel_cursor()) { // no need if no movement
 //			tt_screen->display(tt_screen->update_display());
@@ -1667,8 +1674,8 @@ static boolean tt_message_loop_iteration() {
 		// the same as a stopped engine, and pixel sampling cannot tell them apart.
 		static long beat = 0;
 		if ((++beat % 240) == 0) {
-			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d\n",
-			       beat,(long)tt_frame_number,(int)paused,(int)replaying());
+			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d time_travel=%d\n",
+			       beat,(long)tt_frame_number,(int)paused,(int)replaying(),(int)tt_time_travel);
 			fflush(stdout);
 		};
 	}
