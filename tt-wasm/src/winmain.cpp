@@ -1091,7 +1091,17 @@ void restore_cursor() {
 #if TT_ALPHA_FEATURE
 
 boolean mouse_moved() { // new on 031103 - used for auto hiding of time travel buttons
-	 if (tt_using_direct_input && tt_mouse_mode == RELATIVE_MOUSE_MODE) {
+#ifdef __EMSCRIPTEN__
+	 /* There is no DirectInput in wasm -- direct_input_mouse_delta always reports 0,0 -- so taking
+	  * that branch means reporting "the mouse never moved" forever, and the time-travel buttons stay
+	  * auto-hidden however much the user moves it (log.cpp:4575-4590 auto-hides after
+	  * tt_duration_to_trigger_auto_hide). GetCursorPos below is the path the browser shim really
+	  * implements, so always use it. */
+	 boolean use_direct_input_deltas = FALSE;
+#else
+	 boolean use_direct_input_deltas = (tt_using_direct_input && tt_mouse_mode == RELATIVE_MOUSE_MODE);
+#endif
+	 if (use_direct_input_deltas) {
 		 long delta_x = 0, delta_y = 0;
 		 UnwindProtect<boolean> set(tt_mouse_acquired,TRUE); // so the following reports changes despite the fact that ToonTalk "isn't listening"
 #if TT_DIRECT_INPUT
