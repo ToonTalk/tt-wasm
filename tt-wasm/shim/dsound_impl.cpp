@@ -89,8 +89,14 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
     if (!DS.flags) DS.flags = {};
     DS.flags[id] = playing_flag;
     DS.srcs[id] = src;
+    /* Short history of every source, so the watchdog can still reach one that has been dropped
+     * from DS.srcs while sounding. The 'ended' LISTENER (not the onended property, which the stop
+     * paths deliberately null out) is what tells us a node is genuinely finished — without it the
+     * watchdog "rescues" every sound that simply ran to its end and reports each one. */
     if (!DS.all) DS.all = [];
-    DS.all.push({ id: id, src: src });
+    var ent = { id: id, src: src, ended: false };
+    try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {}
+    DS.all.push(ent);
     if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64);
     src.start();
   } catch (e) { /* no audio available — stay silent */ }
@@ -189,16 +195,24 @@ EM_JS(int, tt_ds_reconcile, (), {
   if (DS.all) {
     for (var i = DS.all.length - 1; i >= 0; i--) {
       var e = DS.all[i];
-      if (e.dead) continue;
+      if (e.dead || e.ended) continue;             /* already gone, or ran to its natural end */
       if (DS.srcs[e.id] === e.src) continue;       /* still the current source for that buffer */
       var f = DS.flags[e.id];
       if (f !== undefined && HEAP8[f] !== 0) continue;  /* engine believes that buffer is playing */
       kill(e.src);
       e.dead = true;
+      DS.rescued = (DS.rescued || []); DS.rescued.push(e.id);
       stopped++;
     }
   }
   return stopped;
+});
+
+/* Which buffer was rescued, so a report names something instead of just counting. -1 = none. */
+EM_JS(int, tt_ds_last_rescued, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.rescued || !DS.rescued.length) return -1;
+  return DS.rescued[DS.rescued.length - 1];
 });
 
 extern "C" void tt_audio_watchdog() {
@@ -206,8 +220,8 @@ extern "C" void tt_audio_watchdog() {
 	if (stopped > 0) {
 		static int reported = 0;
 		if (reported < 12) { reported++;
-			printf("[tt] audiowatch: stopped %d source(s) the engine had already given up on%s\n",
-			       stopped, reported == 12 ? " [further reports suppressed]" : "");
+			printf("[tt] audiowatch: stopped %d source(s) still sounding after the engine gave up (last buffer=%d)%s\n",
+			       stopped, tt_ds_last_rescued(), reported == 12 ? " [further reports suppressed]" : "");
 			fflush(stdout);
 		};
 	};

@@ -461,9 +461,16 @@ globalThis.TT_audioReport = function () {
     return k + (s.loop ? ' LOOPING' : '') + ' ' + (s.buffer ? s.buffer.duration.toFixed(2) + 's' : '?') +
            ' gain=' + (DS.gains[k] ? DS.gains[k].gain.value.toFixed(2) : 'none');
   });
+  // Sources the shim no longer tracks but which have never reported 'ended' — the state that made
+  // the rotor outlive its helicopter. Listed separately because a source can be missing from
+  // DS.srcs and still be connected to the speakers.
+  var lost = (DS.all || []).filter(function (e) {
+    return !e.ended && !e.dead && DS.srcs[e.id] !== e.src;
+  }).map(function (e) { return e.id + (e.src.loop ? ' LOOPING' : ''); });
   return 'ctx=' + DS.ctx.state + ' master=' + (DS.master ? DS.master.gain.value.toFixed(2) : 'none') +
          ' volume=' + globalThis.TT_volume + ' rmsAtMaster=' + rms +
          ' | live sources: ' + (live.length ? live.join(' ; ') : 'NONE') +
+         ' | untracked-and-unfinished: ' + (lost.length ? lost.join(' ; ') : 'NONE') +
          ' | gains held: ' + Object.keys(DS.gains).join(',');
 };
 
