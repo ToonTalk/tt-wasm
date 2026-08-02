@@ -69,6 +69,13 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
     gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1;
     var src = DS.ctx.createBufferSource();
     src.buffer = ab; src.loop = !!loop; src.connect(gain);
+    /* Looping effects are the ones that can outlive their reason for playing (the helicopter is
+     * the notable one), so say when one starts. Bounded, and only for loops, so it stays quiet. */
+    if (loop) {
+      DS.loopLog = (DS.loopLog || 0) + 1;
+      if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's';
+        (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); }
+    }
     if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; };
     HEAP8[playing_flag] = 1;
     DS.srcs[id] = src;
@@ -78,7 +85,11 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
 
 EM_JS(void, tt_ds_stop, (int id, char *playing_flag), {
   var DS = Module.TT_ds;
-  if (DS && DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; }
+  if (DS && DS.srcs[id]) {
+    if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id;
+      (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); }
+    try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id];
+  }
   HEAP8[playing_flag] = 0;
 });
 

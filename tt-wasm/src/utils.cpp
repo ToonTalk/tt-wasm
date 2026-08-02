@@ -1121,6 +1121,14 @@ void stop_sound_id(int id) {
       sound_to_delete = NULL;
    };
 	sound_buffer sound = retrieve_sound(id,sound_to_delete);
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 10) { p++;
+		printf("[tt] stopsnd: id=%d got=%d fresh=%d (Stop %s)\n", id, (int)(sound != NULL),
+		       (int)(sound_to_delete != NULL),
+		       (sound != NULL && sound_to_delete == NULL) ? "called" : "SKIPPED");
+		fflush(stdout); } }
+#endif
 	if (sound == NULL) return; // not enough memory or some problem
    if (sound_to_delete == NULL) sound->Stop(); // is really a pre-existing one from the cache
    id_of_sound_to_play = 0;
