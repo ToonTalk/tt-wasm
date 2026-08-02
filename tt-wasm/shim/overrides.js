@@ -277,6 +277,32 @@ addToLibrary({
     if (!path) return -1;
     try { return FS.open(path, write ? 'w' : 'r').fd; } catch (e) { return -1; }
   },
+  // Time travel records into <user dir>/time_travel.dmo and stages each segment under
+  // "Temporary File Cache", and the engine expects to create those folders itself (it calls
+  // CreateDirectory freely and never checks for failure — on Windows it cannot fail in any way
+  // that matters). As a zero-stub nothing was ever created, so every log segment and the archive
+  // itself failed to open and free-play time travel silently recorded nothing at all. Creates
+  // parents too, since the engine assumes a Windows API that does not need them pre-made.
+  CreateDirectoryA__deps: ['$FS', '$UTF8ToString'],
+  CreateDirectoryA: function(namePtr, sa) {
+    if (!namePtr) return 0;
+    var path = UTF8ToString(namePtr).replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+    if (!path) return 0;
+    var parts = path.split('/'), sofar = '', made = 0;
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] === '') { sofar = ''; continue; }        // leading slash: stay absolute
+      sofar += '/' + parts[i];
+      try { FS.mkdir(sofar); made = 1; }
+      catch (e) { if (e && e.errno !== undefined && e.code !== 'EEXIST') { /* keep trying deeper */ } }
+    }
+    return made;   // Win32: non-zero on success, and "already exists" is not a failure we report
+  },
+  RemoveDirectoryA__deps: ['$FS', '$UTF8ToString'],
+  RemoveDirectoryA: function(namePtr) {
+    if (!namePtr) return 0;
+    var path = UTF8ToString(namePtr).replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+    try { FS.rmdir(path); return 1; } catch (e) { return 0; }
+  },
   ReadFile__deps: ['$FS'],
   ReadFile: function(fh, buf, toRead, nReadPtr, ovl) {
     var s = FS.streams[fh]; var n = 0;

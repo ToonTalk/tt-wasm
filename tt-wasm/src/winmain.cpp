@@ -1674,8 +1674,9 @@ static boolean tt_message_loop_iteration() {
 		// the same as a stopped engine, and pixel sampling cannot tell them apart.
 		static long beat = 0;
 		if ((++beat % 240) == 0) {
-			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d time_travel=%d\n",
-			       beat,(long)tt_frame_number,(int)paused,(int)replaying(),(int)tt_time_travel);
+			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d time_travel=%d logging=%d now=%ld next_log=%ld\n",
+			       beat,(long)tt_frame_number,(int)paused,(int)replaying(),(int)tt_time_travel,
+			       (int)tt_logging,(long)tt_current_time,(long)tt_next_new_log_time);
 			fflush(stdout);
 		};
 	}
@@ -10120,8 +10121,15 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 			};
 		};
 	};
+#ifdef __EMSCRIPTEN__
+	printf("[tt] ttsetup: enabled=%d between_logs=%ld count_max=%d logging=%d replaying=%d out_name=%s dump_xml=%d\n",
+	       (int)tt_time_travel_enabled,(long)tt_time_between_new_logs,(int)tt_log_count_max,
+	       (int)tt_logging,(int)replaying(),
+	       tt_log_out_file_name ? tt_log_out_file_name : "(none)",(int)tt_dump_as_xml);
+	fflush(stdout);
+#endif
 	// moved here on 150903 from seconds_between_new_logs > 0 branch above so that if you turn off time travel you still end up where you left off
-	if (tt_city_name == NULL && time_travel_enabled()) { 
+	if (tt_city_name == NULL && time_travel_enabled()) {
 		// rewritten 211003 since otherwise saved cities not used if there is a replay log and a time travel archive
 //	if (tt_city_name == NULL && (tt_time_between_new_logs > 0 || log_in_archive() != NULL)) {
 		// default when running with time travel is to resume where you left off - new on 110603

@@ -271,6 +271,17 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
 // The demos are NOT baked into tt.data — they total ~36MB — so fetch the one asked for and
 // write it into the FS before the engine starts, then hand the engine its own command-line
 // switch "-I <name>" (replay reproducing the original timing; utils.cpp interpret_command_line).
+// ?timetravel=1 records free play so you can rewind it, and offers it as a .dmo to save.
+// Off by default: recording writes a full city snapshot every 10 seconds into the in-memory
+// filesystem, which in a browser tab is memory the user did not ask to spend. -time_travel_enabled
+// is the engine's own switch (utils.cpp:11018); demos ignore this since a replay sets its own
+// time-travel state.
+globalThis.TT_recording = false;
+(function setUpTimeTravel() {
+  if (typeof location === 'undefined') return;
+  globalThis.TT_recording = /[?&]timetravel=1/.test(location.search) && !/[?&]demo=/.test(location.search);
+})();
+
 globalThis.TT_cmdline = '';
 (function setUpDemo() {
   if (typeof location === 'undefined') return;
@@ -311,6 +322,38 @@ globalThis.TT_cmdline = '';
     }
   });
 })();
+
+// Append (never prepend — the demo-replay tests check for a leading "-I ") the switch that turns
+// recording off unless it was asked for. Must run after setUpDemo, which assigns TT_cmdline.
+(function applyTimeTravelSwitch() {
+  if (globalThis.TT_recording) return;
+  globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
+                          '-time_travel_enabled 0';
+})();
+
+// Save the recorded session as a .dmo. Asks the engine to bring the archive up to date first --
+// the segment in progress is not in it until it is closed — then hands the bytes to the browser
+// as a download. Exposed on the page so the button in tt.html (and the console) can call it.
+globalThis.TT_saveDemo = function () {
+  if (!globalThis.TT_recording) { console.warn('[tt] save: not recording — reload with ?timetravel=1'); return false; }
+  var pathPtr = Module['_tt_finish_time_travel_archive'] && Module['_tt_finish_time_travel_archive']();
+  if (!pathPtr) { console.warn('[tt] save: no time-travel archive yet'); return false; }
+  var path = UTF8ToString(pathPtr).replace(/\\/g, '/').replace(/\/+/g, '/');
+  var bytes;
+  try { bytes = FS.readFile(path); }
+  catch (e) { console.warn('[tt] save: cannot read ' + path + ' — ' + e.message); return false; }
+  var blob = new Blob([bytes], {type: 'application/octet-stream'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'toontalk-session.dmo';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  console.log('[tt] save: ' + path + ' (' + bytes.length + ' bytes)');
+  return true;
+};
 
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
 // directory subsystem (ini_entry -> GetPrivateProfileString) finds real values instead of NULL.

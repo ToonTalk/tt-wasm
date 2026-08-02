@@ -476,6 +476,15 @@ millisecond close_log_and_open_next() {
 	};
 	tt_log_out_file_name = maintain_n_versions_youngest_last(tt_log_count_max); //,tt_current_log_segment); // new on 200799
 	log_out_archive(); // make sure this is initialized - new on 190703
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 6) { p++;
+		printf("[tt] ttfiles: user_dir=%s out=%s archive=%s\n",
+		       tt_user_directory ? tt_user_directory : "(null)",
+		       tt_log_out_file_name ? tt_log_out_file_name : "(null)",
+		       tt_log_out_archive ? tt_log_out_archive : "(null)");
+		fflush(stdout); } }
+#endif
 //	millisecond start; // replaced by a global variable so that don't count the time in the debugger (or some other dialog)
 	if (tt_next_new_log_time > 0) {
 		tt_log_initialization_start_time = timeGetTime(); 
@@ -750,7 +759,17 @@ void log_initialization(ascii_string log_file_name) {
   	  log_write((bytes) &debug_counter,sizeof(debug_counter)); // new on 150100
 	  dump_keep_every_data(log_out); // new on 180100
 	  date_and_time_log_created = seconds_since_1970();
+#ifdef __EMSCRIPTEN__
+	  { // Match the 4-byte on-disk time_t the reader expects (see the read side around log.cpp:2214
+		 // and write_use_profile). wasm's time_t is 8 bytes, so writing sizeof() here produced logs
+		 // this very build could not read back -- a recorded demo would misalign at the first
+		 // segment preface and load no city.
+		 unsigned long recorded_date = (unsigned long) date_and_time_log_created;
+		 log_write((bytes) &recorded_date,sizeof(recorded_date));
+	  }
+#else
 	  log_write((bytes) &date_and_time_log_created,sizeof(date_and_time_log_created));
+#endif
 #if TT_DEBUG_ON
 	  if (tt_debug_mode == 290903) {
 		  tt_error_file() << date_and_time_log_created << " at " << tt_current_time << " for segment " << tt_current_log_segment <<  " on frame " << tt_frame_number << endl;
@@ -5125,6 +5144,25 @@ void save_city_since_end_of_logging() {
 		// test on 200703 - should be conditional and have a nice interface
 	};
 };
+
+#ifdef __EMSCRIPTEN__
+/* Bring the time-travel archive up to date and hand back its path, so the page can offer the
+ * recorded session as a .dmo download. Natively you just quit and the archive is on disk; a
+ * browser tab has no "afterwards", so the same finishing work has to be available on demand.
+ *
+ * Mirrors what a normal exit does: close the segment in progress (close_log ZIPs it into the
+ * archive) and then add the current city, which is what makes the newest point in the recording
+ * reachable when it is replayed (Main.cpp:1854 does exactly this on the way out). Safe to call
+ * from a DOM handler: those run between requestAnimationFrame ticks, never inside a cycle. */
+extern "C" EMSCRIPTEN_KEEPALIVE const char *tt_finish_time_travel_archive() {
+	if (!time_travel_enabled() || tt_log_out_archive == NULL) return(NULL);
+	close_log_and_open_next();
+	save_city_since_end_of_logging();
+	printf("[tt] ttsave: archive '%s' segments up to %d\n",tt_log_out_archive,(int)tt_current_log_segment);
+	fflush(stdout);
+	return(tt_log_out_archive);
+};
+#endif
 
 string most_recent_city_file_name() {
 	if (tt_user_directory == NULL) return(NULL); // new on 050300 -- not good if this is called before user directory is set

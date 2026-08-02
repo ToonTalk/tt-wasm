@@ -1827,6 +1827,13 @@ void delete_deleted_houses() { // abstracted on 290204
 };
 
 void start_time_travelling() { // abstracted 130204
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 6) { p++;
+		printf("[tt] ttrecord: starting a log segment at %ld (seg=%d logging=%d)\n",
+		       (long)tt_current_time,(int)tt_current_log_segment,(int)tt_logging);
+		fflush(stdout); } }
+#endif
 	millisecond time_to_start_log = close_log_and_open_next();
 #if TT_DEBUG_ON
 	if (time_to_start_log > 1000) { // probably took a long time cause hit a breakpoint
