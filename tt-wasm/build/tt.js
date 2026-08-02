@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp9t3duggg.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpu44xn1u4.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp9t3duggg.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpmz07xrox.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpu44xn1u4.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpqgqbw8m0.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpmz07xrox.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpqgqbw8m0.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -369,8 +369,25 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
            && !globalThis.TT_replayOver;
   };
   var firstClickSwallowed = false;
+  // WINDOWED TRACKING. The engine's absolute mode places the hand at the cursor, which is only as
+  // fine as the canvas is big: in a panel 800x600 renders at ~360px, so one mouse pixel becomes
+  // 2.2 hand pixels and the hand lurches (Ken: full screen "reacts well to mouse movements but it
+  // doesn't work in a panel"). Full screen feels right because it is near 1:1 AND accumulates raw
+  // movement through pointer lock -- which is also what the original did windowed, re-centring the
+  // cursor every frame (winmain.cpp SetCursorPos(client_center)). The web can only close that loop
+  // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
+  // pause, and capturing the mouse would be wrong.
+  var wantLock = function () {
+    return !document.fullscreenElement && document.pointerLockElement !== c &&
+           !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0);
+  };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
+    if (wantLock() && c.requestPointerLock) {
+      // Chrome rejects a lock requested too soon after the user escaped the last one; that is
+      // fine, the next click gets it.
+      try { var p = c.requestPointerLock(); if (p && p.catch) p.catch(function () {}); } catch (err) {}
+    }
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
     post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
@@ -766,13 +783,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpwg6w2y09.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp_zj50oy5.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpwg6w2y09.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmp_zj50oy5.js
 
 
 var programArgs = [];

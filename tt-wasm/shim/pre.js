@@ -156,8 +156,25 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
            && !globalThis.TT_replayOver;
   };
   var firstClickSwallowed = false;
+  // WINDOWED TRACKING. The engine's absolute mode places the hand at the cursor, which is only as
+  // fine as the canvas is big: in a panel 800x600 renders at ~360px, so one mouse pixel becomes
+  // 2.2 hand pixels and the hand lurches (Ken: full screen "reacts well to mouse movements but it
+  // doesn't work in a panel"). Full screen feels right because it is near 1:1 AND accumulates raw
+  // movement through pointer lock -- which is also what the original did windowed, re-centring the
+  // cursor every frame (winmain.cpp SetCursorPos(client_center)). The web can only close that loop
+  // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
+  // pause, and capturing the mouse would be wrong.
+  var wantLock = function () {
+    return !document.fullscreenElement && document.pointerLockElement !== c &&
+           !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0);
+  };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
+    if (wantLock() && c.requestPointerLock) {
+      // Chrome rejects a lock requested too soon after the user escaped the last one; that is
+      // fine, the next click gets it.
+      try { var p = c.requestPointerLock(); if (p && p.catch) p.catch(function () {}); } catch (err) {}
+    }
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
     post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
