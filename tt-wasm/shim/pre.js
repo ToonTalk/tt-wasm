@@ -365,7 +365,11 @@ globalThis.TT_cmdline = '';
 // Master volume, 0..1. Drives the one gain node every sound passes through (dsound_impl.cpp) and
 // the loudness of Marty's synthesised speech, which speechSynthesis caps at 1.0 and which is
 // otherwise quieter than the recorded narration.
-globalThis.TT_volume = 1;
+// Do NOT clobber: tt.html restores the saved setting into TT_volume from its inline script, which
+// runs BEFORE tt.js loads this file. Assigning 1 unconditionally threw that away, so a page
+// reloaded with the slider at minimum came back up silent-looking but at full volume — the
+// helicopter kept droning with the control showing zero (Ken).
+if (globalThis.TT_volume === undefined) globalThis.TT_volume = 1;
 globalThis.TT_setVolume = function (v) {
   v = Math.max(0, Math.min(1, Number(v)));
   globalThis.TT_volume = v;
