@@ -148,7 +148,12 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // Lazy: TT_cmdline is assigned by the ?demo= block BELOW this attach function, so the
   // flag must be read at click time, not at attach time.
   var demoReplay = function () {
-    return globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0;
+    // Only while a demo is actually PLAYING. Once it ends the engine hands over the time-travel
+    // controls, and swallowing a click there costs the user their first press on a button --
+    // they have to click twice with no indication why. TT_replayOver is set by the end-of-demo
+    // watcher below.
+    return globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0
+           && !globalThis.TT_replayOver;
   };
   var firstClickSwallowed = false;
   c.addEventListener('mousedown', function (e) {
@@ -273,6 +278,11 @@ globalThis.TT_cmdline = '';
   if (!m) return;
   var name = m[1];
   globalThis.TT_cmdline = '-I ' + name;
+  // ?segment=N starts the replay at log segment N (the engine's own -segment option,
+  // utils.cpp:10831). A demo is dozens of segments — explode2 has 48 — so this is the only
+  // practical way to test what happens at the END of a demo without watching all of it.
+  var seg = location.search.match(/[?&]segment=(\d+)/);
+  if (seg) globalThis.TT_cmdline += ' -segment ' + seg[1];
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
     // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
@@ -315,6 +325,16 @@ Module['preRun'].push(function () {
     'GenerateRobotNames=1',
     'MaximumNumberOfHoles=2048',
     'RobotCounter=50',
+    // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
+    // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
+    // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its
+    // set_user_wants_to_quit branch rather than setting tt_time_travel_after_display_updated
+    // (log.cpp:1224-1239 — the comment there is explicit that the point is "at the end of a demo
+    // rather than begin recording you get the time travel buttons"). Ken: "when a demo ends there
+    // isn't a way to get the time travel interface to go back in time." A browser tab is not a
+    // kiosk that should exit, so turn the option off — it is the engine's own switch, read at
+    // log.cpp:1918.
+    'ExitWhenDemoEnds=0',
     // Skip title-screen dwell for normal boots; during .dmo replay keep the engine's
     // default pacing so the recorded titles read at the intended speed.
     (globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0 ? '' : 'DelayBetweenTitles=0'),

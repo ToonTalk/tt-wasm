@@ -8986,6 +8986,16 @@ void MainWindow::mouse_button_just_went_down(int which_button) {
 //				  if (window_height != tt_screen_height) {
 //					  mouse_position.y += GetSystemMetrics(SM_CYFRAME)+GetSystemMetrics(SM_CYCAPTION);
 //				  };
+#ifdef __EMSCRIPTEN__
+		{ static int p = 0;
+		  if (p < 6) { p++;
+			printf("[tt] mousedown: btn=%d state=%d exclusive=%d px=%ld,%ld -> city %ld,%ld\n",
+				which_button,(int)tt_time_travel,(int)exclusive_screen_desired(),
+				(long)mouse_position.x,(long)mouse_position.y,
+				(long)tt_screen->x_pixel_to_screen(mouse_position.x),
+				(long)tt_screen->y_pixel_to_screen(mouse_position.y));
+			fflush(stdout); } }
+#endif
 		time_travel_react_to_mouse_down(tt_screen->x_pixel_to_screen(mouse_position.x),
 												  tt_screen->y_pixel_to_screen(mouse_position.y));
 	} else if (tt_mouse_acquired) { // conditional new on 311099

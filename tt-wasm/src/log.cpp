@@ -27,8 +27,11 @@
 #if !defined(__TT_TOOLS_H)   
 #include "tools.h"
 #endif 
-#if !defined(__TT_SCREEN_H)   
+#if !defined(__TT_SCREEN_H)
 #include "screen.h"
+#endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #endif
 #if !defined(__TT_WINMAIN_H)
 #include "winmain.h"
@@ -1216,6 +1219,12 @@ ascii_string replay_log_file_name = NULL;
 //};
 
 void stop_replay() {
+#ifdef __EMSCRIPTEN__
+	// Tell the page the demo is over. pre.js swallows the first canvas click during a replay so
+	// that unlocking audio does not also pause the demo; once the engine hands over the
+	// time-travel controls that swallow would silently eat the user's first press on a button.
+	EM_ASM({ globalThis.TT_replayOver = true; });
+#endif
 	set_replay(NO_REPLAY);
 	if (!tt_subtitles_and_narration_even_without_demo) { // tt_debug_mode != 1785) {
       speak_file = -1;
@@ -5059,6 +5068,20 @@ void time_travel_react(TimeTravelButton button) {
 };
 
 void time_travel_react_to_mouse_down(city_coordinate x, city_coordinate y) {
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0;
+	  if (p < 6) { p++;
+		printf("[tt] ttclick: at %ld,%ld buttons=%d\n",(long)x,(long)y,(int)(buttons != NULL));
+		if (buttons != NULL) {
+			for (int j = 0; j < number_of_buttons_displayed; j++) {
+				TTRegion r;
+				buttons[j]->full_region(r);
+				printf("[tt]   btn%d x %ld..%ld y %ld..%ld inside=%d\n",j,
+					(long)r.min_x,(long)r.max_x,(long)r.min_y,(long)r.max_y,(int)r.inside(x,y));
+			};
+		};
+		fflush(stdout); } }
+#endif
 	if (buttons == NULL) return; // something wrong
 	TTRegion region;
 	for (int i = 0; i < number_of_buttons_displayed; i++) { // since pause button shouldn't be considered here - new on 041103
