@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToonTalk — WASM</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 800px at 50% 0%, #23233a, #101018 70%);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box;
+    font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; color: #d7d7e4;
+  }
+  #stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  /* 800x600 pixel art scaled up to fill the window, 4:3 preserved. */
+  #ttcanvas {
+    image-rendering: pixelated; background: #000;
+    width: min(92vw, 74vh); height: auto; aspect-ratio: 4 / 3;
+    border: 1px solid #3a3a4c; border-radius: 6px;
+    box-shadow: 0 10px 50px rgba(0,0,0,.55);
+  }
+  /* the canvas is focusable (tabIndex for keys) — suppress the white UA focus ring */
+  #ttcanvas:focus { outline: none; }
+  #ttcanvas:focus-visible { outline: none; }
+  /* fullscreen: fill the screen, keep 4:3 (letterboxed); pre.js maps the mouse to the
+     content rect, so the black bars are dead space rather than misaimed clicks */
+  #ttcanvas:fullscreen {
+    width: 100vw; height: 100vh; aspect-ratio: auto;
+    object-fit: contain; border: none; border-radius: 0; background: #000;
+  }
+  #controls { display: flex; gap: 10px; align-items: center; }
+  #fsbtn, #savebtn {
+    font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+    border-radius: 6px; padding: 4px 14px; cursor: pointer;
+  }
+  #fsbtn:hover, #savebtn:hover { background: #34344a; }
+  #help {
+    max-width: 620px; text-align: center; color: #a9a9bd;
+    background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
+    border-radius: 8px; padding: 10px 16px;
+  }
+  #help b { color: #ececf4; }
+  kbd {
+    font: inherit; background: #2a2a3a; border: 1px solid #44445a; border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 6px; color: #e6e6f2;
+  }
+  #status { color: #6d6d80; font-size: 12px; letter-spacing: .02em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="ttcanvas" width="800" height="600"></canvas>
+  <div id="help">
+    <b>Welcome to ToonTalk.</b> <b>Click where you want to fly</b> — the helicopter glides there.
+    <b>Hold the left mouse button</b> (or <kbd>D</kbd>) to fly down — keep holding to touch down
+    and step out. Right button (or <kbd>U</kbd>) climbs. On the ground, <b>click where you want
+    to walk</b>, and <b>click</b> things to pick them up. In your house, <b>right-click</b> (or
+    any key) to sit down at your desk. <kbd>Space</kbd> runs the tool you're holding.
+  </div>
+  <div id="status">loading engine…</div>
+  <div id="controls">
+    <button id="fsbtn" type="button">Full screen</button>
+    <!-- only shown when ?timetravel=1 is recording the session -->
+    <button id="savebtn" type="button" hidden>Save this session</button>
+  </div>
+</div>
+<script>
+  var statusEl = document.getElementById('status');
+  var Module = {
+    // 1785656702 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
+    locateFile: function (f) { return f + '?v=1785656702'; },
+    // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
+    // resets on navigation and resurrects stale lines, so automation reads this instead.
+    print: function (t) {
+      if (t && t.indexOf('[tt]') === 0) {
+        var l = (window.TT_log = window.TT_log || []);
+        l.push(t);
+        if (l.length > 3000) l.splice(0, 500);
+      }
+      console.log(t);
+    },
+    printErr: function (t) { console.warn(t); },
+    onRuntimeInitialized: function () {
+      statusEl.textContent = /[?&]demo=/.test(location.search)
+        ? 'demo playing — click once for sound; after that, a click pauses and resumes'
+        : 'engine running — click the picture to begin';
+    }
+  };
+  window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+  // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like
+  // "input dead after re-entering full screen" comes with the exact event trail.
+  function ttNote(s) {
+    var l = (window.TT_log = window.TT_log || []);
+    l.push('[tt] ui: ' + s);
+    if (l.length > 3000) l.splice(0, 500);
+  }
+  // Chrome refuses a pointer-lock request made too soon after the user ESCAPED the previous
+  // lock (an anti-abuse latch, ~1.5s). The .catch below sees that rejection and retries once
+  // the latch expires — otherwise re-entering full screen silently comes up WITHOUT the lock
+  // and the mouse doesn't drive the game (Ken: "after returning to full screen it ignored
+  // mouse... actions").
+  function ttRequestLock(c, retried) {
+    var p;
+    try { p = c.requestPointerLock({ unadjustedMovement: false }); } catch (e) { p = null; }
+    if (p && p.catch) {
+      p.then(function () { ttNote('pointer lock OK'); }).catch(function (err) {
+        ttNote('pointer lock REJECTED: ' + err.name + (retried ? ' (retry failed)' : ' — retrying in 1.6s'));
+        if (!retried) setTimeout(function () {
+          if (document.fullscreenElement === c && document.pointerLockElement !== c) ttRequestLock(c, true);
+        }, 1600);
+      });
+    }
+  }
+  // ?timetravel=1 records free play. Reveal the save control only then — offering it otherwise
+  // would promise a file that does not exist.
+  if (/[?&]timetravel=1/.test(location.search) && !/[?&]demo=/.test(location.search)) {
+    var saveBtn = document.getElementById('savebtn');
+    saveBtn.hidden = false;
+    saveBtn.addEventListener('click', function () {
+      var ok = window.TT_saveDemo && window.TT_saveDemo();
+      statusEl.textContent = ok ? 'Saved this session as toontalk-session.dmo'
+                                : 'Nothing recorded yet — play for a few seconds first';
+    });
+  }
+  document.getElementById('fsbtn').addEventListener('click', function () {
+    var c = document.getElementById('ttcanvas');
+    if (document.fullscreenElement) { ttNote('fsbtn: exiting'); document.exitFullscreen(); }
+    else if (c.requestFullscreen) {
+      // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
+      // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
+      // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
+      // (press-AND-HOLD Esc remains the browser's own exit).
+      ttNote('fsbtn: entering');
+      c.requestFullscreen().then(function () {
+        ttRequestLock(c, false);
+        if (navigator.keyboard && navigator.keyboard.lock) {
+          navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
+                                             .catch(function (e) { ttNote('keyboard lock FAILED: ' + e.name); });
+        }
+      }).catch(function (e) { ttNote('requestFullscreen FAILED: ' + e.name); });
+    }
+    c.focus();   // keys keep flowing to the game either way
+  });
+  document.addEventListener('fullscreenchange', function () {
+    ttNote('fullscreenchange: ' + (document.fullscreenElement ? 'IN' : 'OUT'));
+    document.getElementById('fsbtn').textContent =
+      document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+    if (!document.fullscreenElement) {
+      if (navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock();
+      if (document.exitPointerLock) document.exitPointerLock();
+    }
+  });
+  document.addEventListener('pointerlockchange', function () {
+    var locked = document.pointerLockElement === document.getElementById('ttcanvas');
+    ttNote('pointerlockchange: ' + (locked ? 'LOCKED' : 'unlocked'));
+    if (Module && Module._em_set_mouse_mode) {
+      // 0 = relative everywhere (original fullscreen), 1 = absolute everywhere (windowed web)
+      Module._em_set_mouse_mode(locked ? 0 : 1);
+    }
+    if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; }
+  });
+  document.addEventListener('pointerlockerror', function () { ttNote('pointerlockerror'); });
+  // Escape in full screen (Ken's spec = the ORIGINAL behavior): on the floor Escape STANDS
+  // YOU UP — the engine handles that itself (At_Floor::react, case VK_ESCAPE -> get_up());
+  // walking or flying it leaves full screen, showing the options + Full screen button.
+  // Chrome normally exits pointer lock AND full screen itself on one Esc press — Keyboard
+  // Lock (above) suppresses that and lets the keydown through. On the floor we only
+  // preventDefault (NOT stopPropagation: pre.js's own keydown listener must still post
+  // VK_ESCAPE + the ESC character to the engine, which does the standing up); off the
+  // floor we leave full screen ourselves.
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !document.fullscreenElement) return;
+    e.preventDefault();
+    var onFloor = (typeof Module !== 'undefined') && Module._em_on_floor && Module._em_on_floor();
+    ttNote('Esc in fullscreen: on_floor=' + (onFloor ? 1 : 0) +
+           (onFloor ? ' -> engine stands up' : ' -> exiting fullscreen'));
+    if (onFloor) {
+      var c = document.getElementById('ttcanvas');
+      if (document.pointerLockElement !== c) ttRequestLock(c, false);
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }, true);
+  // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
+  // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
+  if (/[?&]fps=1/.test(location.search)) {
+    var fpsEl = document.createElement('div');
+    fpsEl.style.cssText = 'position:fixed;top:6px;left:8px;z-index:99;font:13px monospace;' +
+      'color:#0f0;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:4px;pointer-events:none;';
+    document.body.appendChild(fpsEl);
+    setInterval(function () {
+      var t = window.TT_present_times || [];
+      var now = performance.now();
+      var recent = t.filter(function (x) { return now - x < 1000; });
+      var worst = 0;
+      for (var i = 1; i < recent.length; i++) worst = Math.max(worst, recent[i] - recent[i - 1]);
+      fpsEl.textContent = recent.length + ' fps, worst gap ' + Math.round(worst) + 'ms';
+    }, 500);
+  }
+</script>
+<script src="tt.js?v=1785656702"></script>
+</body>
+</html>

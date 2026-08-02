@@ -6,7 +6,6 @@ toontalk-web
 *.mp4
 
 # === generated build output (tt-wasm WASM port) ===
-tt-wasm/build/
 tt-wasm/obj/
 tt-wasm/logs/
 *.o

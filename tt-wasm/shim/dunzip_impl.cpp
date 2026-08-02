@@ -150,6 +150,14 @@ bool extract_member(int k) {
 
 } // namespace
 
+/* The reader caches an archive's bytes and its parsed central directory keyed by path, which is
+ * safe while archives are read-only. Now that dzip_impl.cpp writes them (time travel appends a
+ * segment every few seconds), the writer must drop the cache or the next read of the SAME path
+ * serves the pre-write bytes. */
+extern "C" void tt_zip_forget_archive(const char *path) {
+    if (path == nullptr || (g_arc && strcmp(path, g_arc_path) == 0)) drop_archive();
+}
+
 static int dz_log = 0;
 extern "C" int dunzip(LPUNZIPCMDSTRUCT u) {
     if (!u || !u->lpszZIPFile) return UE_NOFILE;
