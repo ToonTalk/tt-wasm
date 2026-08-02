@@ -71,7 +71,12 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
       DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1;
       DS.master.connect(DS.ctx.destination);
     }
-    if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; }
+    /* A unity bus between the per-buffer gains and the master, existing solely so the level can be
+     * measured BEFORE the volume control. Tapping the master's output cannot answer "is anything
+     * playing" while the volume is at zero — the reading is zero by construction, which is exactly
+     * the state Ken tested in. */
+    if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); }
+    if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; }
     gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1;
     var src = DS.ctx.createBufferSource();
     src.buffer = ab; src.loop = !!loop; src.connect(gain);

@@ -446,7 +446,10 @@ globalThis.TT_audioReport = function () {
     try {
       globalThis.__ttAn = DS.ctx.createAnalyser();
       globalThis.__ttAn.fftSize = 2048;
-      if (DS.master) DS.master.connect(globalThis.__ttAn);
+      // Tap the BUS, not the master: the master carries the volume setting, so with the slider at
+      // zero its output is silent whatever is playing and the number answers nothing.
+      if (DS.bus) DS.bus.connect(globalThis.__ttAn);
+      else if (DS.master) DS.master.connect(globalThis.__ttAn);
     } catch (e) {}
   }
   var rms = 'n/a';
@@ -456,6 +459,10 @@ globalThis.TT_audioReport = function () {
     var t = 0; for (var i = 0; i < b.length; i++) t += b[i] * b[i];
     rms = Math.sqrt(t / b.length).toFixed(4);
   } catch (e) {}
+  // A suspended context processes nothing, so a zero here means "not measured", NOT "silent".
+  // Say so rather than printing a number that reads like evidence — setting the volume to zero
+  // suspends the context, which is exactly when someone is most likely to be checking.
+  if (DS.ctx.state !== 'running') rms += ' (NOT MEASURED — context ' + DS.ctx.state + '; use TT_audioProbe())';
   var live = Object.keys(DS.srcs).map(function (k) {
     var s = DS.srcs[k];
     return k + (s.loop ? ' LOOPING' : '') + ' ' + (s.buffer ? s.buffer.duration.toFixed(2) + 's' : '?') +
@@ -468,10 +475,45 @@ globalThis.TT_audioReport = function () {
     return !e.ended && !e.dead && DS.srcs[e.id] !== e.src;
   }).map(function (e) { return e.id + (e.src.loop ? ' LOOPING' : ''); });
   return 'ctx=' + DS.ctx.state + ' master=' + (DS.master ? DS.master.gain.value.toFixed(2) : 'none') +
-         ' volume=' + globalThis.TT_volume + ' rmsAtMaster=' + rms +
+         ' volume=' + globalThis.TT_volume + ' rmsBeforeVolume=' + rms +
          ' | live sources: ' + (live.length ? live.join(' ; ') : 'NONE') +
          ' | untracked-and-unfinished: ' + (lost.length ? lost.join(' ; ') : 'NONE') +
          ' | gains held: ' + Object.keys(DS.gains).join(',');
+};
+
+// TT_audioProbe(): is anything actually generating sound RIGHT NOW, whatever the volume is set to?
+// TT_audioReport() cannot answer that at volume zero — the context is suspended, so nothing is
+// processed and the level reads zero no matter what. This resumes the context briefly, measures at
+// the bus (upstream of the volume control, so the reading is of the sound itself rather than of the
+// setting), then puts everything back exactly as it was. Nothing becomes audible: the master gain
+// is held at zero for the duration. Returns a promise — call it as: await TT_audioProbe()
+globalThis.TT_audioProbe = function () {
+  var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+  if (!DS || !DS.ctx) return Promise.resolve('no audio started yet');
+  var wasSuspended = DS.ctx.state !== 'running';
+  var heldMaster = DS.master ? DS.master.gain.value : null;
+  if (DS.master) DS.master.gain.value = 0;          // stay silent while we listen
+  var restore = function () {
+    if (DS.master && heldMaster !== null) DS.master.gain.value = heldMaster;
+    if (wasSuspended) { try { DS.ctx.suspend(); } catch (e) {} }
+  };
+  return Promise.resolve(wasSuspended ? DS.ctx.resume() : null).then(function () {
+    globalThis.TT_audioReport();                    // ensures the analyser exists and is wired
+    return new Promise(function (done) { setTimeout(done, 300); });
+  }).then(function () {
+    var peak = 0, rms = 0;
+    try {
+      var b = new Float32Array(globalThis.__ttAn.fftSize);
+      globalThis.__ttAn.getFloatTimeDomainData(b);
+      var t = 0;
+      for (var i = 0; i < b.length; i++) { t += b[i] * b[i]; if (Math.abs(b[i]) > peak) peak = Math.abs(b[i]); }
+      rms = Math.sqrt(t / b.length);
+    } catch (e) {}
+    restore();
+    return 'SOUND BEING GENERATED: ' + (rms > 0.0005 ? 'YES' : 'no') +
+           ' (rms=' + rms.toFixed(4) + ' peak=' + peak.toFixed(4) + ', measured upstream of the ' +
+           'volume control with the volume forced to silence) | ' + globalThis.TT_audioReport();
+  }).catch(function (e) { restore(); return 'probe failed: ' + e; });
 };
 
 // Play a .dmo the user picked off their own machine. ?demo=<name> can only name a file the SERVER

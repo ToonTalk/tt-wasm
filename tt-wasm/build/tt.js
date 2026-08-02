@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmpkmopqq84.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpph4xzv87.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmpkmopqq84.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp7o7rfvgn.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpph4xzv87.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpsprzqowm.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp7o7rfvgn.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpsprzqowm.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -659,7 +659,10 @@ globalThis.TT_audioReport = function () {
     try {
       globalThis.__ttAn = DS.ctx.createAnalyser();
       globalThis.__ttAn.fftSize = 2048;
-      if (DS.master) DS.master.connect(globalThis.__ttAn);
+      // Tap the BUS, not the master: the master carries the volume setting, so with the slider at
+      // zero its output is silent whatever is playing and the number answers nothing.
+      if (DS.bus) DS.bus.connect(globalThis.__ttAn);
+      else if (DS.master) DS.master.connect(globalThis.__ttAn);
     } catch (e) {}
   }
   var rms = 'n/a';
@@ -669,6 +672,10 @@ globalThis.TT_audioReport = function () {
     var t = 0; for (var i = 0; i < b.length; i++) t += b[i] * b[i];
     rms = Math.sqrt(t / b.length).toFixed(4);
   } catch (e) {}
+  // A suspended context processes nothing, so a zero here means "not measured", NOT "silent".
+  // Say so rather than printing a number that reads like evidence — setting the volume to zero
+  // suspends the context, which is exactly when someone is most likely to be checking.
+  if (DS.ctx.state !== 'running') rms += ' (NOT MEASURED — context ' + DS.ctx.state + '; use TT_audioProbe())';
   var live = Object.keys(DS.srcs).map(function (k) {
     var s = DS.srcs[k];
     return k + (s.loop ? ' LOOPING' : '') + ' ' + (s.buffer ? s.buffer.duration.toFixed(2) + 's' : '?') +
@@ -681,10 +688,45 @@ globalThis.TT_audioReport = function () {
     return !e.ended && !e.dead && DS.srcs[e.id] !== e.src;
   }).map(function (e) { return e.id + (e.src.loop ? ' LOOPING' : ''); });
   return 'ctx=' + DS.ctx.state + ' master=' + (DS.master ? DS.master.gain.value.toFixed(2) : 'none') +
-         ' volume=' + globalThis.TT_volume + ' rmsAtMaster=' + rms +
+         ' volume=' + globalThis.TT_volume + ' rmsBeforeVolume=' + rms +
          ' | live sources: ' + (live.length ? live.join(' ; ') : 'NONE') +
          ' | untracked-and-unfinished: ' + (lost.length ? lost.join(' ; ') : 'NONE') +
          ' | gains held: ' + Object.keys(DS.gains).join(',');
+};
+
+// TT_audioProbe(): is anything actually generating sound RIGHT NOW, whatever the volume is set to?
+// TT_audioReport() cannot answer that at volume zero — the context is suspended, so nothing is
+// processed and the level reads zero no matter what. This resumes the context briefly, measures at
+// the bus (upstream of the volume control, so the reading is of the sound itself rather than of the
+// setting), then puts everything back exactly as it was. Nothing becomes audible: the master gain
+// is held at zero for the duration. Returns a promise — call it as: await TT_audioProbe()
+globalThis.TT_audioProbe = function () {
+  var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+  if (!DS || !DS.ctx) return Promise.resolve('no audio started yet');
+  var wasSuspended = DS.ctx.state !== 'running';
+  var heldMaster = DS.master ? DS.master.gain.value : null;
+  if (DS.master) DS.master.gain.value = 0;          // stay silent while we listen
+  var restore = function () {
+    if (DS.master && heldMaster !== null) DS.master.gain.value = heldMaster;
+    if (wasSuspended) { try { DS.ctx.suspend(); } catch (e) {} }
+  };
+  return Promise.resolve(wasSuspended ? DS.ctx.resume() : null).then(function () {
+    globalThis.TT_audioReport();                    // ensures the analyser exists and is wired
+    return new Promise(function (done) { setTimeout(done, 300); });
+  }).then(function () {
+    var peak = 0, rms = 0;
+    try {
+      var b = new Float32Array(globalThis.__ttAn.fftSize);
+      globalThis.__ttAn.getFloatTimeDomainData(b);
+      var t = 0;
+      for (var i = 0; i < b.length; i++) { t += b[i] * b[i]; if (Math.abs(b[i]) > peak) peak = Math.abs(b[i]); }
+      rms = Math.sqrt(t / b.length);
+    } catch (e) {}
+    restore();
+    return 'SOUND BEING GENERATED: ' + (rms > 0.0005 ? 'YES' : 'no') +
+           ' (rms=' + rms.toFixed(4) + ' peak=' + peak.toFixed(4) + ', measured upstream of the ' +
+           'volume control with the volume forced to silence) | ' + globalThis.TT_audioReport();
+  }).catch(function (e) { restore(); return 'probe failed: ' + e; });
 };
 
 // Play a .dmo the user picked off their own machine. ?demo=<name> can only name a file the SERVER
@@ -1003,13 +1045,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpeo9prxhc.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp37n7r0hj.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpeo9prxhc.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmp37n7r0hj.js
 
 
 var programArgs = [];
@@ -9765,7 +9807,7 @@ var ASM_CONSTS = {
  17071387: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
  17071447: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
 };
-function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
+function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
 function tt_ds_stop_all() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
 function tt_ds_stop_effects() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { if (k === '0') continue; try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
