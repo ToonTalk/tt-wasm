@@ -75,7 +75,14 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
      * measured BEFORE the volume control. Tapping the master's output cannot answer "is anything
      * playing" while the volume is at zero — the reading is zero by construction, which is exactly
      * the state Ken tested in. */
-    if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); }
+    if (!DS.bus) {
+      DS.bus = DS.ctx.createGain();
+      DS.bus.connect(DS.master);
+      /* Permanent analyser on the bus. Every sound this shim plays passes through here, upstream
+       * of the volume, so the watchdog can compare what is SOUNDING with what is registered
+       * instead of relying on someone being at the keyboard with the speakers on. */
+      try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {}
+    }
     if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; }
     gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1;
     var src = DS.ctx.createBufferSource();
@@ -213,6 +220,28 @@ EM_JS(int, tt_ds_reconcile, (), {
   return stopped;
 });
 
+/* Sound with no owner. Returns the RMS x10000 when the bus carries signal while NOTHING is
+ * registered as playing and no orphan is outstanding — a sound the shim did not create, or one it
+ * has lost every handle on. Every check so far has been "does the registry look right", which
+ * cannot see a sound that was never in the registry. This listens instead. 0 = nothing anomalous. */
+EM_JS(int, tt_ds_ghost_level, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.probe || !DS.ctx || DS.ctx.state !== 'running') return 0;  /* suspended: nothing runs */
+  for (var k in DS.srcs) return 0;                 /* something is legitimately registered */
+  if (DS.all) {
+    for (var i = 0; i < DS.all.length; i++) {
+      var e = DS.all[i];
+      if (!e.dead && !e.ended) return 0;           /* a known orphan: the sweep above owns that case */
+    }
+  }
+  var b = new Float32Array(DS.probe.fftSize);
+  DS.probe.getFloatTimeDomainData(b);
+  var t = 0;
+  for (var j = 0; j < b.length; j++) t += b[j] * b[j];
+  var rms = Math.sqrt(t / b.length);
+  return (rms > 0.0005) ? Math.round(rms * 10000) : 0;
+});
+
 /* Which buffer was rescued, so a report names something instead of just counting. -1 = none. */
 EM_JS(int, tt_ds_last_rescued, (), {
   var DS = Module.TT_ds;
@@ -227,6 +256,17 @@ extern "C" void tt_audio_watchdog() {
 		if (reported < 12) { reported++;
 			printf("[tt] audiowatch: stopped %d source(s) still sounding after the engine gave up (last buffer=%d)%s\n",
 			       stopped, tt_ds_last_rescued(), reported == 12 ? " [further reports suppressed]" : "");
+			fflush(stdout);
+		};
+	};
+	/* Sound with nothing registered to account for it. Reported rather than silenced: the shim did
+	 * not create it, so it has no handle to stop, and guessing would only hide the evidence. */
+	int ghost = tt_ds_ghost_level();
+	if (ghost > 0) {
+		static int ghosts = 0;
+		if (ghosts < 6) { ghosts++;
+			printf("[tt] audioghost: bus carries signal (rms=%.4f) with NO source registered and no orphan%s\n",
+			       ghost / 10000.0, ghosts == 6 ? " [further reports suppressed]" : "");
 			fflush(stdout);
 		};
 	};
