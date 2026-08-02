@@ -1114,6 +1114,12 @@ void turn_on_sound(boolean forever) {
 };
 
 //#if TT_DIRECTX
+#ifdef __EMSCRIPTEN__
+extern "C" void tt_stop_all_web_audio();     // dsound_impl.cpp
+extern "C" void tt_stop_effects_web_audio(); // all but the narration channel
+extern "C" void tt_stop_looping_web_audio(); // the repeating ones (rotor loop, running tools)
+#endif
+
 void stop_sound_id(int id) {
    if (id <= 0) return; // <= as of 210404
    if (sound_to_delete != NULL) {
@@ -1129,6 +1135,16 @@ void stop_sound_id(int id) {
 		       (sound != NULL && sound_to_delete == NULL) ? "called" : "SKIPPED");
 		fflush(stdout); } }
 #endif
+#ifdef __EMSCRIPTEN__
+	/* If the cache no longer holds this sound, the Stop() below either does not happen at all or
+	 * lands on a buffer freshly made for the occasion — never the one actually sounding. Natively
+	 * that is harmless; here the rotor loop is a Web Audio source that keeps looping forever with
+	 * nothing tracking it, which is what Ken hears still flying after he has landed. Recover by
+	 * stopping the repeating sources, which is precisely what this call is asking for. */
+	if (sound == NULL || sound_to_delete != NULL) {
+		tt_stop_looping_web_audio();
+	};
+#endif
 	if (sound == NULL) return; // not enough memory or some problem
    if (sound_to_delete == NULL) sound->Stop(); // is really a pre-existing one from the cache
    id_of_sound_to_play = 0;
@@ -1143,17 +1159,18 @@ void stop_sound_id(int id) {
 //#endif
 
 //#if TT_DIRECTX
-#ifdef __EMSCRIPTEN__
-extern "C" void tt_stop_all_web_audio(); // dsound_impl.cpp
-#endif
 
 boolean stop_sound(boolean narration_too) { // added narration_too (and removed an obsolete priority number) on 170204
    stop_all_sounds_in_cache();
 #ifdef __EMSCRIPTEN__
    // The cache walk above misses any looping buffer whose cache entry was evicted, which left the
    // helicopter droning through the time-travel pause. The shim owns the mixer, so enforce what
-   // stop_sound means there as well.
-   tt_stop_all_web_audio();
+   // stop_sound means there as well -- but only as far as the caller asked. Stopping EVERYTHING
+   // here regardless of narration_too was cutting the demo narration off mid-sentence: landing
+   // alone calls stop_sound(FALSE) (prgrmmr.cpp:965), and the voice only returned when the next
+   // cue fired, several sentences later (Ken, pongact3).
+   if (narration_too) tt_stop_all_web_audio();
+   else               tt_stop_effects_web_audio();
 #endif
 	if (narration_too) {
 		sndPlaySound(NULL,SND_SYNC); // might be playing narration for example made conditional on 170204 

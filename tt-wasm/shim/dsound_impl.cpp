@@ -110,6 +110,36 @@ EM_JS(void, tt_ds_stop_all, (), {
 });
 extern "C" void tt_stop_all_web_audio() { tt_ds_stop_all(); }
 
+/* Everything EXCEPT the narration channel (sndPlaySound uses reserved id 0). stop_sound(FALSE)
+ * means "stop the effects but leave the narration alone" and is called from seven places,
+ * including the landing path (prgrmmr.cpp:965) — stopping the lot there cut the demo narration
+ * off mid-sentence, and it only came back when the next cue fired several sentences later. */
+EM_JS(void, tt_ds_stop_effects, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.srcs) return;
+  for (var k in DS.srcs) {
+    if (k === '0') continue;
+    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    delete DS.srcs[k];
+  }
+});
+extern "C" void tt_stop_effects_web_audio() { tt_ds_stop_effects(); }
+
+/* Only the looping ones. stop_sound_id(HELICOPTER_SOUND) works through the engine's sound CACHE
+ * and can only Stop() a buffer it still finds there; on a miss it makes a fresh buffer and stops
+ * nothing, while the rotor loop plays on with nothing tracking it. This is the recovery for
+ * exactly that case. */
+EM_JS(void, tt_ds_stop_looping, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.srcs) return;
+  for (var k in DS.srcs) {
+    if (!DS.srcs[k].loop) continue;
+    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    delete DS.srcs[k];
+  }
+});
+extern "C" void tt_stop_looping_web_audio() { tt_ds_stop_looping(); }
+
 EM_JS(void, tt_ds_volume, (int id, double gain), {
   var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} });
   DS.vols[id] = gain;
