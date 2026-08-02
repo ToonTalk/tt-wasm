@@ -754,7 +754,23 @@ boolean speak(string text, long id) { // changed to boolean on 110401 so it retu
 		tt_error_file() << "Started speaking: " << timeGetTime() << endl;
 	};
 #endif
-   if (text == NULL) return(FALSE);
+   if (text == NULL || text[0] == 0) return(FALSE);
+#ifdef __EMSCRIPTEN__
+   {
+      /* The SAME hook as the wide_string overload above. Marty reaches speech through BOTH, and
+       * hooking only the wide one meant he spoke during demos but was silent in free play (Ken).
+       * Below this point is the SAPI path, which is inert in wasm — gpITTSCentral is never
+       * non-NULL — so without this he simply returned FALSE and mimed. */
+      int started = tt_tts_speak(text,id,replaying() ? 1 : 0);
+      if (started) {
+         if (id < 0) speaks_in_progress++;
+         paragraph_id = id;
+         printf("[tt] marty: speaking (narrow) id=%ld\n",id); fflush(stdout);
+         return(TRUE);
+      };
+      return(FALSE);
+   }
+#endif
    if (gpITTSCentral == NULL) turn_on_speech_and_sound_off();
    if (gpITTSCentral == NULL) return(FALSE);
    if (cant_start_speech) return(FALSE);

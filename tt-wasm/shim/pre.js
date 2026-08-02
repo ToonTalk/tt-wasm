@@ -649,10 +649,49 @@ Module['preRun'].push(function () {
     }
     return p;
   };
+  // Windows file names are case-INSENSITIVE and the engine relies on it: swap2's narration script
+  // asks for "us\s01.wav" while the archive stores the member as "US/s01.wav", so the demo played
+  // with subtitles but no voice (Ken). MEMFS is case-sensitive, so when an exact path is missing,
+  // walk it component by component and accept a unique case-insensitive match — which is what the
+  // engine would have got on the platform it was written for. Only on the miss path, so correctly
+  // cased lookups cost nothing.
+  var ttCaseFix = function (p) {
+    if (typeof p !== 'string' || p.charAt(0) !== '/') return p;
+    var parts = p.split('/'), cur = '';
+    for (var i = 1; i < parts.length; i++) {
+      var want = parts[i];
+      if (want === '') continue;
+      var trial = cur + '/' + want;
+      var ok = false;
+      try { FS.lookupPath(trial); ok = true; } catch (e) {}
+      if (!ok) {
+        var names = [];
+        try { names = FS.readdir(cur === '' ? '/' : cur); } catch (e) { return p; }
+        var lower = want.toLowerCase(), hit = null, many = false;
+        for (var j = 0; j < names.length; j++) {
+          if (names[j].toLowerCase() === lower) { if (hit === null) hit = names[j]; else many = true; }
+        }
+        if (hit === null || many) return p;    // no match, or ambiguous: leave it alone
+        trial = cur + '/' + hit;
+      }
+      cur = trial;
+    }
+    return cur;
+  };
+  var ttPath = function (path) {
+    var p = ttNorm(path);
+    if (typeof p !== 'string') return p;
+    try { FS.lookupPath(p); return p; } catch (e) {}
+    return ttCaseFix(p);
+  };
   var origOpen = FS.open;
-  FS.open = function (path, flags, mode) { return origOpen.call(FS, ttNorm(path), flags, mode); };
+  FS.open = function (path, flags, mode) {
+    // only rescue reads; a create/write must use the name it was given
+    var writing = (typeof flags === 'string') ? /[wa+]/.test(flags) : !!(flags & 3);
+    return origOpen.call(FS, writing ? ttNorm(path) : ttPath(path), flags, mode);
+  };
   var origStat = FS.stat;
-  FS.stat = function (path, dontFollow) { return origStat.call(FS, ttNorm(path), dontFollow); };
+  FS.stat = function (path, dontFollow) { return origStat.call(FS, ttPath(path), dontFollow); };
   // Dummy string-DLL files so load_string_library's existence check (local_file_exists ->
   // CreateFile, common.cpp:132) passes. The strings themselves come from resstrings.js and
   // LoadLibrary is faked to a non-null handle; only the file's *existence* is load-bearing.
