@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp7jwwubg7.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp9t3duggg.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp7jwwubg7.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpb_fg5dxt.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmp9t3duggg.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpmz07xrox.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpb_fg5dxt.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpmz07xrox.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -513,7 +513,13 @@ globalThis.TT_cmdline = '';
     // during initialization. (Blocking here only delays our own start-up.)
     try {
       var bytes;
-      if (typeof XMLHttpRequest !== 'undefined') {
+      var parked = (name === 'picked' && typeof sessionStorage !== 'undefined')
+                   ? sessionStorage.getItem('TT_pickedDemo') : null;
+      if (parked) {                        // a .dmo the user opened from their own machine
+        var raw = atob(parked);
+        bytes = new Uint8Array(raw.length);
+        for (var b = 0; b < raw.length; b++) bytes[b] = raw.charCodeAt(b);
+      } else if (typeof XMLHttpRequest !== 'undefined') {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'demos/' + name + '.dmo', false);
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
@@ -546,6 +552,47 @@ globalThis.TT_cmdline = '';
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
 })();
+
+// Master volume, 0..1. Drives the one gain node every sound passes through (dsound_impl.cpp) and
+// the loudness of Marty's synthesised speech, which speechSynthesis caps at 1.0 and which is
+// otherwise quieter than the recorded narration.
+globalThis.TT_volume = 1;
+globalThis.TT_setVolume = function (v) {
+  v = Math.max(0, Math.min(1, Number(v)));
+  globalThis.TT_volume = v;
+  try {
+    var DS = Module.TT_ds;
+    if (DS && DS.master) DS.master.gain.value = v;
+  } catch (e) {}
+  return v;
+};
+
+// Play a .dmo the user picked off their own machine. ?demo=<name> can only name a file the SERVER
+// has (it is fetched as demos/<name>.dmo), and a browser cannot open an arbitrary local path — so
+// a session saved from this page needs a file picker to get back in.
+globalThis.TT_playLocalDemo = function (file) {
+  if (!file) return false;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var bytes = new Uint8Array(reader.result);
+      // The engine opens the demo during initialization, so this needs a fresh boot — and a
+      // reload wipes the in-memory filesystem. Park the bytes in sessionStorage and let the
+      // ?demo= staging block below pick them up on the way back up.
+      var s = '';
+      for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+      sessionStorage.setItem('TT_pickedDemo', btoa(s));
+      console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
+      location.search = '?demo=picked';
+    } catch (e) {
+      // sessionStorage is a few MB; the shipped demos are bigger and already on the server
+      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + e.message);
+      alert('Could not open that file: ' + e.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  return true;
+};
 
 // Save the recorded session as a .dmo. Asks the engine to bring the archive up to date first --
 // the segment in progress is not in it until it is closed — then hands the bytes to the browser
@@ -719,13 +766,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpnvjpeyb0.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpwg6w2y09.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpnvjpeyb0.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpwg6w2y09.js
 
 
 var programArgs = [];
@@ -9097,7 +9144,7 @@ var ASM_CONSTS = {
  17071586: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
  17071646: () => { if (globalThis.TT_demoPause) globalThis.TT_demoPause(); }
 };
-function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.ctx.destination); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; DS.srcs[id] = src; src.start(); } catch (e) { } }
+function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; DS.srcs[id] = src; src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
 function tt_ds_stop_all() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
 function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); DS.vols[id] = gain; if (DS.gains[id]) DS.gains[id].gain.value = gain; }

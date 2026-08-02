@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ToonTalk's own robot, from the images in the ToonTalk repository, padded square.
+     Inline so the page stays self-contained. -->
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
 <title>ToonTalk — WASM</title>
 <style>
   html, body { margin: 0; height: 100%; }
@@ -29,12 +32,14 @@
     width: 100vw; height: 100vh; aspect-ratio: auto;
     object-fit: contain; border: none; border-radius: 0; background: #000;
   }
-  #controls { display: flex; gap: 10px; align-items: center; }
-  #fsbtn, #savebtn {
+  #controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  #vol { display: flex; align-items: center; gap: 6px; color: #a9a9bd; font-size: 13px; }
+  #volslider { width: 90px; accent-color: #AB0519; }
+  #fsbtn, #savebtn, #openbtn {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
     border-radius: 6px; padding: 4px 14px; cursor: pointer;
   }
-  #fsbtn:hover, #savebtn:hover { background: #34344a; }
+  #fsbtn:hover, #savebtn:hover, #openbtn:hover { background: #34344a; }
   #help {
     max-width: 620px; text-align: center; color: #a9a9bd;
     background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
@@ -61,6 +66,12 @@
   <div id="status">loading engine…</div>
   <div id="controls">
     <button id="fsbtn" type="button">Full screen</button>
+    <label id="vol" title="Volume">
+      <span aria-hidden="true">🔊</span>
+      <input id="volslider" type="range" min="0" max="100" value="100" aria-label="Volume">
+    </label>
+    <button id="openbtn" type="button">Open a .dmo…</button>
+    <input id="openfile" type="file" accept=".dmo" hidden>
     <!-- only shown when ?timetravel=1 is recording the session -->
     <button id="savebtn" type="button" hidden>Save this session</button>
   </div>
@@ -68,9 +79,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1785659850 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1785660578 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1785659850'; },
+    locateFile: function (f) { return f + '?v=1785660578'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -113,6 +124,36 @@
       });
     }
   }
+  // Volume. Sits outside fullscreen deliberately: in fullscreen the canvas fills the screen and
+  // the mouse belongs to the game (pointer lock), so there is nowhere to put a slider.
+  (function () {
+    var slider = document.getElementById('volslider');
+    var saved = null;
+    try { saved = localStorage.getItem('TT_volume'); } catch (e) {}
+    if (saved !== null) slider.value = String(Math.round(Number(saved) * 100));
+    var apply = function () {
+      var v = Number(slider.value) / 100;
+      if (window.TT_setVolume) window.TT_setVolume(v);
+      else window.TT_volume = v;                 // before the module is up
+      try { localStorage.setItem('TT_volume', String(v)); } catch (e) {}
+    };
+    slider.addEventListener('input', apply);
+    apply();
+  })();
+
+  // Open a .dmo the user has on their own machine — a session saved from this page, or a demo
+  // from a ToonTalk installation. ?demo=<name> can only name a file the SERVER has.
+  (function () {
+    var btn = document.getElementById('openbtn'), input = document.getElementById('openfile');
+    btn.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () {
+      if (input.files && input.files[0]) {
+        statusEl.textContent = 'Opening ' + input.files[0].name + '…';
+        window.TT_playLocalDemo(input.files[0]);
+      }
+    });
+  })();
+
   // ?timetravel=1 records free play. Reveal the save control only then — offering it otherwise
   // would promise a file that does not exist.
   if (/[?&]timetravel=1/.test(location.search) && !/[?&]demo=/.test(location.search)) {
@@ -200,6 +241,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1785659850"></script>
+<script src="tt.js?v=1785660578"></script>
 </body>
 </html>

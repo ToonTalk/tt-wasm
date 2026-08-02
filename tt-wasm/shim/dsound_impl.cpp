@@ -55,7 +55,15 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
       }
     }
     var gain = DS.gains[id];
-    if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.ctx.destination); DS.gains[id] = gain; }
+    /* One master gain between every per-buffer gain and the speakers, so the page can offer a
+     * volume control without touching the engine's own DirectSound levels (SetVolume keeps
+     * setting DS.gains[id] as before). Created on first use and remembered across sounds. */
+    if (!DS.master) {
+      DS.master = DS.ctx.createGain();
+      DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1;
+      DS.master.connect(DS.ctx.destination);
+    }
+    if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; }
     gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1;
     var src = DS.ctx.createBufferSource();
     src.buffer = ab; src.loop = !!loop; src.connect(gain);

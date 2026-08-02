@@ -300,7 +300,13 @@ globalThis.TT_cmdline = '';
     // during initialization. (Blocking here only delays our own start-up.)
     try {
       var bytes;
-      if (typeof XMLHttpRequest !== 'undefined') {
+      var parked = (name === 'picked' && typeof sessionStorage !== 'undefined')
+                   ? sessionStorage.getItem('TT_pickedDemo') : null;
+      if (parked) {                        // a .dmo the user opened from their own machine
+        var raw = atob(parked);
+        bytes = new Uint8Array(raw.length);
+        for (var b = 0; b < raw.length; b++) bytes[b] = raw.charCodeAt(b);
+      } else if (typeof XMLHttpRequest !== 'undefined') {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'demos/' + name + '.dmo', false);
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
@@ -333,6 +339,47 @@ globalThis.TT_cmdline = '';
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
 })();
+
+// Master volume, 0..1. Drives the one gain node every sound passes through (dsound_impl.cpp) and
+// the loudness of Marty's synthesised speech, which speechSynthesis caps at 1.0 and which is
+// otherwise quieter than the recorded narration.
+globalThis.TT_volume = 1;
+globalThis.TT_setVolume = function (v) {
+  v = Math.max(0, Math.min(1, Number(v)));
+  globalThis.TT_volume = v;
+  try {
+    var DS = Module.TT_ds;
+    if (DS && DS.master) DS.master.gain.value = v;
+  } catch (e) {}
+  return v;
+};
+
+// Play a .dmo the user picked off their own machine. ?demo=<name> can only name a file the SERVER
+// has (it is fetched as demos/<name>.dmo), and a browser cannot open an arbitrary local path — so
+// a session saved from this page needs a file picker to get back in.
+globalThis.TT_playLocalDemo = function (file) {
+  if (!file) return false;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var bytes = new Uint8Array(reader.result);
+      // The engine opens the demo during initialization, so this needs a fresh boot — and a
+      // reload wipes the in-memory filesystem. Park the bytes in sessionStorage and let the
+      // ?demo= staging block below pick them up on the way back up.
+      var s = '';
+      for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+      sessionStorage.setItem('TT_pickedDemo', btoa(s));
+      console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
+      location.search = '?demo=picked';
+    } catch (e) {
+      // sessionStorage is a few MB; the shipped demos are bigger and already on the server
+      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + e.message);
+      alert('Could not open that file: ' + e.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  return true;
+};
 
 // Save the recorded session as a .dmo. Asks the engine to bring the archive up to date first --
 // the segment in progress is not in it until it is closed — then hands the bytes to the browser
