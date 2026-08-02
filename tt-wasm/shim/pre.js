@@ -327,6 +327,9 @@ globalThis.TT_cmdline = '';
 // recording off unless it was asked for. Must run after setUpDemo, which assigns TT_cmdline.
 (function applyTimeTravelSwitch() {
   if (globalThis.TT_recording) return;
+  // A .dmo IS a time-travel archive and the replay drives itself through tt_time_travel; turning
+  // time travel off here left demogate reporting tt_enabled=0 and the segment jump never ran.
+  if (typeof location !== 'undefined' && /[?&]demo=/.test(location.search)) return;
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
 })();

@@ -397,7 +397,32 @@ HRESULT DomNode::getAttribute(BSTR nm, VARIANT *val) {
 }
 HRESULT DomNode::setAttribute(BSTR nm, VARIANT val) {
     wstring key = nm ? wstring(nm) : wstring();
-    wstring v = (val.vt == VT_BSTR && val.bstrVal) ? wstring(val.bstrVal) : wstring();
+    /* The engine sets numeric attributes through CComVariant, so most of what arrives here is
+     * VT_I4 / VT_I8 / VT_R8 rather than a BSTR (xml.cpp:2703 and its LONGLONG/double siblings).
+     * Treating anything non-BSTR as "" wrote EVERY numeric attribute out empty — which is why a
+     * recorded time-travel archive's TimeTravelData carried CurrentSegment="" OldestSegment=""
+     * YoungestSegment="" and could not be replayed. Saved cities and notebooks go through the
+     * same call. */
+    wstring v;
+    wchar_t numbuf[64];
+    switch (val.vt) {
+        case VT_BSTR: if (val.bstrVal) v = val.bstrVal; break;
+        case VT_I2:   swprintf(numbuf, 64, L"%d", (int) val.iVal);   v = numbuf; break;
+        case VT_I4:   swprintf(numbuf, 64, L"%ld", (long) val.lVal); v = numbuf; break;
+        case VT_I8:   swprintf(numbuf, 64, L"%lld", (long long) val.lVal); v = numbuf; break;
+        case VT_BOOL: v = val.boolVal ? L"1" : L"0"; break;
+        case VT_R4:
+        case VT_R8: {
+            double d = (val.vt == VT_R8) ? val.dblVal : (double) val.fltVal;
+            /* integral values must not gain a ".000000" tail — the readers parse these with
+             * integer conversions */
+            if (d == (double)(long long) d) swprintf(numbuf, 64, L"%lld", (long long) d);
+            else                            swprintf(numbuf, 64, L"%g", d);
+            v = numbuf;
+            break;
+        }
+        default: break;   /* VT_EMPTY / VT_NULL really are the empty string */
+    }
     DomNode *a = find_attr(key);
     if (!a) { a = owner->mint(NODE_ATTRIBUTE); a->name = key; a->parent = this; attrs.push_back(a); }
     a->text = v;
