@@ -1137,7 +1137,7 @@ void turn_on_sound(boolean forever) {
 #ifdef __EMSCRIPTEN__
 extern "C" void tt_stop_all_web_audio();     // dsound_impl.cpp
 extern "C" void tt_stop_effects_web_audio(); // all but the narration channel
-extern "C" void tt_stop_looping_web_audio(); // the repeating ones (rotor loop, running tools)
+extern "C" int  tt_stop_looping_web_audio(); // the repeating ones (rotor loop, running tools)
 #endif
 
 void stop_sound_id(int id) {
@@ -1169,6 +1169,43 @@ void stop_sound_id(int id) {
    if (sound_to_delete == NULL) sound->Stop(); // is really a pre-existing one from the cache
    id_of_sound_to_play = 0;
 };
+#ifdef __EMSCRIPTEN__
+/* The engine keeps its own answer to "should a repeating sound be sounding right now":
+ * id_of_sound_to_play, set in play_sound's repeat branch and cleared by stop_sound_id and
+ * stop_sound. Nothing consulted it.
+ *
+ * That mattered because of what 6f64beb changed. Before it, Play() restarted the Web Audio source
+ * every cycle, so the rotor died on its own the moment the engine stopped asking for it -- silence
+ * needed nobody's cooperation. Making looping real (which the original does rely on: play_sound
+ * returns early while id_of_sound_to_play == id, so DirectSound is asked to loop exactly once and
+ * plays until Stop) removed that safety net, and silence became conditional on a Stop() finding
+ * the right buffer. Every rotor bug since has been a different way for that to fail: an evicted
+ * cache entry, a stop() that threw, a source dropped from the registry while sounding.
+ *
+ * So stop enumerating the ways and enforce the invariant. When the engine says no repeating sound
+ * should be playing, no looping source may exist -- whatever happened to the buffer that started
+ * it, and whether or not the shim still has a handle on it. This is the safety net 6f64beb
+ * removed, restored without going back to restarting the sound every cycle. */
+void tt_em_enforce_no_stray_loop() {
+	static int last_repeat_id = -1;
+	static int since_sweep = 0;
+	boolean changed = (id_of_sound_to_play != last_repeat_id);
+	last_repeat_id = id_of_sound_to_play;
+	if (id_of_sound_to_play != 0) { since_sweep = 0; return; } // something SHOULD be repeating
+	if (!changed && ++since_sweep < 60) return;                // cheap: an int compare per cycle
+	since_sweep = 0;
+	int stopped = tt_stop_looping_web_audio();
+	if (stopped > 0) {
+		static int reported = 0;
+		if (reported < 8) { reported++;
+			printf("[tt] strayloop: %d looping sound(s) still playing though the engine has none%s\n",
+			       stopped, reported == 8 ? " [further reports suppressed]" : "");
+			fflush(stdout);
+		};
+	};
+};
+#endif
+
 //#else
 //void stop_sound_id(int id) {
 //   if (id < 0) return;

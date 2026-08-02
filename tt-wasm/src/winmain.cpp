@@ -1669,6 +1669,7 @@ boolean Main::MessageLoopOnce() {
 // segment boundary threw straight out of the frame callback and killed the run.
 // Mirrors the body of the native while(TRUE) loop; returns FALSE when the loop should stop.
 extern "C" void tt_audio_watchdog(); // dsound_impl.cpp — stop what the engine thinks it stopped
+void tt_em_enforce_no_stray_loop();  // utils.cpp — no looping sound may outlive the engine's own marker
 
 static boolean tt_message_loop_iteration() {
 	{
@@ -1677,6 +1678,9 @@ static boolean tt_message_loop_iteration() {
 		 * already forgotten about it — so the shim has to be the one to notice. */
 		static long audio_tick = 0;
 		if ((++audio_tick % 60) == 0) tt_audio_watchdog();
+		/* Every cycle, not every sixtieth: this is the rotor's backstop, and a second of engine
+		 * noise after landing is exactly the complaint. Costs an int compare unless it fires. */
+		tt_em_enforce_no_stray_loop();
 	}
 	{
 		// Heartbeat: the one reliable liveness signal from the browser. A still picture is not

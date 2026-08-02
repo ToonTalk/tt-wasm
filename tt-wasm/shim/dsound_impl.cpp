@@ -164,16 +164,19 @@ extern "C" void tt_stop_effects_web_audio() { tt_ds_stop_effects(); }
  * and can only Stop() a buffer it still finds there; on a miss it makes a fresh buffer and stops
  * nothing, while the rotor loop plays on with nothing tracking it. This is the recovery for
  * exactly that case. */
-EM_JS(void, tt_ds_stop_looping, (), {
+EM_JS(int, tt_ds_stop_looping, (), {
   var DS = Module.TT_ds;
-  if (!DS || !DS.srcs) return;
+  if (!DS || !DS.srcs) return 0;
+  var n = 0;
   for (var k in DS.srcs) {
     if (!DS.srcs[k].loop) continue;
+    n++;
     try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
     delete DS.srcs[k];
   }
+  return n;
 });
-extern "C" void tt_stop_looping_web_audio() { tt_ds_stop_looping(); }
+extern "C" int tt_stop_looping_web_audio() { return tt_ds_stop_looping(); }
 
 /* WATCHDOG. Every route by which a sound can outlive the engine's intention ends in the same
  * state: a Web Audio source still running while the buffer's own `playing` byte reads 0, i.e. the
