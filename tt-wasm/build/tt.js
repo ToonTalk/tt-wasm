@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp8cq48pmv.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpmyf6rohv.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp8cq48pmv.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp6cw51wjr.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpmyf6rohv.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpdumn3glj.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp6cw51wjr.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpdumn3glj.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -349,6 +349,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // Looping sounds (helicopter) re-Play each engine cycle, so once resumed they are heard.
   var resumeAudio = function () {
     var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+    if (globalThis.TT_volume === 0) return;   // the user muted it; a click is not a request to unmute
     if (DS && DS.ctx && DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} }
   };
   ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(function (ev) {
@@ -536,13 +537,16 @@ globalThis.TT_cmdline = '';
     // letting main() start without the file.
     if (name === 'picked') {
       addRunDependency('tt-picked-demo');
-      var done = function (bytes) {
+      var done = function (bytes, base) {
         try {
           if (bytes && bytes.length) {
+            if (!base) base = 'picked';
             try { FS.mkdir('/toontalk'); } catch (e) {}
             try { FS.mkdir('/toontalk/Demos'); } catch (e) {}
-            FS.writeFile('/toontalk/Demos/picked.dmo', bytes);
-            console.log('[tt] demo: staged picked.dmo (' + bytes.length + ' bytes)');
+            FS.writeFile('/toontalk/Demos/' + base + '.dmo', bytes);
+            // Point the engine at the file under its own name, so <name>.ust resolves.
+            globalThis.TT_cmdline = globalThis.TT_cmdline.replace(/^-I \S+/, '-I ' + base);
+            console.log('[tt] demo: staged ' + base + '.dmo (' + bytes.length + ' bytes)');
           } else {
             console.warn('[tt] demo: nothing stored for the picked demo');
             globalThis.TT_cmdline = '';
@@ -560,12 +564,17 @@ globalThis.TT_cmdline = '';
           var db = open.result;
           try {
             var get = db.transaction('files', 'readonly').objectStore('files').get('pickedDemo');
-            get.onsuccess = function () { var v = get.result; db.close(); done(v && new Uint8Array(v)); };
-            get.onerror = function () { db.close(); done(null); };
-          } catch (e) { db.close(); done(null); }
+            get.onsuccess = function () {
+              var v = get.result; db.close();
+              if (v && v.bytes) done(new Uint8Array(v.bytes), v.name);   /* {name, bytes} */
+              else if (v) done(new Uint8Array(v), null);                 /* bytes stored by an older build */
+              else done(null, null);
+            };
+            get.onerror = function () { db.close(); done(null, null); };
+          } catch (e) { db.close(); done(null, null); }
         };
-        open.onerror = function () { done(null); };
-      } catch (e) { done(null); }
+        open.onerror = function () { done(null, null); };
+      } catch (e) { done(null, null); }
       return;
     }
     // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
@@ -620,6 +629,14 @@ globalThis.TT_setVolume = function (v) {
   try {
     var DS = Module.TT_ds;
     if (DS && DS.master) DS.master.gain.value = v;
+    // Belt and braces at the ends of the range. A looping effect (the helicopter) is started once
+    // and runs for minutes, so anything that ever let one bypass the master would keep sounding
+    // with the control at zero — which is what Ken reported. Suspending the context cannot be
+    // bypassed by any node, so zero is silent whatever the graph looks like.
+    if (DS && DS.ctx) {
+      if (v === 0) { if (DS.ctx.state === 'running') DS.ctx.suspend(); }
+      else if (DS.ctx.state === 'suspended') { DS.ctx.resume(); }
+    }
   } catch (e) {}
   return v;
 };
@@ -649,7 +666,14 @@ globalThis.TT_playLocalDemo = function (file) {
         var db = open.result;
         try {
           var tx = db.transaction('files', 'readwrite');
-          tx.objectStore('files').put(bytes, 'pickedDemo');
+          // Keep the ORIGINAL base name with the bytes. The narration/subtitle script inside a
+          // .dmo is named after the demo (<name>.ust, log.cpp:309), so staging every picked file
+          // as "picked.dmo" made that lookup ask for picked.ust and find nothing — the demo
+          // played silently with no subtitles (Ken: "pongact1 worked but there was no narration").
+          var base = String(file.name).replace(/^.*[\\\/]/, '').replace(/\.[^.]*$/, '')
+                                      .replace(/[^A-Za-z0-9_]/g, '_');
+          if (!base) base = 'picked';
+          tx.objectStore('files').put({ name: base, bytes: bytes }, 'pickedDemo');
           tx.oncomplete = function () {
             db.close();
             console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
@@ -836,13 +860,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpqcr8ba4n.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpcc5oa5be.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpqcr8ba4n.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpcc5oa5be.js
 
 
 var programArgs = [];
@@ -9214,7 +9238,7 @@ var ASM_CONSTS = {
  17071170: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
  17071230: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
 };
-function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; DS.srcs[id] = src; src.start(); } catch (e) { } }
+function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; DS.srcs[id] = src; src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
 function tt_ds_stop_all() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
 function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); DS.vols[id] = gain; if (DS.gains[id]) DS.gains[id].gain.value = gain; }

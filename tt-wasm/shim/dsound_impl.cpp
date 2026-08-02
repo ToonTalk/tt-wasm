@@ -35,7 +35,9 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
       if (!AC) return;
       DS.ctx = new AC();
     }
-    if (DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} }
+    /* Don't undo a volume-zero suspend (pre.js TT_setVolume); the first-gesture resume and this
+     * one are both about unlocking audio, not about overriding the user's setting. */
+    if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} }
     if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; }
     var bytesPerSample = bits >>> 3;
     var frames = (bytes / (bytesPerSample * channels)) | 0;

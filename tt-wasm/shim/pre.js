@@ -136,6 +136,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // Looping sounds (helicopter) re-Play each engine cycle, so once resumed they are heard.
   var resumeAudio = function () {
     var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+    if (globalThis.TT_volume === 0) return;   // the user muted it; a click is not a request to unmute
     if (DS && DS.ctx && DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} }
   };
   ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(function (ev) {
@@ -323,13 +324,16 @@ globalThis.TT_cmdline = '';
     // letting main() start without the file.
     if (name === 'picked') {
       addRunDependency('tt-picked-demo');
-      var done = function (bytes) {
+      var done = function (bytes, base) {
         try {
           if (bytes && bytes.length) {
+            if (!base) base = 'picked';
             try { FS.mkdir('/toontalk'); } catch (e) {}
             try { FS.mkdir('/toontalk/Demos'); } catch (e) {}
-            FS.writeFile('/toontalk/Demos/picked.dmo', bytes);
-            console.log('[tt] demo: staged picked.dmo (' + bytes.length + ' bytes)');
+            FS.writeFile('/toontalk/Demos/' + base + '.dmo', bytes);
+            // Point the engine at the file under its own name, so <name>.ust resolves.
+            globalThis.TT_cmdline = globalThis.TT_cmdline.replace(/^-I \S+/, '-I ' + base);
+            console.log('[tt] demo: staged ' + base + '.dmo (' + bytes.length + ' bytes)');
           } else {
             console.warn('[tt] demo: nothing stored for the picked demo');
             globalThis.TT_cmdline = '';
@@ -347,12 +351,17 @@ globalThis.TT_cmdline = '';
           var db = open.result;
           try {
             var get = db.transaction('files', 'readonly').objectStore('files').get('pickedDemo');
-            get.onsuccess = function () { var v = get.result; db.close(); done(v && new Uint8Array(v)); };
-            get.onerror = function () { db.close(); done(null); };
-          } catch (e) { db.close(); done(null); }
+            get.onsuccess = function () {
+              var v = get.result; db.close();
+              if (v && v.bytes) done(new Uint8Array(v.bytes), v.name);   /* {name, bytes} */
+              else if (v) done(new Uint8Array(v), null);                 /* bytes stored by an older build */
+              else done(null, null);
+            };
+            get.onerror = function () { db.close(); done(null, null); };
+          } catch (e) { db.close(); done(null, null); }
         };
-        open.onerror = function () { done(null); };
-      } catch (e) { done(null); }
+        open.onerror = function () { done(null, null); };
+      } catch (e) { done(null, null); }
       return;
     }
     // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
@@ -407,6 +416,14 @@ globalThis.TT_setVolume = function (v) {
   try {
     var DS = Module.TT_ds;
     if (DS && DS.master) DS.master.gain.value = v;
+    // Belt and braces at the ends of the range. A looping effect (the helicopter) is started once
+    // and runs for minutes, so anything that ever let one bypass the master would keep sounding
+    // with the control at zero — which is what Ken reported. Suspending the context cannot be
+    // bypassed by any node, so zero is silent whatever the graph looks like.
+    if (DS && DS.ctx) {
+      if (v === 0) { if (DS.ctx.state === 'running') DS.ctx.suspend(); }
+      else if (DS.ctx.state === 'suspended') { DS.ctx.resume(); }
+    }
   } catch (e) {}
   return v;
 };
@@ -436,7 +453,14 @@ globalThis.TT_playLocalDemo = function (file) {
         var db = open.result;
         try {
           var tx = db.transaction('files', 'readwrite');
-          tx.objectStore('files').put(bytes, 'pickedDemo');
+          // Keep the ORIGINAL base name with the bytes. The narration/subtitle script inside a
+          // .dmo is named after the demo (<name>.ust, log.cpp:309), so staging every picked file
+          // as "picked.dmo" made that lookup ask for picked.ust and find nothing — the demo
+          // played silently with no subtitles (Ken: "pongact1 worked but there was no narration").
+          var base = String(file.name).replace(/^.*[\\\/]/, '').replace(/\.[^.]*$/, '')
+                                      .replace(/[^A-Za-z0-9_]/g, '_');
+          if (!base) base = 'picked';
+          tx.objectStore('files').put({ name: base, bytes: bytes }, 'pickedDemo');
           tx.oncomplete = function () {
             db.close();
             console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
