@@ -52,7 +52,7 @@ EXTRA="${1:-}"
   -sERROR_ON_UNDEFINED_SYMBOLS=0 -Wl,--allow-multiple-definition \
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
   -sSTACK_SIZE=16777216 \
-  -sUSE_ZLIB=1 -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
+  -sUSE_ZLIB=1 -lidbfs.js -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
 rc=$?; echo "link exit=$rc"
 [ $rc -ne 0 ] && { echo "--- link errors ---"; tail -30 logs/link.err; exit 1; }
 # The recorded .dmo demos (~36MB) are served over HTTP rather than preloaded into tt.data —

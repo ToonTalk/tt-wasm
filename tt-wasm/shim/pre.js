@@ -538,6 +538,64 @@ globalThis.TT_saveDemo = function () {
   return true;
 };
 
+// PERSISTENCE. The engine keeps everything about a user under <My Documents>/ToonTalk/<name>/:
+// the history of what Marty has already explained (<name>.usr, written by dump_history —
+// utils.cpp:466), the notebook and its pages, and any time-travel archive. All of that lived in a
+// filesystem that is built fresh on every load, so nothing survived a reload and Marty greeted
+// every session as the first (Ken: "Marty should remember what he has told the user").
+//
+// Mount that directory on IndexedDB instead. The demo temp cache is a SIBLING inside the same
+// parent — extracted segments and 6MB demos — and has no business in browser storage, so a plain
+// in-memory filesystem is mounted back over it once the persisted data is in.
+Module['preRun'] = Module['preRun'] || [];
+Module['preRun'].push(function () {
+  var ROOT = '/toontalk/My Documents/ToonTalk';
+  var CACHE = ROOT + '/Temporary File Cache';
+  var overlayCache = function () {
+    try { FS.mkdirTree(CACHE); } catch (e) {}
+    try { FS.mount(MEMFS, {}, CACHE); } catch (e) { console.warn('[tt] persist: temp cache stays persistent — ' + e.message); }
+  };
+  try {
+    if (typeof IDBFS === 'undefined') { console.warn('[tt] persist: IDBFS not linked; user data will not survive a reload'); return; }
+    FS.mkdirTree(ROOT);
+    FS.mount(IDBFS, {}, ROOT);
+    addRunDependency('tt-persist-load');
+    FS.syncfs(true, function (err) {                 // true = load what is already stored
+      if (err) console.warn('[tt] persist: load failed — ' + err);
+      overlayCache();
+      var names = [];
+      try { names = FS.readdir(ROOT).filter(function (n) { return n !== '.' && n !== '..'; }); } catch (e) {}
+      console.log('[tt] persist: loaded, ' + ROOT + ' holds [' + names.join(', ') + ']');
+      globalThis.TT_persistReady = true;
+      removeRunDependency('tt-persist-load');
+    });
+  } catch (e) {
+    console.warn('[tt] persist: ' + e.message);
+    overlayCache();
+  }
+});
+
+// Write the user's data back. Called on a timer and whenever the page is hidden or closed —
+// syncfs is asynchronous, so a save started at pagehide may not finish, which is why it also runs
+// periodically rather than only on the way out.
+globalThis.TT_persistSave = function (why) {
+  if (!globalThis.TT_persistReady) return false;
+  try {
+    FS.syncfs(false, function (err) {
+      if (err) console.warn('[tt] persist: save failed — ' + err);
+      else if (why) console.log('[tt] persist: saved (' + why + ')');
+    });
+    return true;
+  } catch (e) { return false; }
+};
+if (typeof window !== 'undefined') {
+  setInterval(function () { globalThis.TT_persistSave(); }, 10000);
+  window.addEventListener('pagehide', function () { globalThis.TT_persistSave('pagehide'); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') globalThis.TT_persistSave('hidden');
+  });
+}
+
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
 // directory subsystem (ini_entry -> GetPrivateProfileString) finds real values instead of NULL.
 // Paths are placeholders under /toontalk/ for now (asset wiring comes later); what matters for

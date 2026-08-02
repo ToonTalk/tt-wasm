@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp87wtqiyr.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp63yz4514.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp87wtqiyr.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpfw9f4oge.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmp63yz4514.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpa9ci5r9n.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpfw9f4oge.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpa9ci5r9n.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -751,6 +751,64 @@ globalThis.TT_saveDemo = function () {
   return true;
 };
 
+// PERSISTENCE. The engine keeps everything about a user under <My Documents>/ToonTalk/<name>/:
+// the history of what Marty has already explained (<name>.usr, written by dump_history —
+// utils.cpp:466), the notebook and its pages, and any time-travel archive. All of that lived in a
+// filesystem that is built fresh on every load, so nothing survived a reload and Marty greeted
+// every session as the first (Ken: "Marty should remember what he has told the user").
+//
+// Mount that directory on IndexedDB instead. The demo temp cache is a SIBLING inside the same
+// parent — extracted segments and 6MB demos — and has no business in browser storage, so a plain
+// in-memory filesystem is mounted back over it once the persisted data is in.
+Module['preRun'] = Module['preRun'] || [];
+Module['preRun'].push(function () {
+  var ROOT = '/toontalk/My Documents/ToonTalk';
+  var CACHE = ROOT + '/Temporary File Cache';
+  var overlayCache = function () {
+    try { FS.mkdirTree(CACHE); } catch (e) {}
+    try { FS.mount(MEMFS, {}, CACHE); } catch (e) { console.warn('[tt] persist: temp cache stays persistent — ' + e.message); }
+  };
+  try {
+    if (typeof IDBFS === 'undefined') { console.warn('[tt] persist: IDBFS not linked; user data will not survive a reload'); return; }
+    FS.mkdirTree(ROOT);
+    FS.mount(IDBFS, {}, ROOT);
+    addRunDependency('tt-persist-load');
+    FS.syncfs(true, function (err) {                 // true = load what is already stored
+      if (err) console.warn('[tt] persist: load failed — ' + err);
+      overlayCache();
+      var names = [];
+      try { names = FS.readdir(ROOT).filter(function (n) { return n !== '.' && n !== '..'; }); } catch (e) {}
+      console.log('[tt] persist: loaded, ' + ROOT + ' holds [' + names.join(', ') + ']');
+      globalThis.TT_persistReady = true;
+      removeRunDependency('tt-persist-load');
+    });
+  } catch (e) {
+    console.warn('[tt] persist: ' + e.message);
+    overlayCache();
+  }
+});
+
+// Write the user's data back. Called on a timer and whenever the page is hidden or closed —
+// syncfs is asynchronous, so a save started at pagehide may not finish, which is why it also runs
+// periodically rather than only on the way out.
+globalThis.TT_persistSave = function (why) {
+  if (!globalThis.TT_persistReady) return false;
+  try {
+    FS.syncfs(false, function (err) {
+      if (err) console.warn('[tt] persist: save failed — ' + err);
+      else if (why) console.log('[tt] persist: saved (' + why + ')');
+    });
+    return true;
+  } catch (e) { return false; }
+};
+if (typeof window !== 'undefined') {
+  setInterval(function () { globalThis.TT_persistSave(); }, 10000);
+  window.addEventListener('pagehide', function () { globalThis.TT_persistSave('pagehide'); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') globalThis.TT_persistSave('hidden');
+  });
+}
+
 // Runs before the engine starts: drop a ToonTalk.ini into the Emscripten FS so the config/
 // directory subsystem (ini_entry -> GetPrivateProfileString) finds real values instead of NULL.
 // Paths are placeholders under /toontalk/ for now (asset wiring comes later); what matters for
@@ -938,13 +996,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmptvjth_jo.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpe8_zzcpc.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmptvjth_jo.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpe8_zzcpc.js
 
 
 var programArgs = [];
@@ -1086,7 +1144,7 @@ if (ENVIRONMENT_IS_WORKER) {
 var out = console.log.bind(console);
 var err = console.error.bind(console);
 
-var IDBFS = 'IDBFS is no longer included by default; build with -lidbfs.js';
+
 var PROXYFS = 'PROXYFS is no longer included by default; build with -lproxyfs.js';
 var WORKERFS = 'WORKERFS is no longer included by default; build with -lworkerfs.js';
 var FETCHFS = 'FETCHFS is no longer included by default; build with -lfetchfs.js';
@@ -2575,6 +2633,387 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       return mode;
     };
   
+  
+  
+  
+  var IDBFS = {
+  dbs:{
+  },
+  indexedDB:() => {
+        assert(typeof indexedDB != 'undefined', 'IDBFS used, but indexedDB not supported');
+        return indexedDB;
+      },
+  DB_VERSION:21,
+  DB_STORE_NAME:"FILE_DATA",
+  queuePersist:(mount) => {
+        function onPersistComplete() {
+          if (mount.idbPersistState === 'again') startPersist(); // If a new sync request has appeared in between, kick off a new sync
+          else {
+            mount.idbPersistState = 0; // Otherwise reset sync state back to idle to wait for a new sync later
+            IDBFS.onAutoPersistStateChanged?.(false);
+          }
+        }
+        function startPersist() {
+          mount.idbPersistState = 'idb'; // Mark that we are currently running a sync operation
+          IDBFS.onAutoPersistStateChanged?.(true);
+          IDBFS.syncfs(mount, /*populate:*/false, onPersistComplete);
+        }
+  
+        if (!mount.idbPersistState) {
+          // Programs typically write/copy/move multiple files in the in-memory
+          // filesystem within a single app frame, so when a filesystem sync
+          // command is triggered, do not start it immediately, but only after
+          // the current frame is finished. This way all the modified files
+          // inside the main loop tick will be batched up to the same sync.
+          mount.idbPersistState = setTimeout(startPersist, 0);
+        } else if (mount.idbPersistState === 'idb') {
+          // There is an active IndexedDB sync operation in-flight, but we now
+          // have accumulated more files to sync. We should therefore queue up
+          // a new sync after the current one finishes so that all writes
+          // will be properly persisted.
+          mount.idbPersistState = 'again';
+        }
+      },
+  mount:(mount) => {
+        // reuse core MEMFS functionality
+        var mnt = MEMFS.mount(mount);
+        // If the automatic IDBFS persistence option has been selected, then automatically persist
+        // all modifications to the filesystem as they occur.
+        if (mount?.opts?.autoPersist) {
+          mount.idbPersistState = 0; // IndexedDB sync starts in idle state
+          var memfs_node_ops = mnt.node_ops;
+          mnt.node_ops = {...mnt.node_ops}; // Clone node_ops to inject write tracking
+          mnt.node_ops.mknod = (parent, name, mode, dev) => {
+            var node = memfs_node_ops.mknod(parent, name, mode, dev);
+            // Propagate injected node_ops to the newly created child node
+            node.node_ops = mnt.node_ops;
+            // Remember for each IDBFS node which IDBFS mount point they came from so we know which mount to persist on modification.
+            node.idbfs_mount = mnt.mount;
+            // Remember original MEMFS stream_ops for this node
+            node.memfs_stream_ops = node.stream_ops;
+            // Clone stream_ops to inject write tracking
+            node.stream_ops = {...node.stream_ops};
+  
+            // Track all file writes
+            node.stream_ops.write = (stream, buffer, offset, length, position, canOwn) => {
+              // This file has been modified, we must persist IndexedDB when this file closes
+              stream.node.isModified = true;
+              return node.memfs_stream_ops.write(stream, buffer, offset, length, position, canOwn);
+            };
+  
+            // Persist IndexedDB on file close
+            node.stream_ops.close = (stream) => {
+              var n = stream.node;
+              if (n.isModified) {
+                IDBFS.queuePersist(n.idbfs_mount);
+                n.isModified = false;
+              }
+              if (n.memfs_stream_ops.close) return n.memfs_stream_ops.close(stream);
+            };
+  
+            // Persist the node we just created to IndexedDB
+            IDBFS.queuePersist(mnt.mount);
+  
+            return node;
+          };
+          // Also kick off persisting the filesystem on other operations that modify the filesystem.
+          mnt.node_ops.rmdir   = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rmdir(...args));
+          mnt.node_ops.symlink = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.symlink(...args));
+          mnt.node_ops.unlink  = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.unlink(...args));
+          mnt.node_ops.rename  = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rename(...args));
+        }
+        return mnt;
+      },
+  syncfs:(mount, populate, callback) => {
+        IDBFS.getLocalSet(mount, (err, local) => {
+          if (err) return callback(err);
+  
+          IDBFS.getRemoteSet(mount, (err, remote) => {
+            if (err) return callback(err);
+  
+            var src = populate ? remote : local;
+            var dst = populate ? local : remote;
+  
+            IDBFS.reconcile(src, dst, callback);
+          });
+        });
+      },
+  quit:() => {
+        for (var value of Object.values(IDBFS.dbs)) {
+          value.close()
+        }
+        IDBFS.dbs = {};
+      },
+  getDB:(name, callback) => {
+        // check the cache first
+        var db = IDBFS.dbs[name];
+        if (db) {
+          return callback(null, db);
+        }
+  
+        var req;
+        try {
+          req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+        } catch (e) {
+          return callback(e);
+        }
+        if (!req) {
+          return callback("Unable to connect to IndexedDB");
+        }
+        req.onupgradeneeded = (e) => {
+          var db = /** @type {IDBDatabase} */ (e.target.result);
+          var transaction = e.target.transaction;
+  
+          var fileStore;
+  
+          if (db.objectStoreNames.contains(IDBFS.DB_STORE_NAME)) {
+            fileStore = transaction.objectStore(IDBFS.DB_STORE_NAME);
+          } else {
+            fileStore = db.createObjectStore(IDBFS.DB_STORE_NAME);
+          }
+  
+          if (!fileStore.indexNames.contains('timestamp')) {
+            fileStore.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+        };
+        req.onsuccess = () => {
+          db = /** @type {IDBDatabase} */ (req.result);
+  
+          // add to the cache
+          IDBFS.dbs[name] = db;
+          callback(null, db);
+        };
+        req.onerror = (e) => {
+          callback(e.target.error);
+          e.preventDefault();
+        };
+      },
+  getLocalSet:(mount, callback) => {
+        var entries = {};
+  
+        function isRealDir(p) {
+          return p !== '.' && p !== '..';
+        };
+        function toAbsolute(root) {
+          return (p) => PATH.join2(root, p);
+        };
+  
+        var check = FS.readdir(mount.mountpoint).filter(isRealDir).map(toAbsolute(mount.mountpoint));
+  
+        while (check.length) {
+          var path = check.pop();
+          var stat;
+  
+          try {
+            stat = FS.lstat(path);
+          } catch (e) {
+            return callback(e);
+          }
+  
+          if (FS.isDir(stat.mode)) {
+            check.push(...FS.readdir(path).filter(isRealDir).map(toAbsolute(path)));
+          }
+  
+          entries[path] = { 'timestamp': stat.mtime };
+        }
+  
+        return callback(null, { type: 'local', entries: entries });
+      },
+  getRemoteSet:(mount, callback) => {
+        var entries = {};
+  
+        IDBFS.getDB(mount.mountpoint, (err, db) => {
+          if (err) return callback(err);
+  
+          try {
+            var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+            transaction.onerror = (e) => {
+              callback(e.target.error);
+              e.preventDefault();
+            };
+  
+            var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+            var index = store.index('timestamp');
+  
+            index.openKeyCursor().onsuccess = (event) => {
+              var cursor = event.target.result;
+  
+              if (!cursor) {
+                return callback(null, { type: 'remote', db, entries });
+              }
+  
+              entries[cursor.primaryKey] = { 'timestamp': cursor.key };
+  
+              cursor.continue();
+            };
+          } catch (e) {
+            return callback(e);
+          }
+        });
+      },
+  loadLocalEntry:(path, callback) => {
+        var stat, node;
+  
+        try {
+          var lookup = FS.lookupPath(path);
+          node = lookup.node;
+          stat = FS.lstat(path);
+        } catch (e) {
+          return callback(e);
+        }
+  
+        if (FS.isDir(stat.mode)) {
+          return callback(null, { 'timestamp': stat.mtime, 'mode': stat.mode });
+        } else if (FS.isLink(stat.mode)) {
+          return callback(null, { 'timestamp': stat.mtime, 'mode': stat.mode, 'link': node.link, });
+        } else if (FS.isFile(stat.mode)) {
+          // Performance consideration: storing a normal JavaScript array to a IndexedDB is much slower than storing a typed array.
+          // Therefore always convert the file contents to a typed array first before writing the data to IndexedDB.
+          node.contents = MEMFS.getFileDataAsTypedArray(node);
+          return callback(null, { 'timestamp': stat.mtime, 'mode': stat.mode, 'contents': node.contents });
+        } else {
+          return callback(new Error('node type not supported'));
+        }
+      },
+  storeLocalEntry:(path, entry, callback) => {
+        try {
+          if (FS.isDir(entry['mode'])) {
+            FS.mkdirTree(path, entry['mode']);
+          } else if (FS.isLink(entry['mode'])) {
+            FS.symlink(entry['link'], path);
+          } else if (FS.isFile(entry['mode'])) {
+            FS.writeFile(path, entry['contents'], { canOwn: true });
+          } else {
+            return callback(new Error('node type not supported'));
+          }
+  
+          FS.chmod(path, entry['mode']);
+          FS.utime(path, entry['timestamp'], entry['timestamp']);
+        } catch (e) {
+          return callback(e);
+        }
+  
+        callback(null);
+      },
+  removeLocalEntry:(path, callback) => {
+        try {
+          var stat = FS.lstat(path);
+  
+          if (FS.isDir(stat.mode)) {
+            FS.rmdir(path);
+          } else {
+            FS.unlink(path);
+          }
+        } catch (e) {
+          return callback(e);
+        }
+  
+        callback(null);
+      },
+  loadRemoteEntry:(store, path, callback) => {
+        var req = store.get(path);
+        req.onsuccess = (event) => callback(null, event.target.result);
+        req.onerror = (e) => {
+          callback(e.target.error);
+          e.preventDefault();
+        };
+      },
+  storeRemoteEntry:(store, path, entry, callback) => {
+        try {
+          var req = store.put(entry, path);
+        } catch (e) {
+          callback(e);
+          return;
+        }
+        req.onsuccess = (event) => callback();
+        req.onerror = (e) => {
+          callback(e.target.error);
+          e.preventDefault();
+        };
+      },
+  removeRemoteEntry:(store, path, callback) => {
+        var req = store.delete(path);
+        req.onsuccess = (event) => callback();
+        req.onerror = (e) => {
+          callback(e.target.error);
+          e.preventDefault();
+        };
+      },
+  reconcile:(src, dst, callback) => {
+        var total = 0;
+  
+        var create = [];
+        for (var [key, e] of Object.entries(src.entries)) {
+          var e2 = dst.entries[key];
+          if (!e2 || e['timestamp'].getTime() != e2['timestamp'].getTime()) {
+            create.push(key);
+            total++;
+          }
+        }
+  
+        var remove = [];
+        for (var key of Object.keys(dst.entries)) {
+          if (!src.entries[key]) {
+            remove.push(key);
+            total++;
+          }
+        }
+  
+        if (!total) {
+          return callback(null);
+        }
+  
+        var errored = false;
+        var db = src.type === 'remote' ? src.db : dst.db;
+        var transaction = db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+  
+        function done(err) {
+          if (err && !errored) {
+            errored = true;
+            return callback(err);
+          }
+        };
+  
+        // transaction may abort if (for example) there is a QuotaExceededError
+        transaction.onerror = transaction.onabort = (e) => {
+          done(e.target.error);
+          e.preventDefault();
+        };
+  
+        transaction.oncomplete = (e) => {
+          if (!errored) {
+            callback(null);
+          }
+        };
+  
+        // sort paths in ascending order so directory entries are created
+        // before the files inside them
+        for (const path of create.sort()) {
+          if (dst.type === 'local') {
+            IDBFS.loadRemoteEntry(store, path, (err, entry) => {
+              if (err) return done(err);
+              IDBFS.storeLocalEntry(path, entry, done);
+            });
+          } else {
+            IDBFS.loadLocalEntry(path, (err, entry) => {
+              if (err) return done(err);
+              IDBFS.storeRemoteEntry(store, path, entry, done);
+            });
+          }
+        }
+  
+        // sort paths in descending order so files are deleted before their
+        // parent directories
+        for (var path of remove.sort().reverse()) {
+          if (dst.type === 'local') {
+            IDBFS.removeLocalEntry(path, done);
+          } else {
+            IDBFS.removeRemoteEntry(store, path, done);
+          }
+        }
+      },
+  };
   
   
   
@@ -4153,6 +4592,7 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
   
         FS.filesystems = {
           'MEMFS': MEMFS,
+          'IDBFS': IDBFS,
         };
       },
   init(input, output, error) {
@@ -9280,6 +9720,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'TT_sysStatics',
   'TT_palettes',
   'TT_RES_STRINGS',
+  'IDBFS',
 ];
 unexportedSymbols.forEach(unexportedRuntimeSymbol);
 
