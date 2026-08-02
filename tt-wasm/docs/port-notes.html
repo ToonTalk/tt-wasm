@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToonTalk to WebAssembly — engineering notes</title>
+<meta name="description" content="Porting ~210k lines of 2004 Win32/DirectX C++ to WebAssembly: the shim boundary, the failure modes, nine case studies, and what is still open.">
+<style>
+  :root {
+    --ground:  #F4F6F7;
+    --raised:  #FFFFFF;
+    --sunken:  #EAEEF1;
+    --ink:     #131A1F;
+    --muted:   #5A6874;
+    --rule:    #DBE2E7;
+    --accent:  #AB0519;
+    --accent2: #1B4FA0;
+    --ok:      #2C6E49;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans:  ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:  #0F1418;
+      --raised:  #161D22;
+      --sunken:  #1A2229;
+      --ink:     #E4EBF1;
+      --muted:   #8B99A5;
+      --rule:    #232C34;
+      --accent:  #FF6070;
+      --accent2: #74ACFF;
+      --ok:      #6FBF8E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:  #0F1418;
+    --raised:  #161D22;
+    --sunken:  #1A2229;
+    --ink:     #E4EBF1;
+    --muted:   #8B99A5;
+    --rule:    #232C34;
+    --accent:  #FF6070;
+    --accent2: #74ACFF;
+    --ok:      #6FBF8E;
+  }
+  :root[data-theme="light"] {
+    --ground:  #F4F6F7;
+    --raised:  #FFFFFF;
+    --sunken:  #EAEEF1;
+    --ink:     #131A1F;
+    --muted:   #5A6874;
+    --rule:    #DBE2E7;
+    --accent:  #AB0519;
+    --accent2: #1B4FA0;
+    --ok:      #2C6E49;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.62;
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.5rem; }
+  .prose { max-width: 36rem; }
+
+  h1, h2, h3, .label, .rail dt, .stat-label {
+    font-family: var(--mono);
+  }
+
+  header.masthead {
+    padding: 3.5rem 0 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 4.5vw, 2.4rem);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.125rem;
+    color: var(--muted);
+    margin: 0;
+    max-width: 40rem;
+    text-wrap: pretty;
+  }
+
+  /* Scale of the thing, in facts rather than adjectives. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 2.25rem 0 0;
+  }
+  .stat { background: var(--raised); padding: 0.85rem 1rem; }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    display: block;
+  }
+  .stat-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-top: 0.2rem;
+  }
+
+  section { padding-top: 3rem; }
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 0.9375rem;
+    font-weight: 650;
+    margin: 0 0 0.6rem;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 1.1rem; text-wrap: pretty; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent2); text-underline-offset: 0.15em; }
+  :focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; border-radius: 2px; }
+  strong { font-weight: 650; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code {
+    background: var(--sunken);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+
+  ul { margin: 0 0 1.1rem; padding-left: 1.15rem; }
+  li { margin-bottom: 0.45rem; }
+
+  .scroller { overflow-x: auto; margin: 0 0 1.1rem; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 34rem;
+    font-size: 0.9375rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.9rem 0.55rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td.mono-cell { font-family: var(--mono); font-size: 0.8125rem; }
+
+  /* Case study: metadata rail beside the narrative, notebook fashion. */
+  .case {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem 2.5rem;
+    padding: 1.75rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .case:last-of-type { border-bottom: 0; }
+  @media (min-width: 62rem) {
+    .case { grid-template-columns: 13rem 1fr; }
+  }
+  .rail { margin: 0; font-family: var(--sans); font-size: 0.8125rem; }
+  .rail dt {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.7rem;
+  }
+  .rail dt:first-child { margin-top: 0; }
+  .rail dd { margin: 0.1rem 0 0; }
+  .commit {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    color: var(--accent);
+  }
+  .case-body { max-width: 36rem; }
+
+  .callout {
+    background: var(--sunken);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    max-width: 36rem;
+  }
+  .callout p { font-size: 0.9375rem; }
+  .callout .label {
+    display: block;
+    font-size: 0.625rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  footer {
+    margin-top: 3.5rem;
+    padding: 2rem 0 4rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--sans);
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  footer p { margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="kicker">Engineering notes</p>
+    <h1>ToonTalk on WebAssembly</h1>
+    <p class="standfirst">Moving a 2004 Win32/DirectX C++ application into the browser without rewriting it: where the seam was cut, which failure modes dominate, and nine bugs worth the retelling.</p>
+
+    <div class="stats">
+      <div class="stat"><span class="stat-value">~210k</span><span class="stat-label">Lines of C++ kept</span></div>
+      <div class="stat"><span class="stat-value">67</span><span class="stat-label">Translation units</span></div>
+      <div class="stat"><span class="stat-value">37</span><span class="stat-label">Replacement headers</span></div>
+      <div class="stat"><span class="stat-value">8</span><span class="stat-label">Shim implementations</span></div>
+      <div class="stat"><span class="stat-value">96</span><span class="stat-label">Functional JS overrides</span></div>
+      <div class="stat"><span class="stat-value">258</span><span class="stat-label">Zero-stubs</span></div>
+      <div class="stat"><span class="stat-value">76</span><span class="stat-label">Commits</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <section>
+    <h2>The seam</h2>
+    <div class="prose">
+      <p>The engine is unmodified in substance: it is the original C++, compiled with Emscripten, with port-specific compensations confined to <code>#ifdef __EMSCRIPTEN__</code> blocks. What was rewritten is the platform beneath it — headers that declare the Win32 and DirectX surface the engine expects, and implementations that satisfy those calls with browser primitives.</p>
+      <p>Two rules made the work tractable. First, <strong>the original source is the specification</strong>; any behavioural difference is a port bug, which removes essentially all design debate. Second, compensations are gated and commented at the point of divergence, so the diff against the original stays legible.</p>
+    </div>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th scope="col">Subsystem</th><th scope="col">Original</th><th scope="col">Replacement</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Raster surfaces, blits, flip</td><td class="mono-cell">DirectDraw 7</td><td>COM-shaped objects over a 2D canvas</td></tr>
+          <tr><td>Text, brushes, palette</td><td class="mono-cell">GDI</td><td>Bitmap-font rasteriser + nearest-colour palette mapping</td></tr>
+          <tr><td>Effects and narration</td><td class="mono-cell">DirectSound, winmm</td><td>Web Audio, per-buffer gain nodes</td></tr>
+          <tr><td>Mouse deltas</td><td class="mono-cell">DirectInput</td><td>Pointer events; Pointer Lock for relative mode</td></tr>
+          <tr><td>Saved worlds and robots</td><td class="mono-cell">MSXML</td><td>Hand-written DOM with COM reference semantics</td></tr>
+          <tr><td>Exact arithmetic</td><td class="mono-cell">GMP (Win32 .lib)</td><td>mini-gmp / mini-mpq compiled in</td></tr>
+          <tr><td>Archives (.dmo, .tt)</td><td class="mono-cell">dunzip DLL</td><td>zlib via Emscripten</td></tr>
+          <tr><td>Files and configuration</td><td class="mono-cell">Win32 file API, .ini</td><td>Emscripten FS over a preloaded bundle; synthesised .ini</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <p>Assets are preloaded into a package fetched at start-up; the recorded demos, at roughly 36&nbsp;MB, are pulled over HTTP on demand instead. Both use <code>fetch</code>, which is why the build cannot be opened from a <code>file://</code> URL — the scheme has an opaque origin and <code>fetch</code> refuses it, and <code>instantiateStreaming</code> additionally wants an <code>application/wasm</code> content type that <code>file://</code> cannot supply.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Failure mode one — stubs that report success</h2>
+    <div class="prose">
+      <p>The link runs with <code>-sERROR_ON_UNDEFINED_SYMBOLS=0</code>. This is not optional: the engine imports hundreds of Win32 entry points, most of which are irrelevant in a browser, and demanding an implementation for each would stall the port indefinitely. The build therefore generates a zero-returning JavaScript stub for every import not implemented in the shim — currently 258 of them, against 96 hand-written functional overrides.</p>
+      <p>The cost is that the compiler's most valuable guarantee is switched off, and it is replaced by two much worse ones. A stub that is <em>called through a vtable</em> traps at runtime as <code>null function</code> — noisy, but at least it stops. A stub that is <em>called directly</em> returns 0, and 0 is the success code for most of Win32, <code>S_OK</code> for COM, and <code>Ok</code> for GDI+. It does not fail. It reports that it succeeded.</p>
+    </div>
+    <div class="callout">
+      <span class="label">The general shape</span>
+      <p>Every bug in this class presents as “the logic is wrong” and resolves as “the logic is fine, it was handed a confident zero.” Three of the nine cases below are this bug wearing different clothes, and each one cost days before the pattern was recognised.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Failure mode two — assumptions the original was entitled to make</h2>
+    <div class="prose">
+      <p>The second family comes from the target, not the shim. The engine was compiled by 32-bit MSVC for Windows, and it is correct on that machine. wasm changes the widths and the concurrency model underneath it, and the code has no reason to expect that.</p>
+      <ul>
+        <li><strong>Type widths.</strong> <code>time_t</code> is 4 bytes on the compiler that wrote the recordings and 8 in wasm; <code>wchar_t</code> is 2 bytes on Windows and 4 here. Anything that reads a recorded file with <code>sizeof</code> silently mis-parses it.</li>
+        <li><strong>Integer range.</strong> Intermediate products that never overflowed at the original's coordinate scale do overflow here, and the original's overflow guards were written against the cases that actually occurred.</li>
+        <li><strong>Blocking.</strong> <code>Sleep()</code> suspends a thread. A browser main loop cannot block at all, so the port records a wake deadline and skips iterations — which preserves pacing but changes what happens <em>within</em> a cycle.</li>
+        <li><strong>Installer state.</strong> Directory search paths, registered file extensions and palette settings were written by the installer, not the program. On a fresh Emscripten filesystem none of it exists, and the engine has no fallback because on Windows it never needed one.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Case studies</h2>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">150d640</dd>
+        <dt>Subsystem</dt><dd>DirectDraw shim</dd>
+        <dt>Symptom</dt><dd>Helicopter descends upward; parked craft sits on grass at the top of the screen</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Top-down versus bottom-up surface memory</h3>
+        <p>The canvas present read the surface bottom-up while the DirectDraw-path blits wrote top-down, so every sprite placed through <code>blt_to_back_surface</code> — which pre-flips its y-up marks into top-down rects, exactly as real DDraw expects — rendered mirrored about the horizontal midline.</p>
+        <p>What made it expensive was that GDI content compensated with a flip of its own, which hid the mismatch. Backgrounds looked right; sprites did not. The fix was to standardise every shim on top-down memory rather than to correct any individual blit, which retired a whole family of positional bugs at once.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">a9baf9e</dd>
+        <dt>Subsystem</dt><dd>Exact arithmetic</dd>
+        <dt>Symptom</dt><dd>Pong ball never re-served after leaving the screen; “.” did not stop the game</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Fifty-four stubs where GMP used to be</h3>
+        <p>ToonTalk's exact-arithmetic layer is GNU GMP, reached through <code>mpq_*</code> / <code>mpz_*</code> DLL exports. The Win32 <code>.lib</code> binaries cannot link into wasm, so all 54 imports had become return-0 stubs.</p>
+        <p>Integer pads appeared to work throughout, because small values ride a separate <code>LongNumberValue</code> path. Only the rational path — fractional sensor values, big numbers, exact comparisons — was returning garbage, and Pong's serve trigger is precisely that path: the ball's X sensor pushes a <code>RationalNumberValue</code>. Replaced with mini-gmp and mini-mpq compiled directly into the build.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">3b4fabb</dd>
+        <dt>Subsystem</dt><dd>Sprite registration</dd>
+        <dt>Symptom</dt><dd>Helicopter climbs off the top of the city and out over the ocean; controls dead</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Signed overflow in a per-frame compensation</h3>
+        <p>The port's registration compensation in <code>Sprite::update_display</code> feeds <code>offset_delta * y_scale</code> — millions of units at high camera scale — into <code>shrink_height_from_640x480_screen_size</code>, whose <code>h * 480</code> product overflows 32 bits beyond about 4.4 million. The original's overflow guard only catches positive <code>h</code>.</p>
+        <p>The wrapped result flipped sign, so each rotor-frame swap ratcheted the craft roughly 28,000 units upward. Console telemetry pinned it exactly: <code>yo</code> dropped 14,264 while <code>dy</code> gained 13,698. The end state — all water, no helicopter, unresponsive input — had been reported several times before as separate bugs.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">f111ac9</dd>
+        <dt>Subsystem</dt><dd>Log replay</dd>
+        <dt>Symptom</dt><dd>Demo city snapshots never load; stream fails at <code>tellg = -1</code></dd>
+      </dl>
+      <div class="case-body">
+        <h3><code>sizeof(time_t)</code> in a recorded file</h3>
+        <p><code>read_use_profile</code> read three <code>time_t</code> fields at <code>sizeof(time_t)</code> — 4 bytes on the 32-bit MSVC that wrote the recordings, 8 in wasm. Twelve bytes over-consumed shifted the entire log preface, so <code>load_city_from_log</code> met a failed stream instead of the file-name marker.</p>
+        <p>Reads and writes now use explicit 4-byte time values under Emscripten, preserving compatibility with recordings made by the original. With that, every segment's marker reads at <code>tellg = 752</code> and the shipped demo corpus replays end to end.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">9acf60f</dd>
+        <dt>Subsystem</dt><dd>Text layout</dd>
+        <dt>Symptom</dt><dd>A long text pad renders as nothing but question marks</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Two-byte stride over one-byte characters</h3>
+        <p>The wide-text clipping routine advanced two bytes per character, correct where <code>wchar_t</code> is 2 bytes wide, wrong in wasm where it is 4 and wrong again for the on-disk representation. Every read landed between characters and produced the fallback glyph.</p>
+        <p>Related, and fixed alongside: XML blobs inside recorded logs are stored as 2-byte wide characters regardless of the host's <code>wchar_t</code>, so they are now read explicitly at that width rather than at the native one.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">a2d77b8</dd>
+        <dt>Subsystem</dt><dd>MSXML shim</dd>
+        <dt>Symptom</dt><dd>Tab killed mid-demo: <code>Uncaught RuntimeError: null function</code></dd>
+      </dl>
+      <div class="case-body">
+        <h3>COM lifetime in a hand-written DOM</h3>
+        <p>The shim's document owned its nodes outright but got the reference model wrong, releasing storage while the engine still held pointers into it. The next virtual call went through a freed vtable and, with undefined symbols permitted, surfaced as an indirect call to index 0.</p>
+        <p>The first fix was also wrong — it tested <code>rc &gt; 1</code>, but the engine releases the mint reference after appending, so a legitimately held node sits at exactly 1 and was declared unreferenced. The correct model counts <strong>client</strong> references only: a fresh node starts at 0, every factory and <code>cloneNode</code> hands out an <code>AddRef</code>, and teardown is deferred while any node is still held. Headless replay then ran to frame 13,243, against a hard trap at 7,520 before.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">7ea3d4f</dd>
+        <dt>Subsystem</dt><dd>GDI shim</dd>
+        <dt>Symptom</dt><dd>Number and text pad faces render as black rectangles</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Luminance is not a palette lookup</h3>
+        <p><code>Number::display</code> paints a non-blank pad's face as a solid GDI rectangle rather than sprite art, using a true RGB <code>COLORREF</code> from <code>tt_colors</code>. The shim was mapping every <code>COLORREF</code> to a palette index by luminance — a shortcut valid only against the grayscale development palette, and against the real one it lands on arbitrary entries. The pad's warm-white face mapped to black.</p>
+        <p>The shim now holds the live palette, fed from the DirectDraw shim's <code>SetEntries</code>, and maps by nearest colour with a fast path for explicit palette indices.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">1664392</dd>
+        <dt>Subsystem</dt><dd>Image loading</dd>
+        <dt>Symptom</dt><dd>Time-travel buttons invisible for weeks</dd>
+      </dl>
+      <div class="case-body">
+        <h3>A stub that measured every file at zero by zero</h3>
+        <p><code>UserImage::compute_dimensions</code> measures a file with <code>load_image_dimensions</code>, which is GDI+. There is no GDI+ in wasm: the stubbed <code>Bitmap</code> constructor does nothing, <code>GetLastStatus()</code> returns 0 — which is <code>Ok</code> — and <code>GetWidth()</code>/<code>GetHeight()</code> return 0. So the call “succeeded” with 0×0 and set <code>file_read</code>, which skipped the <code>DibReadBitmapInfoFromFileName</code> measurement immediately below it. <code>set_dimensions</code> then clamped both axes to 1.</p>
+        <p>Every image loaded from a real file was therefore one city unit across. The buttons were laid out, blitted and dirtied every frame at 1×1 — present the entire time, sub-pixel. Two further causes sat behind it: no <code>FileSearchPath</code> in the synthesised .ini, so bare-name lookups failed name resolution outright (the retail installer writes that entry); and the pointing-cursor artwork had never been staged, which is why the frozen screen appeared not to repaint at all.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">32d9f62</dd>
+        <dt>Subsystem</dt><dd>Asset conversion</dd>
+        <dt>Symptom</dt><dd>Buttons in wrong colours; subtitle text visible through their bodies</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Transparency is palette index 0</h3>
+        <p>The retail button art ships as GIF, which the port cannot decode, so it is converted to BMP ahead of time. The first conversion preserved each GIF's own palette — but the engine runs 8-bit against ToonTalk's palette and treats index 0 as transparent, which in the retail art is black.</p>
+        <p>In the GIF palette index 0 is the crimson button body. So the body became the transparency hole and every other colour was resolved against the wrong table. The conversion now remaps each pixel to the nearest colour in ToonTalk's palette, sends the GIF's transparency index to 0, and keeps opaque pixels off index 0 so a dark pixel can never become a hole.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Method</h2>
+    <div class="prose">
+      <p>A shim boundary this wide defeats reasoning from first principles, because any given call may be real, may be a stub, and looks identical either way at the call site. What worked was cheap, permanent instrumentation and a refusal to theorise ahead of measurement.</p>
+      <ul>
+        <li><strong>Bounded probes in the engine.</strong> <code>printf</code> lines tagged <code>[tt]</code>, capped at a few prints or fired every N frames, left in place through the testing phase. The page rings them so nothing is lost to a late console hook.</li>
+        <li><strong>A heartbeat rather than a screenshot.</strong> A still ToonTalk scene is pixel-identical to a stopped one. The loop prints iteration, frame, pause and time-travel state, so liveness is read, not inferred.</li>
+        <li><strong>A headless harness.</strong> Node driving the same build under a wall-clock cap, for crash bisection without a browser in the loop.</li>
+        <li><strong>Canvas measurement over eyeballing.</strong> Row-scanning the rendered canvas to assert geometry — that the subtitle band occupies rows 460–523 and the buttons 529–593 — turns “they overlap” into a check.</li>
+      </ul>
+    </div>
+
+    <div class="callout">
+      <span class="label">Three diagnostic failures, recorded</span>
+      <p><strong>Comparing unlike measurements.</strong> The harness prints pumped loop iterations; the engine prints frame numbers. Reading the first as the second made a run look past a crash point that it had not reached, and nearly produced a false “fixed” report.</p>
+      <p><strong>Inferring liveness from pixels.</strong> Twice a still scene was called frozen. The hidden browser pane additionally throttles to about one iteration per second, which makes a healthy engine look dead.</p>
+      <p><strong>A sound measurement with a wrong conclusion.</strong> “Moving the mouse while frozen changes zero pixels” was correct and reproducible. “Therefore the paused screen never repaints, and this is the same root cause as a second unrelated bug” was neither. It was committed and reported before being retracted one commit later. The pause path repaints fine; it was returning early on a null cursor sprite.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Deliberate divergences</h2>
+    <div class="prose">
+      <p>Kept short on purpose, and each one flagged at the point of change.</p>
+      <ul>
+        <li><strong>Marty speaks via <code>speechSynthesis</code></strong> rather than recorded audio, with an English male voice and raised pitch, and an off switch on the query string.</li>
+        <li><strong>Subtitles step aside for the time-travel controls.</strong> The original pins the subtitle band to the screen bottom and the buttons to <code>min_y</code>, and paints the buttons last, so they overdraw it; that is tolerable natively only because the buttons auto-hide. The port measures what the interface currently covers from the sprites' live positions and lifts the band clear.</li>
+        <li><strong>GIF art is pre-converted to BMP</strong> and <code>.gif</code> lookups are redirected, since only the classic DIB decoder is functional.</li>
+        <li><strong>Absolute mouse mode by default</strong> — a browser is an absolute pointing device — except during demo replay, where recordings were made in relative mode and are interpreted through whatever mode is current.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Open</h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col">Current understanding</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Nest into box not drawn</td><td>Sound fires and later state is correct, so the model performed the operation and only the frame was dropped. Previously attributed to the pacing skip; that attribution is retracted and it needs its own measurement.</td></tr>
+          <tr><td>Full-screen subtitles coarse, descenders clipped</td><td>Font metrics: <code>lfH=-56 lfW=-12</code> resolving to a 16×75 px cell.</td></tr>
+          <tr><td>Narration louder than TTS</td><td><code>speechSynthesis</code> caps at 1.0, so the <code>sndPlaySound</code> path has to come down — a gain node at roughly 0.6.</td></tr>
+          <tr><td>Marty gives no tips after training</td><td>Possibly faithful: tips carry importance 0, below <code>tt_minimum_say_importance</code>. Unconfirmed against the original.</td></tr>
+          <tr><td>PLAY button does not resume</td><td>Needs wiring through <code>time_travel_react_to_mouse_down</code>; a temporary resume currently stands in.</td></tr>
+          <tr><td>Residual helicopter vibration</td><td>Frame-decode registration in the <code>.us1</code> resource path.</td></tr>
+          <tr><td>Port-written logs unreadable by the port</td><td>Asymmetry: the write path still emits an 8-byte <code>date_and_time_log_created</code> where the read path consumes 4.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Compiled from the port's commit history, in-engine probes and test reports. Commit hashes refer to the <span class="mono">tt-wasm</span> repository.</p>
+    <p><a href="port-story.html">A companion page</a> tells the same story without the implementation detail.</p>
+  </div>
+</footer>
+
+</body>
+</html>

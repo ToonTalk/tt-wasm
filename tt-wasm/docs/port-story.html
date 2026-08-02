@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Putting ToonTalk back on its feet — the story of a port</title>
+<meta name="description" content="What it took to move ToonTalk, a Windows program for children who program, into a browser tab — the failures, the challenges, and what works now.">
+<style>
+  :root {
+    --ground:   #F7F3F2;
+    --raised:   #FFFFFF;
+    --ink:      #171112;
+    --muted:    #6E6162;
+    --rule:     #E4DAD9;
+    --accent:   #AB0519;
+    --stud:     #E0D2D0;
+    --quote-bg: #F0E8E6;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans:  ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+
+    --measure: 34rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #14100F;
+      --raised:   #1C1716;
+      --ink:      #F2EAE8;
+      --muted:    #A3938F;
+      --rule:     #2F2523;
+      --accent:   #E4576A;
+      --stud:     #332A28;
+      --quote-bg: #1E1817;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #14100F;
+    --raised:   #1C1716;
+    --ink:      #F2EAE8;
+    --muted:    #A3938F;
+    --rule:     #2F2523;
+    --accent:   #E4576A;
+    --stud:     #332A28;
+    --quote-bg: #1E1817;
+  }
+  :root[data-theme="light"] {
+    --ground:   #F7F3F2;
+    --raised:   #FFFFFF;
+    --ink:      #171112;
+    --muted:    #6E6162;
+    --rule:     #E4DAD9;
+    --accent:   #AB0519;
+    --stud:     #E0D2D0;
+    --quote-bg: #F0E8E6;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.25rem; }
+
+  /* A band of LEGO studs — ToonTalk's whole world is built of these bricks. */
+  .studs {
+    height: 13px;
+    background-color: transparent;
+    background-image: radial-gradient(circle at 6.5px 6.5px, var(--stud) 0 3.6px, transparent 4.1px);
+    background-size: 13px 13px;
+  }
+
+  header.masthead { padding-top: 3.5rem; }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.9rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.9rem);
+    line-height: 1.1;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+  .standfirst {
+    font-size: 1.1875rem;
+    line-height: 1.55;
+    color: var(--muted);
+    margin: 0 0 2rem;
+    text-wrap: pretty;
+  }
+  .byline {
+    font-family: var(--sans);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin: 0 0 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  section { padding-top: 2.75rem; }
+  h2 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    margin: 2rem 0 0.5rem;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 1.15rem; text-wrap: pretty; }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--accent); text-underline-offset: 0.15em; }
+  a:focus-visible, :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  strong { font-weight: 650; }
+  em.term { font-style: italic; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--quote-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  /* A tester's own words about a symptom. */
+  .report {
+    margin: 1.75rem 0;
+    padding: 1rem 1.25rem;
+    background: var(--quote-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 4px 4px 0;
+  }
+  .report p {
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .report .who {
+    display: block;
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  ul.plain { margin: 0 0 1.15rem; padding-left: 1.15rem; }
+  ul.plain li { margin-bottom: 0.5rem; }
+
+  .divider { margin: 3rem 0 0; opacity: 0.85; }
+
+  footer {
+    margin-top: 3.5rem;
+    padding: 2rem 0 4rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--sans);
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  footer p { margin-bottom: 0.6rem; }
+  .swatch {
+    display: inline-block;
+    width: 0.7em; height: 0.7em;
+    background: #AB0519;
+    border-radius: 2px;
+    vertical-align: -0.02em;
+    margin-right: 0.15em;
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">A restoration diary</p>
+    <h1>Putting ToonTalk back on its feet</h1>
+    <p class="standfirst">A programming environment for children, written for Windows and left behind by it, now runs in a browser tab. Almost none of the work was in the part you can see.</p>
+    <p class="byline">On the porting of ToonTalk to WebAssembly · 76 commits between 5 July and 2 August 2026</p>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <section>
+    <p>ToonTalk is a programming language disguised as a video game. Children fly a helicopter over a city, land, walk into a house, and sit down at a desk. There they train robots by showing them what to do, once, with their hands. Numbers are pads you drop on other pads. Messages travel by bird to a nest. A truck builds a new house that runs a new process. A bomb blows the house up and stops it.</p>
+    <p>None of that is metaphor laid over code. In ToonTalk the picture <em class="term">is</em> the program, and the animation of a bird flying to its nest is the running of the thing.</p>
+    <p>The program was written in C++ for Windows, and its source carries dated comments running from the late 1990s to 2005. It talks to the machine through the interfaces of that era: DirectDraw for the screen, DirectSound for audio, DirectInput for the mouse, Windows GDI for text, Microsoft's XML parser for saved worlds. Every one of those has since been superseded or removed. A program can be perfectly correct and still become unrunnable, simply because everything it stands on has been taken away.</p>
+    <p>The port puts the floor back.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">The approach</p>
+    <h2>Not a rewrite</h2>
+    <p>The tempting thing would be to rebuild ToonTalk from scratch in modern web technology. That gets you something that resembles ToonTalk. It does not get you ToonTalk — because twenty years of decisions, corrections and second thoughts live in that code, most of them undocumented and many of them load-bearing. The comments are full of them: <em class="term">rewritten on 100603</em>, <em class="term">condition new on 290404 since no need to emulate the mouse if not in full-screen mode</em>. Nobody could reconstruct that from a description.</p>
+    <p>So the C++ was kept, all of it — roughly 210,000 lines — and compiled to WebAssembly, the format that lets a browser run code written in languages like C++. What was replaced is only the floor underneath: hand-written stand-ins that accept the same calls the old Windows libraries did and carry them out using what a browser has. Drawing goes to a canvas. Sound goes to Web Audio. The file system becomes a bundle of files loaded into memory before the program starts.</p>
+    <p>This gives the work an unusual and rather clarifying rule: <strong>the original is the specification.</strong> There is no debate about how anything should behave, because the behaviour is sitting right there in the source. Anything the port does differently is, by definition, a bug in the port. That rule settled a great many arguments before they started.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">What went wrong</p>
+    <h2>The world upside down</h2>
+    <p>The most memorable failures were the ones where the program was working perfectly and the picture was a lie.</p>
+    <p>Early on, the helicopter came in to land by descending <em class="term">upward</em>. Parked, it sat at the top of the screen on grass instead of down on the street. Houses moved when they shouldn't. All of it was one disagreement about which end of the screen memory is the top. The old graphics interface and the browser canvas number their rows in opposite directions, and the mismatch mirrored every sprite about the middle of the screen — while leaving the backgrounds, which took a different path through the code, looking entirely correct. That combination is what made it so confusing: half the world was right.</p>
+
+    <div class="report">
+      <p>“The helicopter sounds got stuck on repeat.”</p>
+      <span class="who">From the test reports</span>
+    </div>
+
+    <p>Another: the helicopter climbed until it left the city and hung over open ocean, with the controls dead. Each rotor animation frame applied a small correction to its position; at high altitude the numbers in that correction grew past the size the arithmetic could hold, wrapped around, and came back with the wrong sign. So every beat of the rotor ratcheted the machine a little further up. The original had a guard against exactly this overflow, but it only checked one direction.</p>
+    <p>A text pad — the thing you type into — once rendered as a row of question marks and nothing else. The routine that walks along a string of text was stepping two bytes at a time through characters that were one byte wide, so it read the gaps between letters and found nothing it recognised.</p>
+    <p>And in the Pong example, the ball would leave the screen and never be served again. ToonTalk does exact arithmetic — proper fractions, numbers of unlimited size — using a mathematics library that could not be linked into the new build. Fifty-four of its functions had quietly become stubs that returned zero. Whole numbers still worked, because they take a different path internally, so nothing looked wrong until a fraction appeared. Pong's serve depends on a fraction.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">The pattern behind the bugs</p>
+    <h2>Stubs that lie</h2>
+    <p>That last one is worth dwelling on, because it turned out to be the shape of the whole project.</p>
+    <p>When a program is built out of many pieces, the usual protection is that a missing piece stops the build. You cannot ship something that calls a function nobody wrote. This port deliberately switches that protection off — it has to, because hundreds of small Windows functions are called and only some of them matter. The ones that don't get an automatic stand-in that does nothing and returns zero.</p>
+    <p>The trouble is that in a great many programming conventions, zero means <em class="term">success</em>, and zero also means <em class="term">no error</em>. So a stand-in that does nothing does not announce itself. It reports, cheerfully and in perfect good faith, that it has done the job.</p>
+    <p>The clearest case came right at the end. ToonTalk's time-travel controls — the row of buttons that let you rewind a session — were invisible for weeks. Several plausible explanations were chased and fixed along the way, all of them real problems in their own right. The actual cause was that the routine which measures an image file was one of these stand-ins. Asked how big the button artwork was, it answered “no error, zero by zero.” The program believed it, and dutifully laid out, drew, and refreshed seven buttons at one unit across. They had been there the whole time, painted every frame, far too small to see.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">Where the work went wrong about itself</p>
+    <h2>Three honest mistakes</h2>
+    <p>Not every failure was in the code. Some were in the diagnosis, and they cost more time than the bugs did.</p>
+    <h3>Believing a number that meant something else</h3>
+    <p>A crash was being chased through a long demo. The test harness printed a count of loop iterations; the engine printed its own frame number. These are not the same thing, and the first runs far ahead of the second. Reading one as the other made it look as though a run had sailed past the crash point and the fix had worked. It had not. The run trapped at exactly the same place as before. The lesson was narrow and useful: when comparing two runs, compare the same measurement.</p>
+    <h3>Reading a still picture as a stopped program</h3>
+    <p>Twice, a paused scene was reported as a frozen program. A ToonTalk world with nothing moving in it looks identical to a ToonTalk world that has stopped dead. The fix was to stop looking and start asking: the program now prints a steady heartbeat, so liveness is something you read rather than something you infer.</p>
+    <h3>The confident wrong diagnosis</h3>
+    <p>The invisible buttons produced a measurement that was completely sound — with the demo frozen, moving the mouse changed not a single pixel on screen — attached to a conclusion that was completely wrong. It was written up, committed, and reported as “the screen never repaints while paused,” along with a claim that a second unrelated bug shared the same cause. Neither was true. The screen repaints fine; it was skipping because a piece of artwork was missing, so the code responsible bailed out on its first line. Retracting that took one commit. Noticing it required someone asking, in so many words, what exactly was so hard about this.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">Where it stands</p>
+    <h2>What works now</h2>
+    <p>ToonTalk runs in a browser tab. Not a demonstration of a fragment of it — the program, with its city, its houses, its robots, its notebooks of examples.</p>
+    <ul class="plain">
+      <li>All ten of the recorded demonstrations that shipped with ToonTalk replay from beginning to end, with their original narration, subtitles and sound effects.</li>
+      <li>The artwork is the real artwork, read from an original installation, drawn through the same 256-colour palette the program has always used.</li>
+      <li>Sound works — effects and the recorded narration both — routed to the browser's audio engine.</li>
+      <li>Exact arithmetic is genuinely exact again, on unlimited-size numbers and fractions.</li>
+      <li>Full screen reproduces the original's mouse behaviour, which needs the browser to hand over the pointer entirely.</li>
+      <li>Time travel works: the buttons appear when you move the mouse and drift away when you stop, Escape freezes a demo and leaves the controls up, and a second Escape offers to resume, hand you the controls, or leave.</li>
+      <li>Marty, the Martian who gives advice, now speaks aloud through the browser's speech synthesis rather than only appearing in a balloon.</li>
+    </ul>
+    <p>Two things were deliberately allowed to differ from the original. Marty's voice is a synthesised one rather than the recording. And subtitles now step aside for the time-travel controls instead of being painted over by them — in the original they simply overlap, and the overlap was only tolerable because the buttons hide themselves after a few seconds.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Still open</p>
+    <h2>What isn't finished</h2>
+    <p>An honest list, because a restoration is never quite done:</p>
+    <ul class="plain">
+      <li>Occasionally a nest is heard going into a box without being seen to go in, though the world afterwards is correct — the action happened, the picture of it was dropped.</li>
+      <li>Subtitles in full screen look coarse, and letters that hang below the line get clipped.</li>
+      <li>The narration is louder than Marty's synthesised voice.</li>
+      <li>A letter on one of the characters' buttons doesn't fit inside it.</li>
+      <li>There is no menu yet for choosing a demo or starting free play; you name a demo in the address bar.</li>
+      <li>A faint vibration remains in the landed helicopter.</li>
+    </ul>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <h2>Why bother</h2>
+    <p>Software of this kind is unusually easy to lose. It is not a document you can migrate; it is a machine, and it only works while the machinery beneath it is kept alive. When that goes, the thing is gone — not corrupted, not deleted, simply unrunnable, which amounts to the same thing for anyone who wanted to see it.</p>
+    <p>What makes the browser worth the trouble is that it is the one platform that has consistently declined to break old things. A page that works today has a fair chance of working in fifteen years, which is a claim almost nothing else in computing can make.</p>
+    <p>So the goal was never to modernise ToonTalk. It was to move it somewhere it can go on being itself, with its own artwork, its own timing, its own twenty-year-old decisions intact — including the ones nobody remembers making.</p>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><span class="swatch"></span>The red on this page is <code>#AB0519</code> — palette entry 171, 5, 25, taken from ToonTalk's own time-travel buttons.</p>
+    <p>Written from the port's commit history and test reports. <a href="port-notes.html">A companion page</a> covers the same ground for a technical reader.</p>
+  </div>
+</footer>
+
+</body>
+</html>
