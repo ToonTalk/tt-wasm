@@ -78,6 +78,10 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
     }
     if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; };
     HEAP8[playing_flag] = 1;
+    /* Remember where this buffer's "am I playing" byte lives, so the watchdog below can compare
+     * what the ENGINE believes with what is actually sounding. */
+    if (!DS.flags) DS.flags = {};
+    DS.flags[id] = playing_flag;
     DS.srcs[id] = src;
     src.start();
   } catch (e) { /* no audio available — stay silent */ }
@@ -139,6 +143,41 @@ EM_JS(void, tt_ds_stop_looping, (), {
   }
 });
 extern "C" void tt_stop_looping_web_audio() { tt_ds_stop_looping(); }
+
+/* WATCHDOG. Every route by which a sound can outlive the engine's intention ends in the same
+ * state: a Web Audio source still running while the buffer's own `playing` byte reads 0, i.e. the
+ * engine believes it stopped that sound. Rather than chase each route — the rotor loop has now
+ * survived a landing through more than one of them, and none reproduces here — reconcile the two
+ * once a second: anything the engine thinks is stopped, stop for real.
+ *
+ * Deliberately conservative. It never stops a sound the engine believes is playing, so it cannot
+ * silence anything legitimate; it only closes the gap between belief and fact. */
+EM_JS(int, tt_ds_reconcile, (), {
+  var DS = Module.TT_ds;
+  if (!DS || !DS.srcs || !DS.flags) return 0;
+  var stopped = 0;
+  for (var k in DS.srcs) {
+    var flag = DS.flags[k];
+    if (flag === undefined) continue;              /* never played through us */
+    if (HEAP8[flag] !== 0) continue;               /* the engine thinks it IS playing: leave it */
+    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    delete DS.srcs[k];
+    stopped++;
+  }
+  return stopped;
+});
+
+extern "C" void tt_audio_watchdog() {
+	int stopped = tt_ds_reconcile();
+	if (stopped > 0) {
+		static int reported = 0;
+		if (reported < 12) { reported++;
+			printf("[tt] audiowatch: stopped %d source(s) the engine had already given up on%s\n",
+			       stopped, reported == 12 ? " [further reports suppressed]" : "");
+			fflush(stdout);
+		};
+	};
+}
 
 EM_JS(void, tt_ds_volume, (int id, double gain), {
   var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} });

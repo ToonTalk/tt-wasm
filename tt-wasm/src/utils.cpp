@@ -2,6 +2,9 @@
 
 #if !defined(__TT_DEFS_H)   
 #include "defs.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>   /* EM_ASM: persist Marty's history the moment it is written */
+#endif
 #endif
 #if !defined(__TT_GLOBALS_H)   
 #include "globals.h"
@@ -464,7 +467,17 @@ void write_user_parameters(output_stream &file, Parameters *parameters) {
 const int new_history_count = 1; // 1 added on 11/6/97 -- put at end so as not to break old profiles
 
 void dump_history(boolean puzzle_state_changed) {
-   if (!tt_maintain_history || tt_user_parameters == NULL) return; 
+#ifdef __EMSCRIPTEN__
+   { /* Marty's memory of what he has told you is this file. If it is never written, or written
+      * somewhere that does not persist, he greets every session as the first (Ken). */
+     static int p = 0;
+     if (p < 8) { p++;
+       printf("[tt] history: dump maintain=%d params=%d replaying=%d user='%s'\n",
+              (int)tt_maintain_history,(int)(tt_user_parameters != NULL),(int)replaying(),
+              tt_file_name ? tt_file_name : "(none)");
+       fflush(stdout); } }
+#endif
+   if (!tt_maintain_history || tt_user_parameters == NULL) return;
 	// second disjunct added 311099 since might be trouble shooting too early to deal with this
    if (tt_system_mode == PUZZLE && !puzzle_state_changed && !ok_to_save_puzzle_state()) return;
 	if (replaying()) return; // new on 151204 -- no point maintaining USR when replaying someone's time travel file or demo
@@ -477,6 +490,13 @@ void dump_history(boolean puzzle_state_changed) {
 	delete [] full_file_name;
    dump_history(history_file,puzzle_state_changed);
    history_file.close();
+#ifdef __EMSCRIPTEN__
+   /* Push it to browser storage NOW rather than waiting for the periodic sync. This file IS
+    * Marty's memory, and it is written at exactly the moments a user is most likely to reload
+    * soon after — the timer could still be seconds away, and a hard refresh kills an in-flight
+    * save (Ken: "Marty behaved the same after a hard refresh"). */
+   EM_ASM({ if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); });
+#endif
 };
 
 void dump_history(output_file_stream &file, boolean puzzle_state_changed) {

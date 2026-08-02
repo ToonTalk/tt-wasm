@@ -1668,7 +1668,16 @@ boolean Main::MessageLoopOnce() {
 // through to its end. The browser loop used to call MessageLoopOnce() bare, so the first
 // segment boundary threw straight out of the frame callback and killed the run.
 // Mirrors the body of the native while(TRUE) loop; returns FALSE when the loop should stop.
+extern "C" void tt_audio_watchdog(); // dsound_impl.cpp — stop what the engine thinks it stopped
+
 static boolean tt_message_loop_iteration() {
+	{
+		/* Reconcile the mixer with what the engine believes is playing, about once a second. A
+		 * sound that outlives its Stop() is inaudible to every check inside the engine — it has
+		 * already forgotten about it — so the shim has to be the one to notice. */
+		static long audio_tick = 0;
+		if ((++audio_tick % 60) == 0) tt_audio_watchdog();
+	}
 	{
 		// Heartbeat: the one reliable liveness signal from the browser. A still picture is not
 		// the same as a stopped engine, and pixel sampling cannot tell them apart.
