@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp9c970cei.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpc4w50ja9.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp9c970cei.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp471qnz91.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpc4w50ja9.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp1ipm6ses.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp471qnz91.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmp1ipm6ses.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -641,6 +641,40 @@ globalThis.TT_setVolume = function (v) {
   return v;
 };
 
+// TT_audioReport(): what is making noise RIGHT NOW. Run it from the console at the moment a sound
+// is wrong and paste the result — it turns "I can still hear the helicopter" into something
+// checkable. Reports every live source with its length and whether it loops, the gain each one
+// carries, the master setting, and the measured signal level at the master's output, so a sound
+// that is playing with no source registered (or a registered source that is silent) is obvious.
+globalThis.TT_audioReport = function () {
+  var DS = (typeof Module !== 'undefined') && Module.TT_ds;
+  if (!DS || !DS.ctx) return 'no audio started yet';
+  if (!DS.__an) { try { DS.__an = DS.ctx.createGain(); } catch (e) {} }
+  if (!globalThis.__ttAn) {
+    try {
+      globalThis.__ttAn = DS.ctx.createAnalyser();
+      globalThis.__ttAn.fftSize = 2048;
+      if (DS.master) DS.master.connect(globalThis.__ttAn);
+    } catch (e) {}
+  }
+  var rms = 'n/a';
+  try {
+    var b = new Float32Array(globalThis.__ttAn.fftSize);
+    globalThis.__ttAn.getFloatTimeDomainData(b);
+    var t = 0; for (var i = 0; i < b.length; i++) t += b[i] * b[i];
+    rms = Math.sqrt(t / b.length).toFixed(4);
+  } catch (e) {}
+  var live = Object.keys(DS.srcs).map(function (k) {
+    var s = DS.srcs[k];
+    return k + (s.loop ? ' LOOPING' : '') + ' ' + (s.buffer ? s.buffer.duration.toFixed(2) + 's' : '?') +
+           ' gain=' + (DS.gains[k] ? DS.gains[k].gain.value.toFixed(2) : 'none');
+  });
+  return 'ctx=' + DS.ctx.state + ' master=' + (DS.master ? DS.master.gain.value.toFixed(2) : 'none') +
+         ' volume=' + globalThis.TT_volume + ' rmsAtMaster=' + rms +
+         ' | live sources: ' + (live.length ? live.join(' ; ') : 'NONE') +
+         ' | gains held: ' + Object.keys(DS.gains).join(',');
+};
+
 // Play a .dmo the user picked off their own machine. ?demo=<name> can only name a file the SERVER
 // has (it is fetched as demos/<name>.dmo), and a browser cannot open an arbitrary local path — so
 // a session saved from this page needs a file picker to get back in.
@@ -860,13 +894,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpvfylhqod.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpfy2pfbzd.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpvfylhqod.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpfy2pfbzd.js
 
 
 var programArgs = [];
