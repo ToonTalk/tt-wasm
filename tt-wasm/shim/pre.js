@@ -318,17 +318,48 @@ globalThis.TT_cmdline = '';
   if (seg) globalThis.TT_cmdline += ' -segment ' + seg[1];
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
+    // A .dmo the user opened from their own machine lives in IndexedDB (see TT_playLocalDemo).
+    // Reading it is asynchronous, so hold the runtime back with a run dependency rather than
+    // letting main() start without the file.
+    if (name === 'picked') {
+      addRunDependency('tt-picked-demo');
+      var done = function (bytes) {
+        try {
+          if (bytes && bytes.length) {
+            try { FS.mkdir('/toontalk'); } catch (e) {}
+            try { FS.mkdir('/toontalk/Demos'); } catch (e) {}
+            FS.writeFile('/toontalk/Demos/picked.dmo', bytes);
+            console.log('[tt] demo: staged picked.dmo (' + bytes.length + ' bytes)');
+          } else {
+            console.warn('[tt] demo: nothing stored for the picked demo');
+            globalThis.TT_cmdline = '';
+          }
+        } catch (e) {
+          console.warn('[tt] demo: could not stage the picked demo — ' + e.message);
+          globalThis.TT_cmdline = '';
+        }
+        removeRunDependency('tt-picked-demo');
+      };
+      try {
+        var open = indexedDB.open('toontalk', 1);
+        open.onupgradeneeded = function () { open.result.createObjectStore('files'); };
+        open.onsuccess = function () {
+          var db = open.result;
+          try {
+            var get = db.transaction('files', 'readonly').objectStore('files').get('pickedDemo');
+            get.onsuccess = function () { var v = get.result; db.close(); done(v && new Uint8Array(v)); };
+            get.onerror = function () { db.close(); done(null); };
+          } catch (e) { db.close(); done(null); }
+        };
+        open.onerror = function () { done(null); };
+      } catch (e) { done(null); }
+      return;
+    }
     // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
     // during initialization. (Blocking here only delays our own start-up.)
     try {
       var bytes;
-      var parked = (name === 'picked' && typeof sessionStorage !== 'undefined')
-                   ? sessionStorage.getItem('TT_pickedDemo') : null;
-      if (parked) {                        // a .dmo the user opened from their own machine
-        var raw = atob(parked);
-        bytes = new Uint8Array(raw.length);
-        for (var b = 0; b < raw.length; b++) bytes[b] = raw.charCodeAt(b);
-      } else if (typeof XMLHttpRequest !== 'undefined') {
+      if (typeof XMLHttpRequest !== 'undefined') {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'demos/' + name + '.dmo', false);
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
@@ -386,22 +417,35 @@ globalThis.TT_setVolume = function (v) {
 globalThis.TT_playLocalDemo = function (file) {
   if (!file) return false;
   var reader = new FileReader();
+  reader.onerror = function () { alert('Could not read that file.'); };
   reader.onload = function () {
+    var bytes = new Uint8Array(reader.result);
+    // The engine opens the demo during initialization, so this needs a fresh boot — and a reload
+    // wipes the in-memory filesystem, so the bytes have to be parked somewhere that survives it.
+    // IndexedDB, not sessionStorage: the shipped demos run to several MB and blew the ~5MB string
+    // quota (Ken hit this picking the first Pong demo).
+    var fail = function (why) {
+      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + why);
+      alert('Could not open that file: ' + why);
+    };
     try {
-      var bytes = new Uint8Array(reader.result);
-      // The engine opens the demo during initialization, so this needs a fresh boot — and a
-      // reload wipes the in-memory filesystem. Park the bytes in sessionStorage and let the
-      // ?demo= staging block below pick them up on the way back up.
-      var s = '';
-      for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-      sessionStorage.setItem('TT_pickedDemo', btoa(s));
-      console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
-      location.search = '?demo=picked';
-    } catch (e) {
-      // sessionStorage is a few MB; the shipped demos are bigger and already on the server
-      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + e.message);
-      alert('Could not open that file: ' + e.message);
-    }
+      var open = indexedDB.open('toontalk', 1);
+      open.onupgradeneeded = function () { open.result.createObjectStore('files'); };
+      open.onerror = function () { fail('this browser would not open local storage'); };
+      open.onsuccess = function () {
+        var db = open.result;
+        try {
+          var tx = db.transaction('files', 'readwrite');
+          tx.objectStore('files').put(bytes, 'pickedDemo');
+          tx.oncomplete = function () {
+            db.close();
+            console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
+            location.search = '?demo=picked';
+          };
+          tx.onerror = function () { db.close(); fail(tx.error ? tx.error.message : 'storage error'); };
+        } catch (e) { db.close(); fail(e.message); }
+      };
+    } catch (e) { fail(e.message); }
   };
   reader.readAsArrayBuffer(file);
   return true;

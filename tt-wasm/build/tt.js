@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmpv32lbul_.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp8cq48pmv.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmpv32lbul_.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpnajm41k3.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmp8cq48pmv.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp6cw51wjr.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpnajm41k3.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmp6cw51wjr.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -531,17 +531,48 @@ globalThis.TT_cmdline = '';
   if (seg) globalThis.TT_cmdline += ' -segment ' + seg[1];
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
+    // A .dmo the user opened from their own machine lives in IndexedDB (see TT_playLocalDemo).
+    // Reading it is asynchronous, so hold the runtime back with a run dependency rather than
+    // letting main() start without the file.
+    if (name === 'picked') {
+      addRunDependency('tt-picked-demo');
+      var done = function (bytes) {
+        try {
+          if (bytes && bytes.length) {
+            try { FS.mkdir('/toontalk'); } catch (e) {}
+            try { FS.mkdir('/toontalk/Demos'); } catch (e) {}
+            FS.writeFile('/toontalk/Demos/picked.dmo', bytes);
+            console.log('[tt] demo: staged picked.dmo (' + bytes.length + ' bytes)');
+          } else {
+            console.warn('[tt] demo: nothing stored for the picked demo');
+            globalThis.TT_cmdline = '';
+          }
+        } catch (e) {
+          console.warn('[tt] demo: could not stage the picked demo — ' + e.message);
+          globalThis.TT_cmdline = '';
+        }
+        removeRunDependency('tt-picked-demo');
+      };
+      try {
+        var open = indexedDB.open('toontalk', 1);
+        open.onupgradeneeded = function () { open.result.createObjectStore('files'); };
+        open.onsuccess = function () {
+          var db = open.result;
+          try {
+            var get = db.transaction('files', 'readonly').objectStore('files').get('pickedDemo');
+            get.onsuccess = function () { var v = get.result; db.close(); done(v && new Uint8Array(v)); };
+            get.onerror = function () { db.close(); done(null); };
+          } catch (e) { db.close(); done(null); }
+        };
+        open.onerror = function () { done(null); };
+      } catch (e) { done(null); }
+      return;
+    }
     // Synchronous XHR: preRun must finish before main(), and the engine opens the demo
     // during initialization. (Blocking here only delays our own start-up.)
     try {
       var bytes;
-      var parked = (name === 'picked' && typeof sessionStorage !== 'undefined')
-                   ? sessionStorage.getItem('TT_pickedDemo') : null;
-      if (parked) {                        // a .dmo the user opened from their own machine
-        var raw = atob(parked);
-        bytes = new Uint8Array(raw.length);
-        for (var b = 0; b < raw.length; b++) bytes[b] = raw.charCodeAt(b);
-      } else if (typeof XMLHttpRequest !== 'undefined') {
+      if (typeof XMLHttpRequest !== 'undefined') {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'demos/' + name + '.dmo', false);
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
@@ -599,22 +630,35 @@ globalThis.TT_setVolume = function (v) {
 globalThis.TT_playLocalDemo = function (file) {
   if (!file) return false;
   var reader = new FileReader();
+  reader.onerror = function () { alert('Could not read that file.'); };
   reader.onload = function () {
+    var bytes = new Uint8Array(reader.result);
+    // The engine opens the demo during initialization, so this needs a fresh boot — and a reload
+    // wipes the in-memory filesystem, so the bytes have to be parked somewhere that survives it.
+    // IndexedDB, not sessionStorage: the shipped demos run to several MB and blew the ~5MB string
+    // quota (Ken hit this picking the first Pong demo).
+    var fail = function (why) {
+      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + why);
+      alert('Could not open that file: ' + why);
+    };
     try {
-      var bytes = new Uint8Array(reader.result);
-      // The engine opens the demo during initialization, so this needs a fresh boot — and a
-      // reload wipes the in-memory filesystem. Park the bytes in sessionStorage and let the
-      // ?demo= staging block below pick them up on the way back up.
-      var s = '';
-      for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-      sessionStorage.setItem('TT_pickedDemo', btoa(s));
-      console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
-      location.search = '?demo=picked';
-    } catch (e) {
-      // sessionStorage is a few MB; the shipped demos are bigger and already on the server
-      console.warn('[tt] demo: could not stage ' + file.name + ' — ' + e.message);
-      alert('Could not open that file: ' + e.message);
-    }
+      var open = indexedDB.open('toontalk', 1);
+      open.onupgradeneeded = function () { open.result.createObjectStore('files'); };
+      open.onerror = function () { fail('this browser would not open local storage'); };
+      open.onsuccess = function () {
+        var db = open.result;
+        try {
+          var tx = db.transaction('files', 'readwrite');
+          tx.objectStore('files').put(bytes, 'pickedDemo');
+          tx.oncomplete = function () {
+            db.close();
+            console.log('[tt] demo: parked ' + file.name + ' (' + bytes.length + ' bytes) — reloading');
+            location.search = '?demo=picked';
+          };
+          tx.onerror = function () { db.close(); fail(tx.error ? tx.error.message : 'storage error'); };
+        } catch (e) { db.close(); fail(e.message); }
+      };
+    } catch (e) { fail(e.message); }
   };
   reader.readAsArrayBuffer(file);
   return true;
@@ -792,13 +836,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpqxl1pnxg.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpqcr8ba4n.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpqxl1pnxg.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpqcr8ba4n.js
 
 
 var programArgs = [];
