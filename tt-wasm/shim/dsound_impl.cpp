@@ -38,7 +38,13 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
     /* Don't undo a volume-zero suspend (pre.js TT_setVolume); the first-gesture resume and this
      * one are both about unlocking audio, not about overriding the user's setting. */
     if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} }
-    if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; }
+    if (DS.srcs[id]) {
+      var prev = DS.srcs[id];
+      try { prev.onended = null; } catch (e) {}
+      try { prev.stop(); } catch (e) {}
+      try { prev.disconnect(); } catch (e) {}   /* stop() can throw; this cannot */
+      delete DS.srcs[id];
+    }
     var bytesPerSample = bits >>> 3;
     var frames = (bytes / (bytesPerSample * channels)) | 0;
     if (frames <= 0) return;
@@ -83,6 +89,9 @@ EM_JS(void, tt_ds_play, (int id, const void *pcm, int bytes, int channels, int r
     if (!DS.flags) DS.flags = {};
     DS.flags[id] = playing_flag;
     DS.srcs[id] = src;
+    if (!DS.all) DS.all = [];
+    DS.all.push({ id: id, src: src });
+    if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64);
     src.start();
   } catch (e) { /* no audio available — stay silent */ }
 });
@@ -92,7 +101,11 @@ EM_JS(void, tt_ds_stop, (int id, char *playing_flag), {
   if (DS && DS.srcs[id]) {
     if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id;
       (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); }
-    try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id];
+    var s0 = DS.srcs[id];
+  try { s0.onended = null; } catch (e) {}
+  try { s0.stop(); } catch (e) {}
+  try { s0.disconnect(); } catch (e) {}
+  delete DS.srcs[id];
   }
   HEAP8[playing_flag] = 0;
 });
@@ -156,13 +169,34 @@ EM_JS(int, tt_ds_reconcile, (), {
   var DS = Module.TT_ds;
   if (!DS || !DS.srcs || !DS.flags) return 0;
   var stopped = 0;
+  var kill = function (s) {
+    try { s.onended = null; } catch (e) {}
+    try { s.stop(); } catch (e) {}
+    try { s.disconnect(); } catch (e) {}          /* the only teardown that cannot throw */
+  };
   for (var k in DS.srcs) {
     var flag = DS.flags[k];
     if (flag === undefined) continue;              /* never played through us */
     if (HEAP8[flag] !== 0) continue;               /* the engine thinks it IS playing: leave it */
-    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    kill(DS.srcs[k]);
     delete DS.srcs[k];
     stopped++;
+  }
+  /* ORPHANS. A source dropped from DS.srcs while still sounding — which is what happens when its
+   * stop() throws — was invisible to the sweep above AND to every report. That is exactly the
+   * state Ken's console showed: balanced START/STOP pairs, no watchdog firings, a rotor still
+   * audible. DS.all keeps a short history of every source so one can still be reached. */
+  if (DS.all) {
+    for (var i = DS.all.length - 1; i >= 0; i--) {
+      var e = DS.all[i];
+      if (e.dead) continue;
+      if (DS.srcs[e.id] === e.src) continue;       /* still the current source for that buffer */
+      var f = DS.flags[e.id];
+      if (f !== undefined && HEAP8[f] !== 0) continue;  /* engine believes that buffer is playing */
+      kill(e.src);
+      e.dead = true;
+      stopped++;
+    }
   }
   return stopped;
 });
@@ -188,7 +222,13 @@ EM_JS(void, tt_ds_volume, (int id, double gain), {
 EM_JS(void, tt_ds_free, (int id), {
   var DS = Module.TT_ds;
   if (!DS) return;
-  if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; }
+  if (DS.srcs[id]) {
+    var sf = DS.srcs[id];
+    try { sf.onended = null; } catch (e) {}
+    try { sf.stop(); } catch (e) {}
+    try { sf.disconnect(); } catch (e) {}
+    delete DS.srcs[id];
+  }
   if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; }
   delete DS.vols[id];
 });
