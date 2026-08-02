@@ -16,7 +16,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-#include "gdi_font.h"   /* tiny bitmap font for TextOut (tools/make_font.py) */
+#include "gdi_font.h"   /* fallback bitmap font for TextOut (tools/make_font.py) */
+#include <emscripten.h>
 
 #ifndef NULL_PEN
 #define WHITE_BRUSH 0
@@ -234,6 +235,110 @@ static FontPick pick_font(GdiDC *dc) {
     p.base = (h >= TT_FONT32_H) ? 2 : (h >= TT_FONT16_H) ? 1 : 0;
     return p;
 }
+/* ---- real text: rasterize with the BROWSER's font engine -------------------------------------
+ * The three embedded 1-bit bitmaps below are a stopgap: point-sampling an 8x12/16x24/32x48 glyph
+ * up to an arbitrary cell gives jagged edges, and drawing every character on the same fixed-width
+ * cell makes proportional text monospace (Ken's screenshot: the port reads "^ 1 0" where the
+ * original reads "^10"). It also has no descent allowance, which is why subtitle descenders were
+ * clipped. So ask the browser to draw the run with a real typeface at the exact requested size,
+ * and blend the coverage it returns into the palette.
+ *
+ * GDI's lfWidth semantics are reproduced: a non-zero average character width stretches the face
+ * horizontally, so the run occupies exactly len*cw — the same total the extent functions report,
+ * which keeps the engine's fit-to-pad arithmetic (correct_font_size, place_text) consistent while
+ * the glyphs themselves become proportional and correctly shaped. */
+EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int cell_w,
+                            unsigned char *out, int out_w, int out_h), {
+  try {
+    if (len <= 0 || out_w <= 0 || out_h <= 0) return 0;
+    var s = '';
+    for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]);
+    var g = Module.TT_txt;
+    if (!g) {
+      g = Module.TT_txt = {};
+      g.cv = document.createElement('canvas');
+      g.cx = g.cv.getContext('2d', { willReadFrequently: true });
+    }
+    if (g.cv.width < out_w || g.cv.height < out_h) {
+      g.cv.width = Math.max(g.cv.width, out_w);
+      g.cv.height = Math.max(g.cv.height, out_h);
+    }
+    var cx = g.cx;
+    var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
+    // Fit ascent+descent inside the cell the engine allotted, so nothing is clipped.
+    var px = cell_h;
+    cx.font = 'bold ' + px + 'px ' + fam;
+    var m = cx.measureText(s);
+    var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent;
+    if (!(asc > 0)) asc = px * 0.75;
+    if (!(desc >= 0)) desc = px * 0.25;
+    var ink = asc + desc;
+    if (ink > cell_h && ink > 0) {
+      px = Math.max(1, Math.floor(px * cell_h / ink));
+      cx.font = 'bold ' + px + 'px ' + fam;
+      m = cx.measureText(s);
+      asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75;
+    }
+    var natural = m.width;
+    if (!(natural > 0)) return 0;
+    var sx = (cell_w > 0) ? (cell_w * len) / natural : 1;   /* GDI lfWidth stretch */
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    cx.clearRect(0, 0, out_w, out_h);
+    cx.fillStyle = '#fff';
+    cx.textBaseline = 'alphabetic';
+    cx.setTransform(sx, 0, 0, 1, 0, 0);
+    cx.fillText(s, 0, asc);
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    var img = cx.getImageData(0, 0, out_w, out_h).data;
+    for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3];  /* alpha */
+    return 1;
+  } catch (e) { return 0; }
+});
+
+static unsigned char *g_txt_buf = 0;
+static int g_txt_cap = 0;
+static unsigned char *txt_buf(int need) {
+    if (need > g_txt_cap) {
+        unsigned char *p = (unsigned char *)realloc(g_txt_buf, need);
+        if (!p) return 0;
+        g_txt_buf = p; g_txt_cap = need;
+    }
+    return g_txt_buf;
+}
+
+/* Blend ink over what is already there, by coverage, then snap to the palette. The original ran
+ * this text through GDI on whatever depth the machine had; anti-aliasing within the 256 entries
+ * is as close as an 8-bit surface gets. */
+static void blend_put(GdiDC *dc, int x, int y, int ir, int ig, int ib, int a) {
+    if (a <= 8) return;
+    if (a >= 248 || !g_pal_set) { put(dc, x, y, dc->text_index); return; }
+    unsigned char d = get(dc, x, y);
+    int dr = g_pal[d][0], dg = g_pal[d][1], db = g_pal[d][2];
+    int r = (ir * a + dr * (255 - a)) / 255;
+    int g = (ig * a + dg * (255 - a)) / 255;
+    int b = (ib * a + db * (255 - a)) / 255;
+    put(dc, x, y, nearest_index(r, g, b));
+}
+
+/* Returns false if the browser could not draw it, so the caller falls back to the bitmap font. */
+static bool draw_text_run(GdiDC *dc, int x, int y, const unsigned short *u16, int len, const FontPick &p) {
+    if (len <= 0) return true;
+    int w = p.cw * len, h = p.ch;
+    if (w <= 0 || h <= 0 || w > 4096 || h > 1024) return false;
+    unsigned char *cov = txt_buf(w * h);
+    if (!cov) return false;
+    if (!tt_text_raster(u16, len, p.ch, p.cw, cov, w, h)) return false;
+    int ir = g_pal_set ? g_pal[dc->text_index][0] : 255;
+    int ig = g_pal_set ? g_pal[dc->text_index][1] : 255;
+    int ib = g_pal_set ? g_pal[dc->text_index][2] : 255;
+    for (int ty = 0; ty < h; ty++)
+        for (int tx = 0; tx < w; tx++) {
+            int a = cov[ty * w + tx];
+            if (a) blend_put(dc, x + tx, y + ty, ir, ig, ib, a);
+        }
+    return true;
+}
+
 static void draw_glyph(GdiDC *dc, int x, int y, unsigned int ch, const FontPick &p, unsigned char color) {
     if (ch < 32 || ch > 255) {
         if (ch == 0 || ch == '\r' || ch == '\n') return;
@@ -292,7 +397,17 @@ BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
     if (texta_log < 2000 && len > 0 && len <= 16) { texta_log++;
         printf("[tt] textA: '%c%c' len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
                str[0], (len > 1 ? str[1] : ' '), len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
-    for (int i = 0; i < len; i++)
+    {   /* widen to UTF-16 for the browser rasterizer; Latin-1 maps straight across */
+        unsigned short stack[128];
+        unsigned short *u = (len <= 128) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
+        if (u) {
+            for (int i = 0; i < len; i++) u[i] = (unsigned char)str[i];
+            bool ok = draw_text_run(dc, x, y, u, len, p);
+            if (u != stack) free(u);
+            if (ok) return 1;
+        }
+    }
+    for (int i = 0; i < len; i++)     /* fallback: the embedded bitmap font */
         draw_glyph(dc, x + i * p.cw, y, (unsigned char)str[i], p, dc->text_index);
     return 1;
 }
@@ -304,7 +419,17 @@ BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
         printf("[tt] textW: u0=%u u1=%u len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
                (unsigned)str[0], (unsigned)(len > 1 ? str[1] : 0),
                len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
-    for (int i = 0; i < len; i++)
+    {
+        unsigned short stack[128];
+        unsigned short *u = (len <= 128) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
+        if (u) {
+            for (int i = 0; i < len; i++) u[i] = (unsigned short)str[i];
+            bool ok = draw_text_run(dc, x, y, u, len, p);
+            if (u != stack) free(u);
+            if (ok) return 1;
+        }
+    }
+    for (int i = 0; i < len; i++)     /* fallback: the embedded bitmap font */
         draw_glyph(dc, x + i * p.cw, y, (unsigned int)str[i], p, dc->text_index);
     return 1;
 }

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp9al5m8wp.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpv32lbul_.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp9al5m8wp.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpohrvtg26.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpv32lbul_.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpnajm41k3.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpohrvtg26.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpnajm41k3.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -792,13 +792,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpdvnzaysu.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpqxl1pnxg.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpdvnzaysu.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpqxl1pnxg.js
 
 
 var programArgs = [];
@@ -9175,6 +9175,7 @@ function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[
 function tt_ds_stop_all() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
 function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); DS.vols[id] = gain; if (DS.gains[id]) DS.gains[id].gain.value = gain; }
 function tt_ds_free(id) { var DS = Module.TT_ds; if (!DS) return; if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; } delete DS.vols[id]; }
+function tt_text_raster(text,len,cell_h,cell_w,out,out_w,out_h) { try { if (len <= 0 || out_w <= 0 || out_h <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); } if (g.cv.width < out_w || g.cv.height < out_h) { g.cv.width = Math.max(g.cv.width, out_w); g.cv.height = Math.max(g.cv.height, out_h); } var cx = g.cx; var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif'; var px = cell_h; cx.font = 'bold ' + px + 'px ' + fam; var m = cx.measureText(s); var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent; if (!(asc > 0)) asc = px * 0.75; if (!(desc >= 0)) desc = px * 0.25; var ink = asc + desc; if (ink > cell_h && ink > 0) { px = Math.max(1, Math.floor(px * cell_h / ink)); cx.font = 'bold ' + px + 'px ' + fam; m = cx.measureText(s); asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75; } var natural = m.width; if (!(natural > 0)) return 0; var sx = (cell_w > 0) ? (cell_w * len) / natural : 1; cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, out_w, out_h); cx.fillStyle = '#fff'; cx.textBaseline = 'alphabetic'; cx.setTransform(sx, 0, 0, 1, 0, 0); cx.fillText(s, 0, asc); cx.setTransform(1, 0, 0, 1, 0, 0); var img = cx.getImageData(0, 0, out_w, out_h).data; for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3]; return 1; } catch (e) { return 0; } }
 function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; for (var i = 0; i < vs.length; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; u.pitch = 1.3; u.rate = 1.0; u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
 
 // Imports from the Wasm binary.
@@ -9182,8 +9183,8 @@ var _fflush = makeInvalidEarlyAccess('_fflush');
 var _free = makeInvalidEarlyAccess('_free');
 var _malloc = makeInvalidEarlyAccess('_malloc');
 var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
-var _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = makeInvalidEarlyAccess('_tt_finish_time_travel_archive');
 var _realloc = makeInvalidEarlyAccess('_realloc');
+var _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = makeInvalidEarlyAccess('_tt_finish_time_travel_archive');
 var _em_set_mouse_mode = Module['_em_set_mouse_mode'] = makeInvalidEarlyAccess('_em_set_mouse_mode');
 var _em_on_floor = Module['_em_on_floor'] = makeInvalidEarlyAccess('_em_on_floor');
 var _tt_tts_finished = Module['_tt_tts_finished'] = makeInvalidEarlyAccess('_tt_tts_finished');
@@ -9214,8 +9215,8 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
   assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
   assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');
-  assert(typeof wasmExports['tt_finish_time_travel_archive'] != 'undefined', 'missing Wasm export: tt_finish_time_travel_archive');
   assert(typeof wasmExports['realloc'] != 'undefined', 'missing Wasm export: realloc');
+  assert(typeof wasmExports['tt_finish_time_travel_archive'] != 'undefined', 'missing Wasm export: tt_finish_time_travel_archive');
   assert(typeof wasmExports['em_set_mouse_mode'] != 'undefined', 'missing Wasm export: em_set_mouse_mode');
   assert(typeof wasmExports['em_on_floor'] != 'undefined', 'missing Wasm export: em_on_floor');
   assert(typeof wasmExports['tt_tts_finished'] != 'undefined', 'missing Wasm export: tt_tts_finished');
@@ -9242,8 +9243,8 @@ function assignWasmExports(wasmExports) {
   _free = createExportWrapper('free', 1);
   _malloc = createExportWrapper('malloc', 1);
   _main = Module['_main'] = createExportWrapper('main', 2);
-  _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = createExportWrapper('tt_finish_time_travel_archive', 0);
   _realloc = createExportWrapper('realloc', 2);
+  _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = createExportWrapper('tt_finish_time_travel_archive', 0);
   _em_set_mouse_mode = Module['_em_set_mouse_mode'] = createExportWrapper('em_set_mouse_mode', 1);
   _em_on_floor = Module['_em_on_floor'] = createExportWrapper('em_on_floor', 0);
   _tt_tts_finished = Module['_tt_tts_finished'] = createExportWrapper('tt_tts_finished', 1);
@@ -9801,6 +9802,8 @@ var wasmImports = {
   tt_ds_stop_all,
   /** @export */
   tt_ds_volume,
+  /** @export */
+  tt_text_raster,
   /** @export */
   tt_tts_speak
 };
