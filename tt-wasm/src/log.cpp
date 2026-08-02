@@ -5033,6 +5033,9 @@ void time_travel_react(TimeTravelButton button) {
 		// new on 041103 - if replaying and any button other than record is pushed then pause
 		use_play_appearance();
 		time_travel(TIME_TRAVEL_PAUSED); // prior to 210204 was TIME_TRAVEL_JUST_PAUSED
+#ifdef __EMSCRIPTEN__
+		stop_sound(TRUE); // see the note in the PLAY_TIME_TRAVEL case below
+#endif
 	}
 	switch (button) {
 		// code simplified on 110603
@@ -5067,6 +5070,16 @@ void time_travel_react(TimeTravelButton button) {
 			if (displaying_pause_button()) {
 				use_play_appearance();
 				time_travel(TIME_TRAVEL_JUST_PAUSED);
+#ifdef __EMSCRIPTEN__
+				/* The original silences a looping effect when you pause from update_time_travel_buttons
+				 * ("especially if flying helicopter good to turn it off when paused like this"), but
+				 * that call sits AFTER an early return taken while the buttons are animating -- and
+				 * restore_time_travel_buttons has just started that animation. Natively the next frames
+				 * finish the animation and reach it; paused, the port runs no further cycles, so the
+				 * helicopter droned on (Ken: "sound effects should stop when the time travel pause
+				 * button is clicked"). */
+				stop_sound(TRUE);
+#endif
 			} else {
 				use_pause_appearance();
 				reset_grid(); // new on 290304 to remove "turds" from the display

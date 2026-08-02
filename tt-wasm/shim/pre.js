@@ -165,8 +165,9 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
   // pause, and capturing the mouse would be wrong.
   var wantLock = function () {
-    return !document.fullscreenElement && document.pointerLockElement !== c &&
-           !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0);
+    // demoReplay() and not the raw command line: after "Take Control" the command line still
+    // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
+    return !document.fullscreenElement && document.pointerLockElement !== c && !demoReplay();
   };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
@@ -238,8 +239,9 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     globalThis.TT_pauseOverlay = false;
     if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
   };
-  globalThis.TT_demoPause = function () {
+  globalThis.TT_demoPause = function (duringDemo) {
     if (box) return;                        // a second Esc must not stack a second chooser
+    duringDemo = (duringDemo === undefined) ? 1 : duringDemo;
     globalThis.TT_pauseOverlay = true;
     box = document.createElement('div');
     box.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;' +
@@ -248,14 +250,17 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     var panel = document.createElement('div');
     panel.style.cssText = 'background:#d4d0c8;border:2px outset #f6f6f6;color:#000;min-width:330px';
     var caption = document.createElement('div');
-    caption.textContent = 'ToonTalk Demo Paused';
+    caption.textContent = duringDemo ? 'ToonTalk Demo Paused' : 'ToonTalk Paused';
     caption.style.cssText = 'background:#000080;color:#fff;font-weight:bold;padding:3px 6px';
     var text = document.createElement('div');
-    text.textContent = 'ToonTalk demo has been stopped.';
+    text.textContent = duringDemo ? 'ToonTalk demo has been stopped.' : 'ToonTalk has been stopped.';
     text.style.cssText = 'padding:20px 16px;text-align:center';
     var row = document.createElement('div');
     row.style.cssText = 'padding:0 12px 14px;display:flex;gap:10px;justify-content:center';
-    [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]].forEach(function (b, i) {
+    // Out of a demo there is nothing to go "back" to and no demo to take control OF: the only
+    // meaningful choices are carry on or leave. Same button numbers either way — 1 resumes.
+    (duringDemo ? [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]]
+                : [['Resume', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
       var el = document.createElement('button');
       el.textContent = b[0];
       el.style.cssText = 'font:inherit;padding:4px 10px;min-width:96px;cursor:pointer';

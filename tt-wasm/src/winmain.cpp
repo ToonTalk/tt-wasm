@@ -11308,9 +11308,10 @@ int edited_picture_counter = 2; // new on 220303
  * returns with ToonTalk still paused and waiting_for_user_dialog set (the state the modal dialog
  * used to hold it in), and the answer arrives later here. The button numbers are the ones
  * ask_continue_or_quit's own switch takes, so the bodies below are its case 5 / case 1. */
-static void tt_show_demo_pause_overlay() {
-	printf("[tt] demopause: chooser up on frame %ld\n",(long)tt_frame_number); fflush(stdout);
-	EM_ASM({ if (globalThis.TT_demoPause) globalThis.TT_demoPause(); });
+static void tt_show_demo_pause_overlay(boolean during_demo) {
+	printf("[tt] demopause: chooser up on frame %ld (demo=%d)\n",(long)tt_frame_number,(int)during_demo);
+	fflush(stdout);
+	EM_ASM({ if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }, during_demo ? 1 : 0);
 };
 
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
@@ -11411,9 +11412,13 @@ void ask_continue_or_quit(boolean interrupted) {
 #endif
    tt_main_window->no_longer_handling_loss_of_focus(); // new on 250602
 #ifdef __EMSCRIPTEN__
-   if (replaying()) {
-      // the chooser answers later, through tt_demo_pause_choice; stay paused until it does
-      tt_show_demo_pause_overlay();
+   {
+      /* ALWAYS, not just while replaying. Once the user takes control of a demo, replaying() is
+       * false, so this used to fall through to show_html_dialog_named_in_ini_file — and there is
+       * no working dialog in wasm, so Escape simply left ToonTalk paused with nothing on screen
+       * (Ken: "a subsequent Esc brings up a black screen"). The chooser answers later, through
+       * tt_demo_pause_choice; stay paused until it does. */
+      tt_show_demo_pause_overlay(replaying());
       return; // inside_ask_continue_or_quit stays TRUE so a second key cannot stack a chooser
    };
 #endif

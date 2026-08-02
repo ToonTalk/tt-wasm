@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmpu44xn1u4.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpxhgfyt_y.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmpu44xn1u4.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpqgqbw8m0.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpxhgfyt_y.js
+// include: C:\Users\toont\AppData\Local\Temp\tmprkynjf57.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpqgqbw8m0.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmprkynjf57.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -378,8 +378,9 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
   // pause, and capturing the mouse would be wrong.
   var wantLock = function () {
-    return !document.fullscreenElement && document.pointerLockElement !== c &&
-           !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0);
+    // demoReplay() and not the raw command line: after "Take Control" the command line still
+    // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
+    return !document.fullscreenElement && document.pointerLockElement !== c && !demoReplay();
   };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
@@ -451,8 +452,9 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     globalThis.TT_pauseOverlay = false;
     if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
   };
-  globalThis.TT_demoPause = function () {
+  globalThis.TT_demoPause = function (duringDemo) {
     if (box) return;                        // a second Esc must not stack a second chooser
+    duringDemo = (duringDemo === undefined) ? 1 : duringDemo;
     globalThis.TT_pauseOverlay = true;
     box = document.createElement('div');
     box.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;' +
@@ -461,14 +463,17 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     var panel = document.createElement('div');
     panel.style.cssText = 'background:#d4d0c8;border:2px outset #f6f6f6;color:#000;min-width:330px';
     var caption = document.createElement('div');
-    caption.textContent = 'ToonTalk Demo Paused';
+    caption.textContent = duringDemo ? 'ToonTalk Demo Paused' : 'ToonTalk Paused';
     caption.style.cssText = 'background:#000080;color:#fff;font-weight:bold;padding:3px 6px';
     var text = document.createElement('div');
-    text.textContent = 'ToonTalk demo has been stopped.';
+    text.textContent = duringDemo ? 'ToonTalk demo has been stopped.' : 'ToonTalk has been stopped.';
     text.style.cssText = 'padding:20px 16px;text-align:center';
     var row = document.createElement('div');
     row.style.cssText = 'padding:0 12px 14px;display:flex;gap:10px;justify-content:center';
-    [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]].forEach(function (b, i) {
+    // Out of a demo there is nothing to go "back" to and no demo to take control OF: the only
+    // meaningful choices are carry on or leave. Same button numbers either way — 1 resumes.
+    (duringDemo ? [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]]
+                : [['Resume', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
       var el = document.createElement('button');
       el.textContent = b[0];
       el.style.cssText = 'font:inherit;padding:4px 10px;min-width:96px;cursor:pointer';
@@ -783,13 +788,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp_zj50oy5.js
+// include: C:\Users\toont\AppData\Local\Temp\tmphx_meear.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp_zj50oy5.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmphx_meear.js
 
 
 var programArgs = [];
@@ -9147,26 +9152,26 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17070508: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17070578: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17070676: () => { globalThis.TT_replayOver = true; },  
- 17070713: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17070809: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17070908: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17071007: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17071109: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17071252: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17071352: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17071493: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17071586: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17071646: () => { if (globalThis.TT_demoPause) globalThis.TT_demoPause(); }
+  17070092: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17070162: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17070260: () => { globalThis.TT_replayOver = true; },  
+ 17070297: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17070393: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17070492: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17070591: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17070693: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17070836: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17070936: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17071077: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17071170: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17071230: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended') { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.master); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; DS.srcs[id] = src; src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
 function tt_ds_stop_all() { var DS = Module.TT_ds; if (!DS || !DS.srcs) return; for (var k in DS.srcs) { try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {} delete DS.srcs[k]; } }
 function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); DS.vols[id] = gain; if (DS.gains[id]) DS.gains[id].gain.value = gain; }
 function tt_ds_free(id) { var DS = Module.TT_ds; if (!DS) return; if (DS.srcs[id]) { try { DS.srcs[id].onended = null; DS.srcs[id].stop(); } catch (e) {} delete DS.srcs[id]; } if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; } delete DS.vols[id]; }
-function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; for (var i = 0; i < vs.length; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; u.pitch = 1.3; u.rate = 1.0; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
+function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; for (var i = 0; i < vs.length; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; u.pitch = 1.3; u.rate = 1.0; u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
 
 // Imports from the Wasm binary.
 var _fflush = makeInvalidEarlyAccess('_fflush');

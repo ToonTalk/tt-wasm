@@ -594,6 +594,10 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
     if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice;
     u.pitch = 1.3;   /* Marty is a small martian, not a newsreader */
     u.rate = 1.0;
+    /* speechSynthesis has its own output path — it does not pass through the Web Audio graph, so
+     * the page's master gain cannot reach it. Apply the same setting here or the volume control
+     * would silence everything except Marty. */
+    u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1;
     if (!replaying_now) {
       u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); };
     }
