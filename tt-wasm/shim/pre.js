@@ -165,10 +165,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // cursor every frame (winmain.cpp SetCursorPos(client_center)). The web can only close that loop
   // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
   // pause, and capturing the mouse would be wrong.
+  // ?pointerlock=0 turns the windowed capture off and goes back to plain absolute tracking.
+  // Ken reports the mouse going unresponsive after training a robot or standing up, which this
+  // capture is the prime suspect for — an escape hatch while that is investigated.
+  var lockAllowed = !(typeof location !== 'undefined' && /[?&]pointerlock=0/.test(location.search));
   var wantLock = function () {
     // demoReplay() and not the raw command line: after "Take Control" the command line still
     // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
-    return !document.fullscreenElement && document.pointerLockElement !== c && !demoReplay();
+    return lockAllowed && !document.fullscreenElement &&
+           document.pointerLockElement !== c && !demoReplay();
   };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();

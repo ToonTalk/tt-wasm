@@ -254,10 +254,10 @@
       <div class="stat"><span class="stat-value">~210k</span><span class="stat-label">Lines of C++ kept</span></div>
       <div class="stat"><span class="stat-value">67</span><span class="stat-label">Translation units</span></div>
       <div class="stat"><span class="stat-value">37</span><span class="stat-label">Replacement headers</span></div>
-      <div class="stat"><span class="stat-value">8</span><span class="stat-label">Shim implementations</span></div>
-      <div class="stat"><span class="stat-value">96</span><span class="stat-label">Functional JS overrides</span></div>
-      <div class="stat"><span class="stat-value">258</span><span class="stat-label">Zero-stubs</span></div>
-      <div class="stat"><span class="stat-value">76</span><span class="stat-label">Commits</span></div>
+      <div class="stat"><span class="stat-value">9</span><span class="stat-label">Shim implementations</span></div>
+      <div class="stat"><span class="stat-value">100</span><span class="stat-label">Functional JS overrides</span></div>
+      <div class="stat"><span class="stat-value">256</span><span class="stat-label">Zero-stubs</span></div>
+      <div class="stat"><span class="stat-value">92</span><span class="stat-label">Commits</span></div>
     </div>
   </div>
 </header>
@@ -466,11 +466,68 @@
     <div class="prose">
       <p>Kept short on purpose, and each one flagged at the point of change.</p>
       <ul>
-        <li><strong>Marty speaks via <code>speechSynthesis</code></strong> rather than recorded audio, with an English male voice and raised pitch, and an off switch on the query string.</li>
+        <li><strong>Marty speaks via <code>speechSynthesis</code></strong>, with an English male voice and raised pitch, and an off switch on the query string. This is a change of <em>engine</em>, not of approach: Marty was synthesised in the original too, through Microsoft Agent, so the port substitutes one speech synthesiser for another rather than inventing a voice where there was none. He reaches speech through two <code>speak()</code> overloads, and hooking only the wide-string one left him silent outside demos.</li>
         <li><strong>Subtitles step aside for the time-travel controls.</strong> The original pins the subtitle band to the screen bottom and the buttons to <code>min_y</code>, and paints the buttons last, so they overdraw it; that is tolerable natively only because the buttons auto-hide. The port measures what the interface currently covers from the sprites' live positions and lifts the band clear.</li>
         <li><strong>GIF art is pre-converted to BMP</strong> and <code>.gif</code> lookups are redirected, since only the classic DIB decoder is functional.</li>
         <li><strong>Absolute mouse mode by default</strong> — a browser is an absolute pointing device — except during demo replay, where recordings were made in relative mode and are interpreted through whatever mode is current.</li>
       </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Since this page was written</h2>
+    <div class="prose">
+      <p>Every item that stood open when these notes were first drafted has been closed. The work that closed them is worth recording, because it kept landing on the same two failure modes described above rather than on anything new.</p>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Theme</dt><dd>Stubs that report success</dd>
+        <dt>Count</dt><dd>Four more</dd>
+      </dl>
+      <div class="case-body">
+        <h3>The pattern held</h3>
+        <p><code>CreateDirectory</code> did nothing, so time travel recorded into folders that were never created and produced not one byte. <code>dzip</code> — every zip WRITE in the program — returned <code>ZE_OK</code> without writing, so no archive could exist. GDI+ measured every image file at 0×0 and reported success, so all file-loaded art was laid out one city unit across. And <code>setAttribute</code> silently dropped any VARIANT that was not a string, so <em>every numeric XML attribute the port had ever written</em> came out empty — saved cities and notebooks included.</p>
+        <p>Each presented as "the logic is wrong" and resolved as "the logic is fine, it was handed a confident zero". That is now five instances counting the GMP one above, which is enough to call it the defining hazard of this port rather than a run of bad luck.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Theme</dt><dd>Assumptions the original was entitled to</dd>
+        <dt>New instances</dt><dd>Installer state, case-insensitivity</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Things Windows did for free</h3>
+        <p>The time-travel buttons and the emulated cursor are asked for by bare name, and only resolve because the retail installer writes a <code>FileSearchPath</code> entry. The port synthesises its own ini and had no such entry, so every one of them failed name resolution. Reaching the end of a demo QUIT rather than handing over the controls, because <code>ExitWhenDemoEnds</code> — another installer-written switch — defaults on.</p>
+        <p>And file names: one demo's narration script asks for <code>us\s01.wav</code> where the archive stores <code>US/s01.wav</code>. Windows does not care; the browser's filesystem does, so that demo played with subtitles and no voice. Lookups now fall back to a case-insensitive match, which is what the engine was written against.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Area</dt><dd>Text</dd>
+        <dt>Effect</dt><dd>Four symptoms, one cause</dd>
+      </dl>
+      <div class="case-body">
+        <h3>A real font engine</h3>
+        <p>The port had none. In-game text came from three embedded 1-bit bitmaps point-sampled to whatever size was requested, drawn on a fixed-width cell — so edges were jagged, proportional text rendered monospace, and there was no descent allowance. That single gap accounted for the coarse subtitles, the clipped descenders, a letter not fitting inside a character's button, and digits that shrank badly. Text is now rasterised by the browser's own font engine at the exact requested size, with GDI's <code>lfWidth</code> stretching reproduced so the engine's fit-to-pad arithmetic sees unchanged numbers, and coverage blended against the palette.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Area</dt><dd>Sound</dd>
+        <dt>Effect</dt><dd>Self-inflicted</dd>
+      </dl>
+      <div class="case-body">
+        <h3>A compensation that overreached</h3>
+        <p>An earlier fix made <code>stop_sound</code> silence the whole mixer, to catch a looping effect the engine had lost track of. But <code>stop_sound(narration_too)</code> takes an argument, and the compensation ran before the check — so all seven callers that ask for "effects only", including the landing, cut the demo narration off mid-sentence. The lesson is narrow and repeatable: a compensation must respect the contract of the function it is compensating inside.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>Also closed along the way: free-play time travel records and can be saved as a <code>.dmo</code>; a picked demo keeps its own name so its narration script resolves; recorded logs are byte-compatible with the reader again; and the volume control reaches both the effects and Marty.</p>
     </div>
   </section>
 
@@ -482,13 +539,11 @@
           <tr><th scope="col">Item</th><th scope="col">Current understanding</th></tr>
         </thead>
         <tbody>
-          <tr><td>Nest into box not drawn</td><td>Sound fires and later state is correct, so the model performed the operation and only the frame was dropped. Previously attributed to the pacing skip; that attribution is retracted and it needs its own measurement.</td></tr>
-          <tr><td>Full-screen subtitles coarse, descenders clipped</td><td>Font metrics: <code>lfH=-56 lfW=-12</code> resolving to a 16×75 px cell.</td></tr>
-          <tr><td>Narration louder than TTS</td><td><code>speechSynthesis</code> caps at 1.0, so the <code>sndPlaySound</code> path has to come down — a gain node at roughly 0.6.</td></tr>
-          <tr><td>Marty gives no tips after training</td><td>Possibly faithful: tips carry importance 0, below <code>tt_minimum_say_importance</code>. Unconfirmed against the original.</td></tr>
-          <tr><td>PLAY button does not resume</td><td>Needs wiring through <code>time_travel_react_to_mouse_down</code>; a temporary resume currently stands in.</td></tr>
+          <tr><td>Mouse unresponsive after training or standing up, windowed</td><td>Almost certainly the windowed pointer-lock capture added for mouse resolution; <code>?pointerlock=0</code> disables it while this is diagnosed.</td></tr>
+          <tr><td>Nest into box not drawn</td><td>Sound fires and later state is correct, so the model performed the operation and only the frame was dropped. An earlier attribution to the pacing skip was retracted; still needs its own measurement.</td></tr>
+          <tr><td>Colours snapped to 256 entries</td><td>The port reports an 8-bit display because the artwork is 8-bit. Sprite art is therefore exact, but anything drawn as a true RGB colorref is snapped, where the original at 32-bit is not. Deferred deliberately.</td></tr>
+          <tr><td>Recorded sessions cannot be replayed yet</td><td>Per-segment city snapshots (<code>city000NN.cty</code>) are not being produced, and a replay needs one per segment to jump. Recording, saving and downloading all work.</td></tr>
           <tr><td>Residual helicopter vibration</td><td>Frame-decode registration in the <code>.us1</code> resource path.</td></tr>
-          <tr><td>Port-written logs unreadable by the port</td><td>Asymmetry: the write path still emits an 8-byte <code>date_and_time_log_created</code> where the read path consumes 4.</td></tr>
         </tbody>
       </table>
     </div>
