@@ -1,0 +1,75 @@
+One last thing and the computer will have all the numbers
+it needs.  Train a robot to make a box containing 1, 2, 4, 8, 16, 
+and so on all the way up to 1,073,741,824.
+
+We need
+    .
+and so on.
+
+This is the result of saving everything in a room.
+4!@%!(%@*ATAnATAlAkA0A0A5A+C!C#C!C+C!C"C!C!CAC!C!C!C+A!C+C!C'C!C!C"C!C!C
+!C+A!C!C#C!C!C!C+A!C!C%C!C!C!C+A!C!C)C!C!C!C+A!C!C1C!C!C!C+A!C!CAC!C!C!C
++A!C8D'C!C!CMA3C!C!C8DdA!C!CxBAC!C!CqA D D C-A5C"C$C!C2A!C!C!CvB,A!C!CwA
+@C!C!CAD(A!C!C0A*A!C!CmA D D C D..
+
+The following is a box with 31 holes whose first hole contains the
+number 1 and whose second hole contains the number 2 and whose third
+hole contains the number 4 and whose fourth hole contains the number 8
+and whose fifth hole contains the number 16 and whose sixth hole
+contains the number 32 and whose seventh hole contains the number 64 and
+whose eighth hole contains the number 128 and whose ninth hole contains
+the number 256 and whose tenth hole contains the number 512 and whose
+eleventh hole contains the number 1,024 and whose twelth hole contains
+the number 2,048 and whose thirteenth hole contains the number 4,096 and
+whose 14th hole contains the number 8,192 and whose 15th hole contains
+the number 16,384 and whose 16th hole contains the number 32,768 and
+whose 17th hole contains the number 65,536 and whose 18th hole contains
+the number 131,072 and whose 19th hole contains the number 262,144 and
+whose 20th hole contains the number 524,288 and whose 21st hole contains
+the number 1,048,576 and whose 22nd hole contains the number 2,097,152
+and whose 23rd hole contains the number 4,194,304 and whose 24th hole
+contains the number 8,388,608 and whose 25th hole contains the number
+16,777,216 and whose 26th hole contains the number 33,554,432 and whose
+27th hole contains the number 67,108,864 and whose 28th hole contains
+the number 134,217,728 and whose 29th hole contains the number
+268,435,456 and whose 30th hole contains the number 536,870,912 and
+whose 31st hole contains the number 1,073,741,824.
+4!@%!(%@+C!C@C!C!C"C!C!C!C+A!C!C#C!C!C!C+A!C!C%C!C!C!C+A!C!C)C!C!C!C+A!C
+!C1C!C!C!C+A!C!CAC!C!C!C+A!C!C@A!C!C!C+A!C!C!D!C!C!C+A!C!C!C"C!C!C+A!C!C
+!C#C!C!C+A!C!C!C%C!C!C+A!C!C!C)C!C!C+A!C!C!C1C!C!C+A!C!C!CAC!C!C+A!C!C!C
+@A!C!C+A!C!C!C!D!C!C+A!C!C!C!C"C!C+A!C!C!C!C#C!C+A!C!C!C!C%C!C+A!C!C!C!C
+)C!C+A!C!C!C!C1C!C+A!C!C!C!CAC!C+A!C!C!C!C@A!C+A!C!C!C!C!D!C+A!C!C!C!C!C
+"C+A!C!C!C!C!C#C+A!C!C!C!C!C%C+A!C!C!C!C!C)C+A!C!C!C!C!C1C+A!C!C!C!C!CAC
++A!C!C!C!C!C@A+A!C..
+
+Goal box: 30 65 200 10
+NumberTyping = off
+TextTyping = off
+Flipping = off
+FunctionKeys = off
+
+You know this robot isn't very different from the one you just trained.
+
+This robot needs to double the first number each time.  It is the 32
+in the box all by itself.
+
+Once the robot has doubled the number he can copy the box with that number.
+This time it'll be the box with 64 in it.
+
+Have you tried training the robot to join the box with the 64 in it
+to the end of the box with the 1, 2, 4, 8, 16 and 32 in it?
+
+The robot is fussy unless you use Dusty to remove some stuff from
+his thought bubble.
+
+Did you give the robot the box and wait until he's finished?
+
+If I could move I would make the box like this.  I'd give the robot the box.
+I'd have the robot copy the 32 in the first box and drop the copy to
+double 32.  Then I'd train the robot to copy the box with the 64 in it
+and put the copy down.  I'd get the robot to set down his wand and take
+out the box with the 1, 2, 4, 8, 16, and 32 in it and I'd join it to the
+box with the 64 in it.  I'd have the robot put the result back and
+he's done. I'd give him the box and when Dusty arrives I'd vacuum up the
+first 32 and the second box from the box in the robot's thought
+bubble. I'd give the robot the box again and wait until he's done.

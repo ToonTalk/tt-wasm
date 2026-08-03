@@ -57,8 +57,9 @@
      (Starttt.cpp: [Executables] HTMLStartTT), and whose buttons did nothing but hand a
      COMMAND LINE back to be passed to ToonTalk.exe. That is why this belongs in the page
      rather than the engine: it is the same split, and it sidesteps the fact that nothing may
-     block the browser's main thread waiting for a click. The command strings below are the
-     original's own (starttt.htm / askname.htm, preserved in the Swedish doc folder). */
+     block the browser's main thread waiting for a click. The command strings, labels and
+     artwork below are the original's own, from the English doc folder of an installed
+     ToonTalk (doc/English/starttt.htm, pickdemo.htm, askname.htm). */
   #launcher {
     position: fixed; inset: 0; z-index: 40; overflow: auto;
     background: radial-gradient(1200px 800px at 50% 0%, #23233a, #0d0d14 70%);
@@ -85,10 +86,18 @@
     color: #7b7b93; margin: 10px 0 5px;
   }
   .ldemo {
-    font: inherit; display: block; width: 100%; text-align: left; cursor: pointer;
+    font: inherit; display: flex; align-items: center; gap: 9px; width: 100%;
+    text-align: left; cursor: pointer;
     color: #d7d7e4; background: #191924; border: 1px solid #33334a;
-    border-radius: 6px; padding: 5px 10px; margin-bottom: 4px;
+    border-radius: 6px; padding: 4px 8px; margin-bottom: 4px;
   }
+  /* the original's own 80x60 demo thumbnails */
+  .ldemo img { width: 56px; height: 42px; object-fit: cover; border-radius: 3px; flex: none; }
+  .ldemo span { color: #d7d7e4; font-size: 13px; }
+  /* playpzl.jpg / freeplay.jpg, the two big choices either side of the demo list */
+  .lbig { width: 100%; max-width: 256px; height: auto; border-radius: 6px; display: block; }
+  button.lcard:disabled { cursor: not-allowed; }
+  button.lcard:disabled .lbig { filter: grayscale(1) brightness(.6); }
   .ldemo:hover { background: #2f2f44; border-color: #55556e; }
   .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
   .lrow button, #lback {
@@ -110,8 +119,10 @@
     display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 104px;
   }
   .lhead:hover { background: #2c2c3e; border-color: #55556e; }
-  /* the art is 8-bit sprite work — scale it without smoothing, like the game canvas */
-  .lhead img { image-rendering: pixelated; height: 72px; width: auto; }
+  /* the three JPEGs are 61, 65 and 54 tall, so give them a common box and centre them —
+     otherwise the labels sit at three different heights */
+  .lhead img { border-radius: 4px; display: block; margin: auto; }
+  .lhead .lbox { height: 66px; display: flex; align-items: center; justify-content: center; }
   .lhead span { font-size: 13px; color: #9d9db4; }
   #ltt { display: block; margin: 14px auto 0; max-width: 520px; color: #9d9db4;
          font-size: 13px; text-align: left; }
@@ -123,32 +134,44 @@
      starttt.htm / pickdemo.htm / askname.htm; demo names are this build's own .dmo files. -->
 <div id="launcher" hidden>
   <div class="lpanel" id="lmain">
-    <h1>What do you want to do in ToonTalk?</h1>
+    <h1>What do you want to do with ToonTalk?</h1>
     <div class="lcols">
       <button class="lcard" type="button" data-cmd="-next_puzzle 1" id="lmissions">
-        <b>Do Missions</b><span>Play the puzzle game</span>
-        <span id="lmissnote" style="font-size:12px;color:#7b7b93"></span>
+        <img class="lbig" src="launcher/playpzl.jpg" alt="Play Puzzle Game">
+        <b>Play Puzzle Game</b>
+        <span id="lmissnote"></span>
       </button>
       <div class="lcard">
-        <b>See a Demo</b>
+        <b>Show Demos</b>
         <div class="lgroup">
-          <h2>The basics of ToonTalk</h2>
-          <button class="ldemo" type="button" data-demo="intro_v2">A tour of ToonTalk</button>
-          <button class="ldemo" type="button" data-demo="explode2">Blowing up houses</button>
-          <button class="ldemo" type="button" data-demo="swap2">Swapping numbers</button>
-          <h2>Making a Ping Pong game</h2>
-          <button class="ldemo" type="button" data-demo="pongact1_v2">Part 1</button>
-          <button class="ldemo" type="button" data-demo="pongact2_v2">Part 2</button>
-          <button class="ldemo" type="button" data-demo="pongact3_v2">Part 3</button>
-          <h2>Computer science examples</h2>
-          <button class="ldemo" type="button" data-demo="fibs2">Fibonacci</button>
-          <button class="ldemo" type="button" data-demo="fact2">Factorial</button>
-          <button class="ldemo" type="button" data-demo="account2">Bank account</button>
-          <button class="ldemo" type="button" data-demo="append2">Appending lists</button>
+          <h2>Basics</h2>
+          <button class="ldemo" type="button" data-demo="intro_v2">
+            <img src="launcher/intro8.gif" alt=""><span>Introductory Tour</span></button>
+          <button class="ldemo" type="button" data-demo="explode2">
+            <img src="launcher/explode8.gif" alt=""><span>Exploding Houses</span></button>
+          <button class="ldemo" type="button" data-demo="swap2">
+            <img src="launcher/swap8.gif" alt=""><span>Swap Numbers</span></button>
+          <h2>Ping Pong Game</h2>
+          <button class="ldemo" type="button" data-demo="pongact1_v2">
+            <img src="launcher/pong1_8.gif" alt=""><span>Part 1</span></button>
+          <button class="ldemo" type="button" data-demo="pongact2_v2">
+            <img src="launcher/pong2_8.gif" alt=""><span>Part 2</span></button>
+          <button class="ldemo" type="button" data-demo="pongact3_v2">
+            <img src="launcher/pong3_8.gif" alt=""><span>Part 3</span></button>
+          <h2>Computer Science Examples</h2>
+          <button class="ldemo" type="button" data-demo="fibs2">
+            <img src="launcher/fibs8.gif" alt=""><span>Fibonacci</span></button>
+          <button class="ldemo" type="button" data-demo="fact2">
+            <img src="launcher/fact8.gif" alt=""><span>Factorial</span></button>
+          <button class="ldemo" type="button" data-demo="account2">
+            <img src="launcher/account8.gif" alt=""><span>Bank Account</span></button>
+          <button class="ldemo" type="button" data-demo="append2">
+            <img src="launcher/append8.gif" alt=""><span>Appending Lists</span></button>
         </div>
       </div>
       <button class="lcard" type="button" data-cmd="-next_puzzle 0">
-        <b>Play Freely</b><span>Fly to a house and build whatever you like</span>
+        <img class="lbig" src="launcher/freeplay.jpg" alt="Free Play">
+        <b>Free Play</b>
       </button>
     </div>
     <div class="lrow">
@@ -157,27 +180,27 @@
     </div>
   </div>
 
-  <!-- askname.htm: name, one of three heads, and the time-travel option -->
+  <!-- askname.htm, in its own words -->
   <div class="lpanel" id="lname" hidden>
-    <h1>Hi! Type your name here.</h1>
+    <h1>Hi. Please type your name.</h1>
     <input id="luser" type="text" value="No Name" spellcheck="false" autocomplete="off">
-    <p style="color:#9d9db4;margin:14px 0 0">Click on one of these pictures:</p>
     <div class="lheads">
       <button class="lhead" type="button" data-head="1">
-        <img src="heads/hair.png" alt="Long hair"><span>Long hair</span>
+        <span class="lbox"><img src="launcher/hairhead.jpg" width="64" height="61" alt="Long Hair"></span><span>Long Hair</span>
       </button>
       <button class="lhead" type="button" data-head="2">
-        <img src="heads/hat.png" alt="Hat"><span>Hat</span>
+        <span class="lbox"><img src="launcher/hathead.jpg" width="58" height="65" alt="Hat"></span><span>Hat</span>
       </button>
       <button class="lhead" type="button" data-head="0">
-        <img src="heads/bald.png" alt="Bald"><span>Bald</span>
+        <span class="lbox"><img src="launcher/baldhead.jpg" width="64" height="54" alt="Bald"></span><span>Bald</span>
       </button>
     </div>
     <label id="ltt">
-      <input type="checkbox" id="lttbox"><span id="lttnote">I want to turn on the time machine so I
-      can fix mistakes if something goes wrong. This can make ToonTalk slow.</span>
+      <input type="checkbox" id="lttbox"><span id="lttnote">I want to be able to travel in time to
+      undo mistakes or replay what I just did. (Sometimes ToonTalk runs slowly when this is
+      checked.)</span>
     </label>
-    <div class="lrow"><button type="button" id="lback">Back</button></div>
+    <div class="lrow"><button type="button" id="lback">BACK</button></div>
   </div>
 </div>
 
@@ -206,9 +229,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1785768634 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1785776549 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1785768634'; },
+    locateFile: function (f) { return f + '?v=1785776549'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -404,8 +427,8 @@
         if (missions) ttbox.checked = false;
         document.getElementById('lttnote').textContent = missions
           ? 'The time machine does not work while you are doing the missions.'
-          : 'I want to turn on the time machine so I can fix mistakes if something goes wrong. ' +
-            'This can make ToonTalk slow.';
+          : 'I want to be able to travel in time to undo mistakes or replay what I just did. ' +
+            '(Sometimes ToonTalk runs slowly when this is checked.)';
         show('name');
       });
     });
@@ -510,6 +533,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1785768634"></script>
+<script src="tt.js?v=1785776549"></script>
 </body>
 </html>
