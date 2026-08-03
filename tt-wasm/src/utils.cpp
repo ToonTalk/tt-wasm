@@ -10950,12 +10950,22 @@ void interpret_command_line(int argc, char *argv[]) { // , boolean ) { -- moved 
 			  tt_user_puzzles = TRUE; // added on 300399
 			  // should I check that it isn't an explicit mention of a system puzzle?
            delete [] file_name;
-        } else if (puzzle_number > 0) {          
+        } else if (puzzle_number > 0) {
            char short_name[10] = "p";
            strcat(short_name,arg);
 			  FileNameStatus file_status;
 			  // if URL don't cache now but just before reading file
            tt_puzzle_file_name = existing_file_name(file_status,short_name,"pzl","Puzzles",FALSE,TRUE,TRUE);
+#ifdef __EMSCRIPTEN__
+           /* The puzzle lookup asks for a LANGUAGE-SPECIFIC subdirectory, so the path is
+            * Puzzles\<IDS_PUZZLE_SUBDIRECTORY>\p<N>.pzl rather than Puzzles\p<N>.pzl. Report both
+            * the name asked for and what the string library gave for that subdirectory -- a
+            * missing string there is invisible and just yields "no puzzle file". */
+           printf("[tt] pzlname: short='%s' lang_subdir='%s' -> '%s'\n", short_name,
+                  AS(IDS_PUZZLE_SUBDIRECTORY,"(missing)"),
+                  tt_puzzle_file_name ? tt_puzzle_file_name : "(NOT FOUND)");
+           fflush(stdout);
+#endif
 			  compute_tt_alternative_spoken_puzzle_file_name(short_name);
         } else if (tt_puzzle_file_name != NULL) { // new on 300399
 			  // update it to be abs of puzzle_number

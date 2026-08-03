@@ -131,6 +131,7 @@
     <div class="lcols">
       <button class="lcard" type="button" data-cmd="-next_puzzle 1">
         <b>Do Missions</b><span>Play the puzzle game</span>
+        <span style="font-size:12px;color:#7b7b93">needs Puzzles/US/p1.pzl —<br>only p17 survives here</span>
       </button>
       <div class="lcard">
         <b>See a Demo</b>
@@ -177,9 +178,8 @@
       </button>
     </div>
     <label id="ltt">
-      <input type="checkbox" id="lttbox">
-      I want to turn on the time machine so I can fix mistakes if something goes wrong.
-      This can make ToonTalk slow.
+      <input type="checkbox" id="lttbox"><span id="lttnote">I want to turn on the time machine so I
+      can fix mistakes if something goes wrong. This can make ToonTalk slow.</span>
     </label>
     <div class="lrow"><button type="button" id="lback">Back</button></div>
   </div>
@@ -390,7 +390,20 @@
 
     // Free play / missions: ask the name and head first, like the original.
     Array.prototype.forEach.call(document.querySelectorAll('.lcard[data-cmd]'), function (b) {
-      b.addEventListener('click', function () { pending = b.getAttribute('data-cmd'); show('name'); });
+      b.addEventListener('click', function () {
+        pending = b.getAttribute('data-cmd');
+        // The mission game cannot time travel, and askname.htm says so rather than silently
+        // ignoring the box: ask_what_name passes time_travel_enabled = -1 when tt_system_mode is
+        // PUZZLE (winmain.cpp), and the page disables the checkbox and explains why.
+        var missions = (pending === '-next_puzzle 1');
+        ttbox.disabled = missions;
+        if (missions) ttbox.checked = false;
+        document.getElementById('lttnote').textContent = missions
+          ? 'The time machine does not work while you are doing the missions.'
+          : 'I want to turn on the time machine so I can fix mistakes if something goes wrong. ' +
+            'This can make ToonTalk slow.';
+        show('name');
+      });
     });
     // A demo needs its .dmo fetched and staged, which ?demo= already does end to end.
     Array.prototype.forEach.call(document.querySelectorAll('.ldemo'), function (b) {

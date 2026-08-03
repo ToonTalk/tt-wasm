@@ -531,6 +531,19 @@ void next_puzzle_default() {
 
 Sprites *floor_items(string floor_encoding, long length, boolean , Picture *controlee=NULL) {
    StringInputStream floor_stream(floor_encoding,length);
+#ifdef __EMSCRIPTEN__
+   /* "Oh boy. Something is wrong with the puzzle file." is raised here and says nothing about
+    * WHAT is wrong. Report the token actually found against the one expected, and the head of the
+    * decoded floor, so a bad puzzle file can be told apart from a bad DECODE of a good one. */
+   { int first = floor_stream.peek();
+     printf("[tt] pzlfloor: len=%ld first_token=%d want WHOLE_FLOOR=%d bytes=[%d %d %d %d]\n",
+            (long)length, first, (int)WHOLE_FLOOR,
+            length > 0 ? (unsigned char)floor_encoding[0] : -1,
+            length > 1 ? (unsigned char)floor_encoding[1] : -1,
+            length > 2 ? (unsigned char)floor_encoding[2] : -1,
+            length > 3 ? (unsigned char)floor_encoding[3] : -1);
+     fflush(stdout); }
+#endif
    if (floor_stream.get() != WHOLE_FLOOR) { // something is wrong
       log(S(IDS_PUZZLE_FOUND_WRONG_TOKEN),FALSE,TRUE);
       return(NULL);
@@ -556,14 +569,22 @@ PuzzleLoadStatus process_puzzle_file(string file_name, boolean reset_old, boolea
 												 House *house, boolean skip_robots,
 												 SpritesPointer &items, 
 												 string &floor_encoding, long &floor_encoding_length) {
+#ifdef __EMSCRIPTEN__
+	printf("[tt] pzlopen: asked for '%s' lang_subdir='%s'\n", file_name ? file_name : "(NULL)",
+	       AS(IDS_PUZZLE_SUBDIRECTORY,"(missing)"));
+	fflush(stdout);
+#endif
 	if (file_name == NULL) return(NO_PUZZLE_FILE);
-	FileNameStatus file_status;	
+	FileNameStatus file_status;
 	string new_file_name = existing_file_name(file_status,file_name,"pzl","puzzles",TRUE,FALSE
 #if TT_POST3187
 		// added final TRUE arg to the following for language specific default on 090807
 		,TRUE
 #endif
 		); // caches if URL - last 2 args added 100700 to prevent warning to user of missing files
+#ifdef __EMSCRIPTEN__
+	printf("[tt] pzlopen: resolved to '%s'\n", new_file_name ? new_file_name : "(NOT FOUND)"); fflush(stdout);
+#endif
 	if (new_file_name == NULL) return(NO_PUZZLE_FILE);
 	FileInputStream file;
 	file.open(new_file_name,std::ios_base::in|std::ios_base::binary); // |std::ios_base::nocreate
@@ -615,6 +636,11 @@ PuzzleLoadStatus process_puzzle_file(string file_name, boolean reset_old, boolea
 //   wall_postfix = new char[max_line_length];
 //   file.getline(wall_postfix,max_line_length);
    string floor_uuencoding = read_lines(&file,32000,length,'\r');
+#ifdef __EMSCRIPTEN__
+   printf("[tt] pzlread: floor_uuencoding=%s len=%ld head='%.24s'\n",
+          floor_uuencoding ? "ok" : "NULL", (long)length,
+          floor_uuencoding ? floor_uuencoding : ""); fflush(stdout);
+#endif
    if (floor_uuencoding == NULL) return(PUZZLE_FILE_BAD);
 	string xml_string = strstr(floor_uuencoding,"<?xml");
 	if (xml_string != NULL) { // new on 180803

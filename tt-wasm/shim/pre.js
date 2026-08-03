@@ -396,6 +396,19 @@ globalThis.TT_cmdline = '';
   });
 })();
 
+// ?puzzle=N — start a NAMED puzzle, the counterpart of ?demo= for the mission game. Note this is
+// the engine's "-puzzle" switch, not "-next_puzzle": -next_puzzle only turns the mission game on
+// and leaves the file to resume_puzzles(), which always starts at the counter (p1). Only -puzzle
+// names a file directly (utils.cpp:10940: a positive number becomes "p<N>", looked up under
+// Puzzles), so it is the only way to reach a particular puzzle.
+(function setUpPuzzle() {
+  if (typeof location === 'undefined') return;
+  var m = location.search.match(/[?&]puzzle=(\d+)/);
+  if (!m) return;
+  globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
+                          '-puzzle ' + m[1];
+})();
+
 // The opening screen — Starttt.exe's job. In the original that was a SEPARATE PROGRAM: it put up
 // its HTML dialogs, and all they did was hand back a command line for it to launch ToonTalk.exe
 // with (Starttt.cpp, interpret_command_line). Reproducing that split here is not just fidelity, it
@@ -410,6 +423,7 @@ globalThis.TT_cmdline = '';
   if (typeof location === 'undefined') return;
   if (/[?&]demo=/.test(location.search)) return;
   if (/[?&]launcher=0/.test(location.search)) return;
+  if (/[?&]puzzle=/.test(location.search)) return;   // the page has already said what to run
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
     if (typeof globalThis.TT_showLauncher !== 'function') return;
