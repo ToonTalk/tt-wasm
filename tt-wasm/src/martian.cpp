@@ -2451,9 +2451,25 @@ boolean Talk_Balloon::say(Martian *speaking_martian, // new on 090502
 #endif
    };
 #if TT_TEXT_TO_SPEECH
-   if ((alternative_spoken_text == NULL && 
+#ifdef __EMSCRIPTEN__
+	/* The one gate between Marty getting text and Marty speaking it. Ken's mission console showed
+	 * the balloon appearing with no [tt] martysay at all, so speak_next_sentence() is never even
+	 * reached -- the question is which half of this condition refuses. add_to_old means the text
+	 * was APPENDED to a message already pending, in which case the engine assumes speech is
+	 * already running and does not start it. */
+	{ static int p = 0;
+	  if (p < 8) { p++;
+	    printf("[tt] balloonsay: add_to_old=%d alt=%s add_alt=%d speech_off=%d length=%d -> %s\n",
+	           (int)add_to_old, alternative_spoken_text ? "yes" : "no",
+	           (int)add_to_old_alternative_spoken, (int)speech_text_offset, (int)length,
+	           ((alternative_spoken_text == NULL && (!add_to_old || speech_text_offset >= length)) ||
+	            (alternative_spoken_text != NULL && (!add_to_old_alternative_spoken || speech_text_offset >= length)))
+	           ? "SPEAKS" : "stays silent");
+	    fflush(stdout); } }
+#endif
+   if ((alternative_spoken_text == NULL &&
 		  (!add_to_old || speech_text_offset >= length)) ||
-		 (alternative_spoken_text != NULL && 
+		 (alternative_spoken_text != NULL &&
 		  (!add_to_old_alternative_spoken || speech_text_offset >= length))) {
       // either new or have already spoken rest
       speak_next_sentence();
