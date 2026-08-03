@@ -1,6 +1,9 @@
 // Copyright (c) 1992-2004.  Ken Kahn, Animated Programs, All rights reserved
 
 #if !defined(__TT_DEFS_H)   
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include "defs.h"
 #endif   
 #if !defined(__TT_GLOBALS_H)   
@@ -168,6 +171,16 @@ void tt_exit_failure(Trouble trouble, const_string reason, const_string reason2)
    write_ini_entry("Switches",AC(IDC_TOONTALK_STARTED),"0"); // not that abnormal
 	tt_trouble_shooting = TRUE; // show following dialog regardless -- really a good idea??
 	if (trouble != TROUBLE_SHOOT_TRIAL_PERIOD_OVER && reason != NULL) tt_err_file_important = TRUE;
+#ifdef __EMSCRIPTEN__
+	/* Natively this ends in a MessageBox, so the user always learns WHY ToonTalk stopped. In the
+	 * browser the dialogs are dead stubs, so an abort simply left a black canvas with the page
+	 * still claiming "engine running" -- indistinguishable from a hang (Ken: "All I see after
+	 * clicking on a head image is black screen", which was the mission game aborting on a puzzle
+	 * file that is not installed). Tell the page instead. */
+	EM_ASM({
+		if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1));
+	}, reason ? reason : "", reason2 ? reason2 : "");
+#endif
 	if (tt_main_window != NULL) {
 		tt_error_file() << "Abnormal termination: ";
       if (reason != NULL) {

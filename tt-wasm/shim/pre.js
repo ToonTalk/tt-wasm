@@ -409,6 +409,14 @@ globalThis.TT_cmdline = '';
                           '-puzzle ' + m[1];
 })();
 
+// Does a file exist in the engine's filesystem? The opening screen uses this to avoid offering a
+// choice that cannot work: the mission game needs Puzzles/US/p1.pzl, and without it the engine
+// aborts before its first frame. Returns false rather than throwing while the packaged data is
+// still being mounted, so callers should poll.
+globalThis.TT_hasFile = function (path) {
+  try { return !!(typeof FS !== 'undefined' && FS.analyzePath(path).exists); } catch (e) { return false; }
+};
+
 // The opening screen — Starttt.exe's job. In the original that was a SEPARATE PROGRAM: it put up
 // its HTML dialogs, and all they did was hand back a command line for it to launch ToonTalk.exe
 // with (Starttt.cpp, interpret_command_line). Reproducing that split here is not just fidelity, it

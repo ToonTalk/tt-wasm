@@ -113,10 +113,6 @@
   /* the art is 8-bit sprite work — scale it without smoothing, like the game canvas */
   .lhead img { image-rendering: pixelated; height: 72px; width: auto; }
   .lhead span { font-size: 13px; color: #9d9db4; }
-  .lnoart {
-    height: 72px; display: flex; align-items: center; justify-content: center;
-    color: #6d6d80; font-size: 12px; text-align: center; line-height: 1.3; padding: 0 4px;
-  }
   #ltt { display: block; margin: 14px auto 0; max-width: 520px; color: #9d9db4;
          font-size: 13px; text-align: left; }
   #ltt input { accent-color: #AB0519; margin-right: 6px; }
@@ -129,9 +125,9 @@
   <div class="lpanel" id="lmain">
     <h1>What do you want to do in ToonTalk?</h1>
     <div class="lcols">
-      <button class="lcard" type="button" data-cmd="-next_puzzle 1">
+      <button class="lcard" type="button" data-cmd="-next_puzzle 1" id="lmissions">
         <b>Do Missions</b><span>Play the puzzle game</span>
-        <span style="font-size:12px;color:#7b7b93">needs Puzzles/US/p1.pzl —<br>only p17 survives here</span>
+        <span id="lmissnote" style="font-size:12px;color:#7b7b93"></span>
       </button>
       <div class="lcard">
         <b>See a Demo</b>
@@ -174,7 +170,7 @@
         <img src="heads/hat.png" alt="Hat"><span>Hat</span>
       </button>
       <button class="lhead" type="button" data-head="0">
-        <span class="lnoart">(picture<br>missing)</span><span>Bald</span>
+        <img src="heads/bald.png" alt="Bald"><span>Bald</span>
       </button>
     </div>
     <label id="ltt">
@@ -231,6 +227,14 @@
     }
   };
   window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+  // The engine gave up (cleanup.cpp tt_exit_failure). Natively that is a MessageBox; here it used
+  // to be a black canvas with the status line still saying "engine running".
+  window.TT_engineFailed = function (reason, reason2) {
+    var msg = [reason, reason2].filter(Boolean).join(' ').trim() || 'ToonTalk stopped.';
+    statusEl.style.color = '#ff8a8a';
+    statusEl.textContent = 'ToonTalk stopped: ' + msg;
+    ttNote('engine failed: ' + msg);
+  };
   // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like
   // "input dead after re-entering full screen" comes with the exact event trail.
   function ttNote(s) {
@@ -412,6 +416,29 @@
       });
     });
     document.getElementById('lback').addEventListener('click', function () { show('main'); });
+
+    // The mission game needs its puzzle files. Without p1.pzl the engine aborts before drawing
+    // anything, so the card must not be offered — a dead black canvas is the worst possible answer
+    // to a click. The packaged data mounts asynchronously, so poll rather than check once.
+    (function gateMissions() {
+      var card = document.getElementById('lmissions'), note = document.getElementById('lmissnote');
+      var tries = 0;
+      var check = function () {
+        var have = window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles/US/p1.pzl');
+        var mounted = window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles');
+        if (have) { card.disabled = false; card.style.opacity = ''; note.textContent = ''; return; }
+        if (mounted || ++tries > 40) {          // 40 x 250ms — the data is up, the files are not
+          card.disabled = true;
+          card.style.opacity = '.45';
+          card.style.cursor = 'not-allowed';
+          note.textContent = 'not installed — needs Puzzles/US/p1.pzl';
+          return;
+        }
+        setTimeout(check, 250);
+      };
+      card.disabled = true; card.style.opacity = '.45';   // until we know
+      check();
+    })();
     document.getElementById('lopen').addEventListener('click', function () {
       document.getElementById('openfile').click();     // same picker as the in-page button
     });
