@@ -106,6 +106,9 @@
 #endif
 
 #include "guid.h"
+#ifdef __EMSCRIPTEN__
+int tt_em_verbose_probes(); // utils.cpp -- ?probes=1 gates the per-frame tracing
+#endif
 
 #ifdef _DEBUG // new on 160103 to debug leaks
 #define new DEBUG_NEW
@@ -4769,6 +4772,7 @@ ProgrammerStatus Programmer_City_Landing::react(boolean new_user_input,
 		  appearance->lower_left_corner(ax,ay);
 		  city_coordinate ox = appearance->true_x_offset();
 		  city_coordinate oy = appearance->true_y_offset();
+		  if (tt_em_verbose_probes())
 		  printf("[tt] land: app=(%ld,%ld) off=(%ld,%ld) anchor=(%ld,%ld) cyc=%d dxy=(%ld,%ld) ms=%ld\n",
 		         (long)ax,(long)ay,(long)ox,(long)oy,(long)(ax-ox),(long)(ay-oy),
 		         (int)appearance->image_cycle_index(),(long)delta_x,(long)delta_y,

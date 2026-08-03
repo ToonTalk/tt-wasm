@@ -223,6 +223,10 @@ const_string C(int id);
 const_string C2(int id, int index);
 #if TT_UNICODE
 const_ascii_string AS(int id, boolean null_ok=FALSE);
+#ifdef __EMSCRIPTEN__
+int tt_em_verbose_probes(); // ?probes=1 -- per-frame tracing, off by default (utils.cpp)
+#endif
+
 const_ascii_string AC(int id);
 const_ascii_string AS2(int id, const_string suffix);
 const_ascii_string AS2(int id, int index);

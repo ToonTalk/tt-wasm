@@ -399,9 +399,6 @@ HFONT CreateFontIndirectA(const LOGFONTA *lf) {
     int w = lf ? (lf->lfWidth  < 0 ? -lf->lfWidth  : lf->lfWidth ) : 0;
     o->font_h = (h * 96 + 36) / 72; if (o->font_h < 1) o->font_h = 12;   /* LOGFONT points -> ~pixels */
     o->font_w = (w * 96 + 36) / 72; if (o->font_w < 1) o->font_w = o->font_h / 2;
-    static int font_log = 0; static int last_fh = -1;   /* temporary diagnosis of pad digit sizing */
-    if (font_log < 500 && o->font_h != last_fh) { font_log++; last_fh = o->font_h;
-        printf("[tt] font: lfH=%ld lfW=%ld -> px %dx%d\n", lf ? (long)lf->lfHeight : 0L, lf ? (long)lf->lfWidth : 0L, o->font_w, o->font_h); fflush(stdout); }
     return (HFONT)o;
 }
 BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
@@ -417,10 +414,6 @@ BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
 BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
     GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
     FontPick p = pick_font(dc);
-    static int texta_log = 0;   /* temporary diagnosis of pad digit sizing */
-    if (texta_log < 2000 && len > 0 && len <= 16) { texta_log++;
-        printf("[tt] textA: '%c%c' len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
-               str[0], (len > 1 ? str[1] : ' '), len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
     {   /* widen to UTF-16 for the browser rasterizer; Latin-1 maps straight across */
         unsigned short stack[128];
         unsigned short *u = (len <= 128) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
@@ -438,11 +431,6 @@ BOOL TextOutA(HDC hdc, int x, int y, LPCSTR str, int len) {
 BOOL TextOutW(HDC hdc, int x, int y, const wchar_t *str, int len) {
     GdiDC *dc = (GdiDC *)hdc; if (!dc || !str) return 0;
     FontPick p = pick_font(dc);
-    static int text_log = 0;   /* temporary diagnosis of pad digit sizing */
-    if (text_log < 2000 && len > 0 && len <= 16) { text_log++;
-        printf("[tt] textW: u0=%u u1=%u len=%d at(%d,%d) fontH=%d base=%d cw=%d ink=%d bk=%d\n",
-               (unsigned)str[0], (unsigned)(len > 1 ? str[1] : 0),
-               len, x, y, (dc->font ? dc->font->font_h : -1), p.base, p.cw, (int)dc->text_index, (int)dc->bk_index); fflush(stdout); }
     {
         unsigned short stack[128];
         unsigned short *u = (len <= 128) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));

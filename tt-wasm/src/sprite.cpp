@@ -110,6 +110,9 @@
 //#include <ctype.h> // for toupper
 #if !defined(__TT_WINMAIN_H)   
 #include "winmain.h"
+#ifdef __EMSCRIPTEN__
+int tt_em_verbose_probes(); // utils.cpp -- ?probes=1 gates the per-frame tracing
+#endif
 #endif
 
 #ifdef _DEBUG // new on 160103 to debug leaks
@@ -1405,6 +1408,7 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 				if (tt_screen_height > tt_graphics_video_mode_height) {
 					pdy = (pdy*tt_graphics_video_mode_height)/tt_screen_height;
 				};
+				if (tt_em_verbose_probes())
 				printf("[tt] offcomp: code=%d xo=%ld oldx=%ld yo=%ld oldy=%ld xs=%u ys=%u cs=%ld gs=%ld dy+=%ld lly=%ld idx=%d\n",
 				       (int)code, (long)x_offset, (long)old_x_offset, (long)y_offset, (long)old_y_offset,
 				       (unsigned)x_scale, (unsigned)y_scale,
@@ -5835,7 +5839,7 @@ boolean TTImage::display(long &width, long &height,
 #ifdef __EMSCRIPTEN__
 	if (code == HELIOLND || code == HELIOFLY) {
 		static int dd_log = 0;
-		if (dd_log < 60) { dd_log++;
+		if (dd_log < 60 && tt_em_verbose_probes()) { dd_log++;
 			printf("[tt] drawimg: code=%d mark=(%ld,%ld) drawn=(%ld,%ld) art_px=(%d,%d) xoff=%ld yoff=%ld xs=%u\n",
 			       (int)code, (long)tt_memory_graphics_mark_x, (long)tt_memory_graphics_mark_y,
 			       (long)width, (long)height, (int)pixel_width, (int)pixel_height,

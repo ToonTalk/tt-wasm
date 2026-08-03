@@ -1186,6 +1186,22 @@ void stop_sound_id(int id) {
  * should be playing, no looping source may exist -- whatever happened to the buffer that started
  * it, and whether or not the shim still has a handle on it. This is the safety net 6f64beb
  * removed, restored without going back to restarting the sound every cycle. */
+/* Per-frame tracing, off unless ?probes=1 asks for it.
+ *
+ * The pad-sizing probes printed a line per glyph per frame, and a console Ken sent to answer a
+ * question about Marty was nothing BUT those lines -- they had filled the in-page ring and evicted
+ * every line worth reading. A diagnostic that drowns the diagnosis is worse than none, so the
+ * chatty ones are opt-in from here on and the console stays readable by default. */
+int tt_em_verbose_probes() {
+	static int on = -1;
+	if (on < 0) {
+		on = EM_ASM_INT({
+			return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0;
+		});
+	};
+	return on;
+};
+
 void tt_em_enforce_no_stray_loop() {
 	static int last_repeat_id = -1;
 	static int since_sweep = 0;
