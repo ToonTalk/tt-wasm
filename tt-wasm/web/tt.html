@@ -423,11 +423,17 @@
     (function gateMissions() {
       var card = document.getElementById('lmissions'), note = document.getElementById('lmissnote');
       var tries = 0;
+      // Poll for the FILE and nothing else. Taking "the Puzzles directory exists" as proof that
+      // the data had finished mounting was wrong: the packager creates directories before it
+      // writes their contents, so that fired between the two and latched the card off even
+      // though p1.pzl arrived moments later.
       var check = function () {
-        var have = window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles/US/p1.pzl');
-        var mounted = window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles');
-        if (have) { card.disabled = false; card.style.opacity = ''; note.textContent = ''; return; }
-        if (mounted || ++tries > 40) {          // 40 x 250ms — the data is up, the files are not
+        if (window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles/US/p1.pzl')) {
+          card.disabled = false; card.style.opacity = ''; card.style.cursor = '';
+          note.textContent = '';
+          return;
+        }
+        if (++tries > 60) {                    // 60 x 250ms = 15s; the data is long since up
           card.disabled = true;
           card.style.opacity = '.45';
           card.style.cursor = 'not-allowed';
@@ -437,6 +443,7 @@
         setTimeout(check, 250);
       };
       card.disabled = true; card.style.opacity = '.45';   // until we know
+      note.textContent = 'checking…';
       check();
     })();
     document.getElementById('lopen').addEventListener('click', function () {
