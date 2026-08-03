@@ -1,0 +1,13 @@
+# Puzzle files are parsed by splitting on a bare CR: process_puzzle_file reads the intro and the
+# floor encoding with read_lines(&file, ..., '\r') (puzzle.cpp). Git's line-ending normalisation
+# would rewrite those terminators and the puzzle would fail to load -- and it fails as "Oh boy.
+# Something is wrong with the puzzle file", which points at the content rather than at the
+# checkout. Keep them byte-for-byte.
+*.pzl -text
+
+# Recorded demos and the packed art/resource archives are binary in every sense.
+*.dmo -text
+*.us1 -text
+*.bmp -text
+*.png -text
+*.dat -text
