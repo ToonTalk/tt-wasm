@@ -396,6 +396,33 @@ globalThis.TT_cmdline = '';
   });
 })();
 
+// The opening screen — Starttt.exe's job. In the original that was a SEPARATE PROGRAM: it put up
+// its HTML dialogs, and all they did was hand back a command line for it to launch ToonTalk.exe
+// with (Starttt.cpp, interpret_command_line). Reproducing that split here is not just fidelity, it
+// is the only shape that works: without Asyncify nothing may block the browser's main thread
+// waiting for a click, so the engine cannot ask mid-startup the way ask_what_name() does natively.
+// Holding main() back with a run dependency asks BEFORE the engine starts, which is exactly when
+// the original asked.
+//
+// Skipped when the page already says what to run (?demo=), when ?launcher=0 asks for the old
+// straight-to-city behaviour, and when the page has no launcher at all.
+(function gateOnLauncher() {
+  if (typeof location === 'undefined') return;
+  if (/[?&]demo=/.test(location.search)) return;
+  if (/[?&]launcher=0/.test(location.search)) return;
+  Module['preRun'] = Module['preRun'] || [];
+  Module['preRun'].push(function () {
+    if (typeof globalThis.TT_showLauncher !== 'function') return;
+    addRunDependency('tt-launcher');
+    globalThis.TT_showLauncher(function (cmdline) {
+      // Replaces rather than appends: the launcher supplies its own -time_travel_enabled, the
+      // way askname.htm's return value did.
+      globalThis.TT_cmdline = cmdline || '';
+      removeRunDependency('tt-launcher');
+    });
+  });
+})();
+
 // Append (never prepend — the demo-replay tests check for a leading "-I ") the switch that turns
 // recording off unless it was asked for. Must run after setUpDemo, which assigns TT_cmdline.
 (function applyTimeTravelSwitch() {

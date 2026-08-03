@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp2pu72vd_.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpbmki9duv.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -202,14 +202,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp2pu72vd_.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpdaej55hk.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpbmki9duv.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpy85rvj7e.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpdaej55hk.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpy85rvj7e.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -606,6 +606,33 @@ globalThis.TT_cmdline = '';
       console.warn('[tt] demo: could not fetch ' + name + '.dmo — ' + e.message);
       globalThis.TT_cmdline = '';
     }
+  });
+})();
+
+// The opening screen — Starttt.exe's job. In the original that was a SEPARATE PROGRAM: it put up
+// its HTML dialogs, and all they did was hand back a command line for it to launch ToonTalk.exe
+// with (Starttt.cpp, interpret_command_line). Reproducing that split here is not just fidelity, it
+// is the only shape that works: without Asyncify nothing may block the browser's main thread
+// waiting for a click, so the engine cannot ask mid-startup the way ask_what_name() does natively.
+// Holding main() back with a run dependency asks BEFORE the engine starts, which is exactly when
+// the original asked.
+//
+// Skipped when the page already says what to run (?demo=), when ?launcher=0 asks for the old
+// straight-to-city behaviour, and when the page has no launcher at all.
+(function gateOnLauncher() {
+  if (typeof location === 'undefined') return;
+  if (/[?&]demo=/.test(location.search)) return;
+  if (/[?&]launcher=0/.test(location.search)) return;
+  Module['preRun'] = Module['preRun'] || [];
+  Module['preRun'].push(function () {
+    if (typeof globalThis.TT_showLauncher !== 'function') return;
+    addRunDependency('tt-launcher');
+    globalThis.TT_showLauncher(function (cmdline) {
+      // Replaces rather than appends: the launcher supplies its own -time_travel_enabled, the
+      // way askname.htm's return value did.
+      globalThis.TT_cmdline = cmdline || '';
+      removeRunDependency('tt-launcher');
+    });
   });
 })();
 
@@ -1045,13 +1072,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmprjn3t659.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpz065_3f5.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmprjn3t659.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpz065_3f5.js
 
 
 var programArgs = [];

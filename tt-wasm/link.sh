@@ -71,4 +71,12 @@ fi
 # stale artifact after a rebuild — a stale tt.wasm under a fresh tt.js reintroduced fixed bugs.
 STAMP=$(date +%s)
 sed -e "s|src=\"tt.js\"|src=\"tt.js?v=$STAMP\"|" -e "s|TTBUILDSTAMP|$STAMP|" web/tt.html > build/tt.html
+
+# The opening screen's avatar heads. These are the engine's OWN art (assets/pics/hairs01.bmp and
+# hats01.bmp, extracted with the palette's transparent index made alpha) rather than anything
+# drawn for the port -- hairs01 is 64x61, precisely the width and height askname.htm declares for
+# hairhead.jpg, so it is the same picture the original dialog showed.
+mkdir -p build/heads
+cp -f web/heads/*.png build/heads/ 2>/dev/null
+
 ls -la build/tt.wasm

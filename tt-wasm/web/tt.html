@@ -51,9 +51,140 @@
     border-radius: 4px; padding: 0 6px; color: #e6e6f2;
   }
   #status { color: #6d6d80; font-size: 12px; letter-spacing: .02em; }
+
+  /* ---- The opening screen: Starttt.exe's job -------------------------------------------
+     The original launcher was a separate program whose UI was HTML shown in an IE dialog
+     (Starttt.cpp: [Executables] HTMLStartTT), and whose buttons did nothing but hand a
+     COMMAND LINE back to be passed to ToonTalk.exe. That is why this belongs in the page
+     rather than the engine: it is the same split, and it sidesteps the fact that nothing may
+     block the browser's main thread waiting for a click. The command strings below are the
+     original's own (starttt.htm / askname.htm, preserved in the Swedish doc folder). */
+  #launcher {
+    position: fixed; inset: 0; z-index: 40; overflow: auto;
+    background: radial-gradient(1200px 800px at 50% 0%, #23233a, #0d0d14 70%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #launcher[hidden] { display: none; }
+  .lpanel { width: min(980px, 96vw); }
+  .lpanel[hidden] { display: none; }
+  .lpanel h1 { font-size: 22px; font-weight: 600; color: #ececf4; text-align: center; margin: 0 0 20px; }
+  .lcols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; align-items: stretch; }
+  @media (max-width: 760px) { .lcols { grid-template-columns: 1fr; } }
+  .lcard {
+    font: inherit; color: #d7d7e4; text-align: center; background: #21212f;
+    border: 1px solid #3a3a4c; border-radius: 10px; padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+  }
+  button.lcard { cursor: pointer; }
+  button.lcard:hover { background: #2c2c3e; border-color: #55556e; }
+  .lcard b { font-size: 17px; color: #ececf4; }
+  .lcard span { color: #9d9db4; font-size: 13px; }
+  .lgroup { width: 100%; text-align: left; margin-top: 4px; }
+  .lgroup h2 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+    color: #7b7b93; margin: 10px 0 5px;
+  }
+  .ldemo {
+    font: inherit; display: block; width: 100%; text-align: left; cursor: pointer;
+    color: #d7d7e4; background: #191924; border: 1px solid #33334a;
+    border-radius: 6px; padding: 5px 10px; margin-bottom: 4px;
+  }
+  .ldemo:hover { background: #2f2f44; border-color: #55556e; }
+  .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .lrow button, #lback {
+    font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+    border-radius: 6px; padding: 5px 16px; cursor: pointer;
+  }
+  .lrow button:hover, #lback:hover { background: #34344a; }
+  /* the name + head dialog (askname.htm) */
+  #lname { max-width: 640px; text-align: center; }
+  #luser {
+    font: 20px/1.4 system-ui, sans-serif; width: min(420px, 84vw); text-align: center;
+    color: #ececf4; background: #191924; border: 1px solid #44445a;
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
+  }
+  .lheads { display: flex; gap: 16px; justify-content: center; margin: 10px 0 4px; }
+  .lhead {
+    font: inherit; cursor: pointer; color: #d7d7e4; background: #21212f;
+    border: 1px solid #3a3a4c; border-radius: 10px; padding: 10px 14px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 104px;
+  }
+  .lhead:hover { background: #2c2c3e; border-color: #55556e; }
+  /* the art is 8-bit sprite work — scale it without smoothing, like the game canvas */
+  .lhead img { image-rendering: pixelated; height: 72px; width: auto; }
+  .lhead span { font-size: 13px; color: #9d9db4; }
+  .lnoart {
+    height: 72px; display: flex; align-items: center; justify-content: center;
+    color: #6d6d80; font-size: 12px; text-align: center; line-height: 1.3; padding: 0 4px;
+  }
+  #ltt { display: block; margin: 14px auto 0; max-width: 520px; color: #9d9db4;
+         font-size: 13px; text-align: left; }
+  #ltt input { accent-color: #AB0519; margin-right: 6px; }
 </style>
 </head>
 <body>
+<!-- Starttt.exe's opening screen. Structure and command strings from the original
+     starttt.htm / pickdemo.htm / askname.htm; demo names are this build's own .dmo files. -->
+<div id="launcher" hidden>
+  <div class="lpanel" id="lmain">
+    <h1>What do you want to do in ToonTalk?</h1>
+    <div class="lcols">
+      <button class="lcard" type="button" data-cmd="-next_puzzle 1">
+        <b>Do Missions</b><span>Play the puzzle game</span>
+      </button>
+      <div class="lcard">
+        <b>See a Demo</b>
+        <div class="lgroup">
+          <h2>The basics of ToonTalk</h2>
+          <button class="ldemo" type="button" data-demo="intro_v2">A tour of ToonTalk</button>
+          <button class="ldemo" type="button" data-demo="explode2">Blowing up houses</button>
+          <button class="ldemo" type="button" data-demo="swap2">Swapping numbers</button>
+          <h2>Making a Ping Pong game</h2>
+          <button class="ldemo" type="button" data-demo="pongact1_v2">Part 1</button>
+          <button class="ldemo" type="button" data-demo="pongact2_v2">Part 2</button>
+          <button class="ldemo" type="button" data-demo="pongact3_v2">Part 3</button>
+          <h2>Computer science examples</h2>
+          <button class="ldemo" type="button" data-demo="fibs2">Fibonacci</button>
+          <button class="ldemo" type="button" data-demo="fact2">Factorial</button>
+          <button class="ldemo" type="button" data-demo="account2">Bank account</button>
+          <button class="ldemo" type="button" data-demo="append2">Appending lists</button>
+        </div>
+      </div>
+      <button class="lcard" type="button" data-cmd="-next_puzzle 0">
+        <b>Play Freely</b><span>Fly to a house and build whatever you like</span>
+      </button>
+    </div>
+    <div class="lrow">
+      <button type="button" id="lopen">Open a .dmo…</button>
+      <button type="button" id="labout">About ToonTalk</button>
+    </div>
+  </div>
+
+  <!-- askname.htm: name, one of three heads, and the time-travel option -->
+  <div class="lpanel" id="lname" hidden>
+    <h1>Hi! Type your name here.</h1>
+    <input id="luser" type="text" value="No Name" spellcheck="false" autocomplete="off">
+    <p style="color:#9d9db4;margin:14px 0 0">Click on one of these pictures:</p>
+    <div class="lheads">
+      <button class="lhead" type="button" data-head="1">
+        <img src="heads/hair.png" alt="Long hair"><span>Long hair</span>
+      </button>
+      <button class="lhead" type="button" data-head="2">
+        <img src="heads/hat.png" alt="Hat"><span>Hat</span>
+      </button>
+      <button class="lhead" type="button" data-head="0">
+        <span class="lnoart">(picture<br>missing)</span><span>Bald</span>
+      </button>
+    </div>
+    <label id="ltt">
+      <input type="checkbox" id="lttbox">
+      I want to turn on the time machine so I can fix mistakes if something goes wrong.
+      This can make ToonTalk slow.
+    </label>
+    <div class="lrow"><button type="button" id="lback">Back</button></div>
+  </div>
+</div>
+
 <div id="stage">
   <canvas id="ttcanvas" width="800" height="600"></canvas>
   <div id="help">
@@ -224,6 +355,97 @@
       document.exitFullscreen();
     }
   }, true);
+  // ---- The opening screen (Starttt.exe) ------------------------------------------------
+  // pre.js holds main() back with a run dependency and calls this; we call `done` with the
+  // command line the engine should start with, exactly as Starttt.exe passed one to
+  // ToonTalk.exe. A DEMO instead reloads with ?demo=<name>, because the whole tested path for
+  // fetching a .dmo and staging it into the filesystem already hangs off that parameter — and
+  // because the engine does not ask a name when replaying (utils.cpp:10707,
+  // "name isn't asked if double click on demo").
+  window.TT_showLauncher = function (done) {
+    var box = document.getElementById('launcher');
+    var main = document.getElementById('lmain'), name = document.getElementById('lname');
+    var stage = document.getElementById('stage');
+    var user = document.getElementById('luser'), ttbox = document.getElementById('lttbox');
+    var pending = '';                                  // '-next_puzzle 0' or '-next_puzzle 1'
+    stage.style.display = 'none';
+    box.hidden = false;
+
+    try {                                              // the original prefills the previous name
+      var prev = localStorage.getItem('TT_userName');  // ([User] PreviousName in the ini)
+      if (prev) user.value = prev;
+    } catch (e) {}
+
+    var show = function (which) {
+      main.hidden = (which !== 'main');
+      name.hidden = (which !== 'name');
+      if (which === 'name') { user.focus(); user.select(); }
+    };
+    var finish = function (cmd) {
+      box.hidden = true;
+      stage.style.display = '';
+      ttNote('launcher: ' + cmd);
+      done(cmd);
+    };
+
+    // Free play / missions: ask the name and head first, like the original.
+    Array.prototype.forEach.call(document.querySelectorAll('.lcard[data-cmd]'), function (b) {
+      b.addEventListener('click', function () { pending = b.getAttribute('data-cmd'); show('name'); });
+    });
+    // A demo needs its .dmo fetched and staged, which ?demo= already does end to end.
+    Array.prototype.forEach.call(document.querySelectorAll('.ldemo'), function (b) {
+      b.addEventListener('click', function () {
+        location.search = '?demo=' + b.getAttribute('data-demo');
+      });
+    });
+    document.getElementById('lback').addEventListener('click', function () { show('main'); });
+    document.getElementById('lopen').addEventListener('click', function () {
+      document.getElementById('openfile').click();     // same picker as the in-page button
+    });
+    document.getElementById('labout').addEventListener('click', function () {
+      window.open('port-story.html', '_blank');
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.lhead'), function (b) {
+      b.addEventListener('click', function () {
+        var who = (user.value || '').trim() || 'No Name';
+        try { localStorage.setItem('TT_userName', who); } catch (e) {}
+        // askname.htm's own return value, in its own order: "order matters if old user name
+        // and changing head appearance".
+        var cmd = '-n ' + who + ' -h ' + b.getAttribute('data-head') +
+                  ' -time_travel_enabled ' + (ttbox.checked ? '1' : '0');
+        if (pending === '-next_puzzle 1') cmd += ' ' + pending;
+        if (ttbox.checked) {                           // recording, so offer the save control
+          window.TT_recording = true;
+          var sb = document.getElementById('savebtn');
+          if (sb) {
+            sb.hidden = false;
+            sb.addEventListener('click', function () {
+              var ok = window.TT_saveDemo && window.TT_saveDemo();
+              statusEl.textContent = ok ? 'Saved this session as toontalk-session.dmo'
+                                        : 'Nothing recorded yet — play for a few seconds first';
+            });
+          }
+        }
+        finish(cmd);
+      });
+    });
+    user.addEventListener('keydown', function (e) {    // Enter = keep the head you had last time
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var last = 1;
+      try { last = Number(localStorage.getItem('TT_userHead') || 1); } catch (e2) {}
+      var btn = document.querySelector('.lhead[data-head="' + last + '"]');
+      if (btn) btn.click();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.lhead'), function (b) {
+      b.addEventListener('click', function () {
+        try { localStorage.setItem('TT_userHead', b.getAttribute('data-head')); } catch (e) {}
+      });
+    });
+    show('main');
+  };
+
   // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
   // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
   if (/[?&]fps=1/.test(location.search)) {
