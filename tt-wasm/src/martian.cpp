@@ -386,6 +386,17 @@ void Martian::teleport_out(boolean by_user) {
 
 #if TT_TEXT_TO_SPEECH
 void Martian::new_talk_mode(MartyTalk new_mode) {
+#ifdef __EMSCRIPTEN__
+	/* Every change of Marty's voice mode passes through here, including
+	 * just_talk_balloons_for()'s temporary switch to MARTY_TALK_BALLOONS -- which is restored by a
+	 * TIMED CALLBACK (MARTY_SPEAKS_CALLBACK), so a callback that never fires would leave him
+	 * silent for the rest of the session. Worth seeing, since he starts in the right mode
+	 * (martymode reports 2 = SPEAKS_AND_TALK_BALLOONS) yet goes quiet in the mission game. */
+	{ static int p = 0;
+	  if (p < 10) { p++;
+	    printf("[tt] martymode: change %d -> %d (0=BALLOONS 1=SPEAKS 2=SPEAKS+BALLOONS 3=SPEAKS+SUBS 4=SUBS_ONLY)\n",
+	           (int)tt_marty_talk,(int)new_mode); fflush(stdout); } }
+#endif
    tt_marty_talk = new_mode;
 	tt_closed_caption = (tt_marty_talk == MARTY_SPEAKS_WITH_SUBTITLES || tt_marty_talk == MARTY_WITH_SUBTITLES); // new on 101199 MARTY_WITH_SUBTITLES added on 110401
 	if (tt_marty_talk == MARTY_SPEAKS_WITH_SUBTITLES && alternative_language_spoken()) {
@@ -2947,15 +2958,15 @@ void and_between_parts_of_hundreds_number(string number, output_stream &stream) 
 
 void number_replacement(string original_number, output_stream &stream) {
 // 100 "etthundra"
-// 200 "tvåhundra"
+// 200 "tvï¿½hundra"
 // 1000 "ettusen"
-// 2000 "tvåtusen"
+// 2000 "tvï¿½tusen"
 // 1000000 "en miljon"
-// 2000000 "två miljoner"
+// 2000000 "tvï¿½ miljoner"
 // 1000000000 "en miljard"
-// 2000000000 "två miljarder"
+// 2000000000 "tvï¿½ miljarder"
 // 1000000000000 "en biljon"
-// 2000000000000 "två biljoner"
+// 2000000000000 "tvï¿½ biljoner"
    if (original_number[0] == '0') { // let MS TTS handle it
       stream << original_number;
 //		if (ordinal == ORDINAL_TH) stream << "th"; // not a great solution...
@@ -3131,7 +3142,7 @@ wide_character in_common(wide_string s1, wide_string s2) {
 void add_to_output(string narrow_text, wide_string &output) {
 	if (narrow_text == NULL || narrow_text[0] == '\0') return;
 	int length = strlen(narrow_text);
-	// following rewritten on 050705 since did the wrong thing with non-ASCII characters -- e.g. biliões
+	// following rewritten on 050705 since did the wrong thing with non-ASCII characters -- e.g. biliï¿½es
 	copy_wide_string(narrow_text,length,output);
 	output += length;
 	//for (int i = 0; i < length; i++) {
@@ -3620,7 +3631,7 @@ string process_for_text_to_speech(string to_say, int line_length) {
 			// new on 060300 since generation of phrase.ini file treated hypens like spaces but tts engine doesn't so fix here
 //			if (tt_language != BRAZILIAN_PORTUGUESE) { // condition new on 040500
 			// commented out conditional on 080500 since now phrase.ini treats - as space in these cases
-			// somehow Brazilian Portuguese was recorded with - as nothing (e.g. ajudá-lo as ajudálo)
+			// somehow Brazilian Portuguese was recorded with - as nothing (e.g. ajudï¿½-lo as ajudï¿½lo)
 			// problem fixed on 080500 and was due to - being nothing in puzzle files but space in RC files
 			if (tt_language != PORTUGAL_PORTUGUESE || tt_system_mode != PUZZLE) { // patch until Portugal generates a new VCE file
 				text_out[j++] = ' ';
@@ -3631,7 +3642,7 @@ string process_for_text_to_speech(string to_say, int line_length) {
 				// from Bete:
 //				1) Regarding robots and nests (Free Play): "soltando-o" and "colocando-o"
 //				The problem is the pronunciation of the last "o" (after the "-").
-//				Attached you will find wavs s000083 (ó)  and s000089 (ô).
+//				Attached you will find wavs s000083 (ï¿½)  and s000089 (ï¿½).
 //				You have to use s000089, because that letter "o" is a "closed" one; it is
 //				not an "open" sound like wave s000083.
 				text_out[j++] = o244;
@@ -3775,6 +3786,15 @@ void Talk_Balloon::speak_next_sentence() {
 			 wide_text = copy_wide_string(to_say,line_length);
 #endif
 		 };
+#ifdef __EMSCRIPTEN__
+		 /* Marty is silent in the mission game but speaks in demos and free play (Ken). The gate
+		  * below is the only thing between him and speak(): MARTY_WITH_SUBTITLES skips it outright.
+		  * Report which mode is in force at the moment he tries to talk. 4 = MARTY_WITH_SUBTITLES. */
+		 { static int p = 0;
+		   if (p < 6) { p++;
+			 printf("[tt] martysay: tt_marty_talk=%d (4=WITH_SUBTITLES skips speech) system_mode=%d\n",
+			        (int)tt_marty_talk, (int)tt_system_mode); fflush(stdout); } }
+#endif
        if (tt_marty_talk == MARTY_WITH_SUBTITLES || !speak(wide_text,say_id)) { // new on 110401 - need to trigger speech
 			 tt_martian->set_saved_say_id(say_id);
 			 millisecond duration = compute_reading_duration(wide_string_length(wide_text));

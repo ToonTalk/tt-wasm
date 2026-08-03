@@ -265,29 +265,53 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
     }
     var cx = g.cx;
     var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
-    // Fit ascent+descent inside the cell the engine allotted, so nothing is clipped.
+    /* Sit the run on the BASELINE the engine was told about. GetTextMetricsA reports
+     * tmAscent = cell_h*4/5, and the engine places text from the top of the cell assuming the
+     * glyphs rest on that baseline. This used to draw with the ink flush to the top of the cell
+     * instead (fillText at `asc`), so every digit rode high in its pad with the slack left
+     * underneath -- reporting one set of metrics while drawing to another. Shrink only when the
+     * ink will not fit around that baseline, which is what keeps descenders inside the cell. */
     var px = cell_h;
     cx.font = 'bold ' + px + 'px ' + fam;
     var m = cx.measureText(s);
     var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent;
     if (!(asc > 0)) asc = px * 0.75;
     if (!(desc >= 0)) desc = px * 0.25;
-    var ink = asc + desc;
-    if (ink > cell_h && ink > 0) {
-      px = Math.max(1, Math.floor(px * cell_h / ink));
+    if (asc + desc > cell_h && asc + desc > 0) {          /* shrink only to avoid clipping */
+      px = Math.max(1, Math.floor(px * cell_h / (asc + desc)));
       cx.font = 'bold ' + px + 'px ' + fam;
       m = cx.measureText(s);
       asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75;
+      desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25;
     }
     var natural = m.width;
     if (!(natural > 0)) return 0;
     var sx = (cell_w > 0) ? (cell_w * len) / natural : 1;   /* GDI lfWidth stretch */
+    /* CENTRE THE INK in the cell the engine allotted, rather than hanging it off the alphabetic
+     * baseline at a fixed fraction of the cell. A number pad is drawn around exactly this cell, so
+     * whatever slack the glyph leaves shows up as lopsided margins: measured on three pads, every
+     * digit sat 4-6px left and 2-5px high (a '2' with 13px of plate to its left and 25px to its
+     * right). The advance box carries the glyph's side bearings and the area below the baseline
+     * carries the descent, and for a single digit neither is symmetric -- so place the INK, which
+     * is what is actually seen. Bearings come from measureText's bounding box, so this follows the
+     * real typeface rather than an assumed ratio. */
+    /* actualBoundingBoxLeft is measured POSITIVE TO THE LEFT of the origin, so for a run that
+     * starts at the origin and reads rightwards it is NEGATIVE. Rejecting negatives here (an
+     * earlier `inkL >= 0` guard) quietly fell back to "no correction" and the horizontal centring
+     * did nothing at all -- the digits stayed 3-4px left. Only reject values that are not numbers. */
+    var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight;
+    if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = natural; }   /* older engines */
+    var boxW = cell_w * len;
+    var originX = boxW / (2 * sx) - (inkR - inkL) / 2;    /* ink centred horizontally */
+    var base = cell_h / 2 + (asc - desc) / 2;             /* ink centred vertically */
+    if (base - asc < 0) base = asc;                       /* never clip the top */
+    if (base + desc > cell_h) base = cell_h - desc;       /* nor the bottom */
     cx.setTransform(1, 0, 0, 1, 0, 0);
     cx.clearRect(0, 0, out_w, out_h);
     cx.fillStyle = '#fff';
     cx.textBaseline = 'alphabetic';
     cx.setTransform(sx, 0, 0, 1, 0, 0);
-    cx.fillText(s, 0, asc);
+    cx.fillText(s, originX, base);
     cx.setTransform(1, 0, 0, 1, 0, 0);
     var img = cx.getImageData(0, 0, out_w, out_h).data;
     for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3];  /* alpha */

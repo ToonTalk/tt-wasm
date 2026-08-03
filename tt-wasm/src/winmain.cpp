@@ -10139,6 +10139,12 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 	       (int)tt_time_travel_enabled,(long)tt_time_between_new_logs,(int)tt_log_count_max,
 	       (int)tt_logging,(int)replaying(),
 	       tt_log_out_file_name ? tt_log_out_file_name : "(none)",(int)tt_dump_as_xml);
+	/* Marty's voice: MARTY_WITH_SUBTITLES (4) is the one mode that skips speak() outright
+	 * (martian.cpp), so it is the difference between him talking and not. 0=TALK_BALLOONS
+	 * 1=SPEAKS 2=SPEAKS_AND_TALK_BALLOONS 3=SPEAKS_WITH_SUBTITLES 4=WITH_SUBTITLES
+	 * 5=NO_TALK -- constant.h:628. */
+	printf("[tt] martymode: tt_marty_talk=%d system_mode=%d closed_caption=%d\n",
+	       (int)tt_marty_talk,(int)tt_system_mode,(int)tt_closed_caption);
 	fflush(stdout);
 #endif
 	// moved here on 150903 from seconds_between_new_logs > 0 branch above so that if you turn off time travel you still end up where you left off
