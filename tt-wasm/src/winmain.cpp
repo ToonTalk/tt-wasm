@@ -10326,37 +10326,30 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 		fflush(stdout);
 		tt_titles_just_ended = TRUE;
 		tt_titles_ended_on_frame = tt_frame_number;
-	} else if (tt_no_city_was_loaded && tt_system_mode != PUZZLE) {
-		// NOT for the mission game. This block declares the titles finished before they have run,
-		// and feeds <Nothing/>, whose handler sets START_FLYING -- which is why missions began in
-		// a helicopter instead of showing the back story and putting the player on the ground
-		// (Ken, with photographs of the original: Zizzle Island sinking, Marty rescuing, the
-		// crash, you parachuting down, then standing by the wrecked rocket).
+	} else if (tt_no_city_was_loaded &&
+	           EM_ASM_INT({ return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; })) {
+		// Only the ?floor=1 DEV SHORTCUT still short-circuits the opening now.
 		//
-		// The comment below -- "the web port has no titles sequence" -- was true when this was
-		// written and is not any more. Programmer_Titles_Flying is constructed at boot like the
-		// original's; this code was simply destroying it on frame 1, before its react() ever ran
-		// ([tt] titlesreact never fired while [tt] titlesdead reported frame=1 with delay=10, the
-		// engine's own ten seconds "to read the story"). For a puzzle the titles are not a
-		// formality: they cycle the four story screens, and their initial_programmer_status()
-		// returns PUZZLE_START, whose handler (prgrmmr.cpp:1210) places the programmer as
-		// Programmer_City_Walking at the rocket's exit point.
+		// This block used to run for every fresh world, on the premise stated in its old comment:
+		// "the web port has no titles sequence". That was true once and is not any more --
+		// Programmer_Titles_Flying is constructed at boot exactly as in the original, and this
+		// code was destroying it on frame 1, before react() had ever run. It also fed <Nothing/>,
+		// whose handler sets START_FLYING (city.cpp:606), so the opening always began in a
+		// helicopter: no titles for free play, and for a mission neither the four back-story
+		// screens nor the ground start that PUZZLE_START gives (Ken, with photographs).
 		//
-		// Letting them run also sets the marker below properly, since titles_over() does it.
+		// Letting the titles run restores both, and sets what this block was faking: their end
+		// calls titles_over(), which sets tt_titles_ended_on_frame properly (the marker that gates
+		// the tt_running_robots consumer in one_tt_cycle -- robots delivered to NEW houses, which
+		// is what kept the sentence-maker demo from continuing its truck chain), and
+		// initial_programmer_status() supplies the starting status: START_FLYING for free play,
+		// PUZZLE_START for a mission.
 		//
-		// The web port has no titles sequence, so the "titles are over" frame marker stays at
-		// its max_long initial value — which permanently gates OFF the tt_running_robots
-		// consumer in one_tt_cycle (`tt_frame_number > tt_titles_ended_on_frame`). That list is
-		// how robots delivered to NEW houses start (Floor::house_built), so every truck-built
-		// house sat idle: Ken's sentence-maker demo produced one sentence and the recursive
-		// truck chain never continued. Declare the titles over at boot, as finishing them would.
+		// The shortcut still needs the world up immediately, since it skips the titles by design.
 		tt_titles_ended_on_frame = tt_frame_number;
 		xml_document *fresh = document_from_string("<Nothing/>");
 		if (fresh != NULL) { tt_city->xml_entity_and_activate(fresh); xml_release_document(fresh); }
-		// Dev shortcut: tt.html?floor=1 boots straight onto the first house's floor (hand +
-		// toolbox), skipping the flight/landing/door journey — for iterating on floor rendering.
-		if (tt_programmer != NULL &&
-		    EM_ASM_INT({ return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; })) {
+		if (tt_programmer != NULL) {
 			printf("[tt] dev: ?floor=1 — entering the bootstrap house floor directly\n"); fflush(stdout);
 			tt_programmer->em_enter_bootstrap_house();
 		};

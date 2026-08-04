@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmpi2mhw6ox.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpwozxr6yb.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmpi2mhw6ox.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpb1tww4fv.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpwozxr6yb.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpgk3ful4h.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpb1tww4fv.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpgk3ful4h.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -924,11 +924,6 @@ function ttIsPuzzle() {
   var m = /-next_puzzle\s+(\d+)/.exec(c);
   return !!(m && Number(m[1]) > 0);
 }
-// Titles are skippable only for a plain free-play boot — see the DelayBetweenTitles note below.
-function ttSkipTitles() {
-  var isDemo = globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0;
-  return !isDemo && !ttIsPuzzle();
-}
 
 Module['preRun'] = Module['preRun'] || [];
 Module['preRun'].push(function () {
@@ -949,16 +944,12 @@ Module['preRun'].push(function () {
     // kiosk that should exit, so turn the option off — it is the engine's own switch, read at
     // log.cpp:1918.
     'ExitWhenDemoEnds=0',
-    // Skip title-screen dwell for a plain free-play boot, where the titles are only a delay
-    // between the user and the city. NOT for a .dmo replay (the recorded titles must read at the
-    // intended speed), and NOT for the mission game, where the titles are not a formality at all:
-    // Programmer_Titles_Flying::react cycles the four back-story screens through them (Zizzle
-    // Island sinking, Marty rescuing, the crash, you parachuting down), and its
-    // initial_programmer_status() is what returns PUZZLE_START -- the status whose handler
-    // (prgrmmr.cpp:1210) puts the player ON THE GROUND at the rocket's exit point instead of in a
-    // helicopter. Setting the delay to zero here skipped the story AND the ground start, which is
-    // why missions began with a helicopter flight (Ken, with photographs of the original).
-    (ttSkipTitles() ? 'DelayBetweenTitles=0' : ''),
+    // DelayBetweenTitles is deliberately NOT set. The engine's own default gives the titles their
+    // dwell, and they are not a formality in either mode: for free play they are the opening
+    // ToonTalk shows before the city, and for a mission they additionally carry the four
+    // back-story screens (Zizzle Island sinking, Marty rescuing everyone, the crash, you
+    // parachuting down) and end in PUZZLE_START, which puts the player on the ground by the
+    // rocket. Forcing zero here used to skip all of that.
     // A browser is an absolute pointing device: use ToonTalk's native absolute-mouse mode
     // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
     // which the web can only fake with Pointer Lock — and without the lock the cursor offset
@@ -1120,13 +1111,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp92wbs8lp.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpizms8eai.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp92wbs8lp.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpizms8eai.js
 
 
 var programArgs = [];
