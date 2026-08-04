@@ -1424,27 +1424,23 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 		}
 #endif
 #ifdef __EMSCRIPTEN__
-		// The offsets are in IDEAL 640x480 units (ideal_horizontal_units at load), but x_scale/
-		// y_scale already include the grow-to-screen factor (scale_to_fit applies
-		// grow_width_to_640x480_screen_size). Using the grown scale here applies the 800/600
-		// growth TWICE to the compensation while the art's ink shift only gets it once — every
-		// image change overshot by screen/640, a rotor-locked vibration (Ken: "the helicopter
-		// vibrated as descending"). Compensate with the ungrown scale so the llx adjustment
-		// exactly cancels the art registration difference at any camera zoom.
-		// 64-bit throughout: at high camera scale the scaled offsets reach millions, and
-		// offset*y_scale*480 overflowed 32 bits inside shrink_height — the compensation came
-		// back with the WRONG SIGN, so each rotor-frame swap ratcheted the copter upward
-		// (Ken 2026-07-22: climbed to the limit, then the helicopter drifted off the top
-		// and the view ended up out over the water).
+		// The ORIGINAL's arithmetic, in 64-bit. x_scale carries the 640->800 grow, and so does
+		// the draw: art ink lands at (cs/gs)*grow, offsets were pre-scaled by cs/gs above, so
+		// multiplying by x_scale/256 here matches the ink shift exactly -- the original's own
+		// consistency (true_*_offset and follower placement are built on the same product).
+		//
+		// History, so this does not regress by re-fix: the helicopter once ratcheted upward on
+		// every rotor-frame swap. The cause was 32-bit overflow -- at high camera scale
+		// offset*y_scale reaches millions and the compensation came back with the WRONG SIGN
+		// (Ken 2026-07-22: climbed to the limit and drifted off the top). The int64 below is the
+		// fix. An earlier attempt ALSO divided the grow back out of the compensation, blaming a
+		// double-count that re-derivation shows never existed; that division made every
+		// registration land a quarter short of the original -- the rocket door sat beside its
+		// ring (Ken, with photographs), the hull ~15px low, and the residual wand/heli shimmer
+		// (task 17) is the 0.25 under-compensation per frame swap. Removed.
 		{
 			int64 dx64 = (int64)(x_offset-old_x_offset)*x_scale;
 			int64 dy64 = (int64)(y_offset-old_y_offset)*y_scale;
-			if (tt_screen_width > tt_graphics_video_mode_width) {
-				dx64 = (dx64*tt_graphics_video_mode_width)/tt_screen_width;
-			};
-			if (tt_screen_height > tt_graphics_video_mode_height) {
-				dy64 = (dy64*tt_graphics_video_mode_height)/tt_screen_height;
-			};
 			delta_x += (city_coordinate)(dx64/256);
 			delta_y += (city_coordinate)(dy64/256);
 		}

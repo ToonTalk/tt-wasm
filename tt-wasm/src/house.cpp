@@ -600,26 +600,6 @@ void House::create_door() {
 //	door_appearance->set_priority_function_of_lly(FALSE);
    door_appearance->set_priority_fixed(TRUE);
    door_appearance->update_display(); // otherwise takes a frame for its big offsets to be noticed
-#ifdef __EMSCRIPTEN__
-   /* The ORIGINAL applies a sprite's registration at x_scale/256 -- which at 800x600 includes the
-    * 640->800 grow, i.e. offsets land at 1.25x. This build's update path divides the grow back
-    * out (the helicopter-vibration compensation in Sprite::update_display), so the update_display
-    * above moved the door by its (-262,-90) registration at 1.0x -- one QUARTER short, which is
-    * the (65,22)px that left the wedge beside the hull's ring (Ken, with photographs of the
-    * retail build; the ring's own pixels in rockbrok.bmp sit exactly at the 1.25x arithmetic's
-    * rectangle). Restore the missing grow fraction: true_*_offset() returns the registration AT
-    * x_scale (the original's full amount), so the shortfall is true - true*640/800. */
-   if (door_style == BROKEN_ROCKET_DOOR_SPRITE) {
-      city_coordinate tx = door_appearance->true_x_offset();
-      city_coordinate ty = door_appearance->true_y_offset();
-      city_coordinate short_x = 0, short_y = 0;
-      if (tt_screen_width > tt_graphics_video_mode_width)
-         short_x = tx-(tx*tt_graphics_video_mode_width)/tt_screen_width;
-      if (tt_screen_height > tt_graphics_video_mode_height)
-         short_y = ty-(ty*tt_graphics_video_mode_height)/tt_screen_height;
-      if (short_x != 0 || short_y != 0) door_appearance->move_by(short_x,short_y);
-   };
-#endif
    // how should this work?  should sprite::sprite be changed??
 	if (appearance_from_side != NULL) { // might be a truck leaving a newly built house ...
 		door_appearance->set_priority(appearance_from_side->priority()-1);
