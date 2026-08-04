@@ -201,7 +201,18 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   globalThis.TT_keys = {};
   // vk -> the character code the engine expects (constant.h: BACKSPACE=8 TAB=9 RETURN=13 ESCAPE=27)
   var TT_charKeys = { 8: 8, 9: 9, 13: 13, 27: 27 };
+  // Typing into a page form field (the opening screen's name box) is not game input: without this
+  // the game swallowed every keystroke typed there, and preventDefault below made Backspace (and
+  // Space, and the arrows) dead in the field -- Ken: "backspace didn't work when entering my user
+  // name". The browser's own editing behaviour is exactly what is wanted in that case.
+  var editableTarget = function (e) {
+    var t = e.target;
+    if (!t) return false;
+    var tag = (t.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || t.isContentEditable === true;
+  };
   window.addEventListener('keydown', function (e) {
+    if (editableTarget(e)) return;
     resumeAudio();
     globalThis.TT_keys[e.keyCode] = 1;
     if (!e.repeat) post(0x0100, e.keyCode, 0);
@@ -223,7 +234,10 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         e.keyCode === 8 || e.keyCode === 9 ||
         (e.keyCode >= 112 && e.keyCode <= 123)) e.preventDefault();
   });
-  window.addEventListener('keyup', function (e) { delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0); });
+  window.addEventListener('keyup', function (e) {
+    if (editableTarget(e)) return;
+    delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0);
+  });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
 })();
 

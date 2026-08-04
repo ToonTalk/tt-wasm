@@ -1073,6 +1073,18 @@ void House::open_door() {
 			door_changed_time
 				// let the programmer go thru 1/4 second early
 			  = tt_current_time+door_appearance->total_cycle_duration()-250;
+#ifdef __EMSCRIPTEN__
+			/* The rocket door "briefly shows then closes" (Ken). The open/close animation is a
+			 * timed image cycle: a total_cycle_duration() of ~0 would make it pop rather than
+			 * slide, and bad frame offsets would draw it displaced. Say what the cycle claims. */
+			{ static int p = 0;
+			  if (p < 6) { p++;
+			    city_coordinate dllx, dlly; door_appearance->lower_left_corner(dllx,dlly);
+			    printf("[tt] doorcycle: OPENING code=%d cycle_ms=%ld door_ll=(%ld,%ld)\n",
+			           (int)door_appearance->appearance_code(),
+			           (long)door_appearance->total_cycle_duration(),(long)dllx,(long)dlly);
+			    fflush(stdout); } }
+#endif
 			break;
 		case DOOR_CLOSING:
 			door_status = DOOR_OPEN;
