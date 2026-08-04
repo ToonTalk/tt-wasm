@@ -729,12 +729,13 @@ Module['preRun'].push(function () {
     // kiosk that should exit, so turn the option off — it is the engine's own switch, read at
     // log.cpp:1918.
     'ExitWhenDemoEnds=0',
-    // DelayBetweenTitles is deliberately NOT set. The engine's own default gives the titles their
-    // dwell, and they are not a formality in either mode: for free play they are the opening
-    // ToonTalk shows before the city, and for a mission they additionally carry the four
-    // back-story screens (Zizzle Island sinking, Marty rescuing everyone, the crash, you
-    // parachuting down) and end in PUZZLE_START, which puts the player on the ground by the
-    // rocket. Forcing zero here used to skip all of that.
+    // The titles run in both modes (for a mission they also carry the four back-story screens),
+    // but at the browser's pace, not the CD-ROM's: the engine's five seconds per screen -- and
+    // the TEN it sets itself for the mission story -- are a long sit in a tab (Ken: "10 seconds
+    // is too long - 3 seconds is ok"). A click still moves on immediately. The puzzle
+    // constructor's own 10-second override yields to this value in the wasm build
+    // (Programmer_Titles_Flying::Programmer_Titles_Flying).
+    'DelayBetweenTitles=3',
     // A browser is an absolute pointing device: use ToonTalk's native absolute-mouse mode
     // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
     // which the web can only fake with Pointer Lock — and without the lock the cursor offset

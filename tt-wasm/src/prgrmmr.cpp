@@ -3611,8 +3611,16 @@ Programmer_Titles_Flying::Programmer_Titles_Flying() :
 	background->set_text(C(IDS_TOONTALK_VERSION_NUMBER));
    background->set_text2(S(IDS_WELCOME_MESSAGE));
 	if (tt_system_mode == PUZZLE) {
+#ifdef __EMSCRIPTEN__
+		/* The original's ten seconds per screen is a long wait in a browser tab, where a click
+		 * moves on and the reader is not sitting through a CD-ROM boot (Ken: "10 seconds is too
+		 * long - 3 seconds is ok"). Take the page's setting instead, which pre.js writes as
+		 * DelayBetweenTitles; the retail value is kept below for any build that is not this one. */
+		if (tt_delay_between_titles <= 0) tt_delay_between_titles = 10;
+#else
 		tt_delay_between_titles = 10; // to read the story - was old default but re-organized on 170903
-	} else if ((tt_log_out_file_name != NULL && !replaying()) || (tt_log_count_max != 0 && !time_travel_enabled())) { 
+#endif
+	} else if ((tt_log_out_file_name != NULL && !replaying()) || (tt_log_count_max != 0 && !time_travel_enabled())) {
 		// updated on 170903 (added roughly 070903 when condition was replaying())
 //		next_title_if_after = timeGetTime()+500; // half a second so it doesn't flash too quickly
 		// removed !tt_log_out_file_name_generated && on 170204
@@ -3849,11 +3857,18 @@ ProgrammerStatus Programmer_Titles_Flying::react(boolean ,
 																 millisecond ,
 																 boolean ) {
 #ifdef __EMSCRIPTEN__
-	{ static int t_log = 0;
-	  if (t_log < 10) { t_log++;
-	    printf("[tt] titlesreact: f=%ld displayed=%d key=%d buttons=%d bg=%d\n",
-	           (long)tt_frame_number,(int)displayed,(int)key,(int)button_status,
-	           background ? (int)background->return_background_index() : -1);
+	/* Log on background CHANGE, not on the first N frames -- react() runs every frame, so a
+	 * frame-count cap burned out on frame 10 and the earlier "verification" never actually saw
+	 * which screens displayed. This names each screen as it appears, story pages included. */
+	{ static int last_bg = -2;
+	  extern short int puzzle_counter;   // puzzle.cpp:113 -- not in puzzle.h
+	  int bg_now = background ? (int)background->return_background_index() : -1;
+	  if (bg_now != last_bg) { last_bg = bg_now;
+	    printf("[tt] titlesbg: f=%ld bg=%d (sink=%d crash=%d hurt=%d rescue=%d) counter=%d first=%d\n",
+	           (long)tt_frame_number, bg_now,
+	           (int)PUZZLE_SINKING_BACKGROUND,(int)PUZZLE_CRASH_BACKGROUND,
+	           (int)PUZZLE_HURT_BACKGROUND,(int)PUZZLE_RESCUE_BACKGROUND,
+	           (int)puzzle_counter,(int)starting_with_first_tutorial_puzzle());
 	    fflush(stdout); } }
 #endif
 	if (!displayed) {
