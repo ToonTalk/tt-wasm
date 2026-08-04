@@ -26,9 +26,13 @@
   /* the canvas is focusable (tabIndex for keys) — suppress the white UA focus ring */
   #ttcanvas:focus { outline: none; }
   #ttcanvas:focus-visible { outline: none; }
+  /* fsbox is a transparent wrapper so overlays can render in fullscreen (a fullscreened CANVAS
+     cannot contain HTML). Windowed it imposes nothing on layout. */
+  #fsbox { display: flex; }
   /* fullscreen: fill the screen, keep 4:3 (letterboxed); pre.js maps the mouse to the
      content rect, so the black bars are dead space rather than misaimed clicks */
-  #ttcanvas:fullscreen {
+  #fsbox:fullscreen { background: #000; align-items: center; justify-content: center; }
+  #fsbox:fullscreen #ttcanvas {
     width: 100vw; height: 100vh; aspect-ratio: auto;
     object-fit: contain; border: none; border-radius: 0; background: #000;
   }
@@ -205,7 +209,11 @@
 </div>
 
 <div id="stage">
-  <canvas id="ttcanvas" width="800" height="600"></canvas>
+  <!-- fsbox exists so FULLSCREEN has an element that can contain HTML: only descendants of the
+       fullscreened element render, and a fullscreened <canvas> can have none — which made the
+       demo-pause chooser invisible in fullscreen (Ken: Esc twice showed only a black screen and
+       take-control was unreachable). Fullscreen goes on this wrapper; overlays append into it. -->
+  <div id="fsbox"><canvas id="ttcanvas" width="800" height="600"></canvas></div>
   <div id="help">
     <b>Welcome to ToonTalk.</b> <b>Click where you want to fly</b> — the helicopter glides there.
     <b>Hold the left mouse button</b> (or <kbd>D</kbd>) to fly down — keep holding to touch down
@@ -277,7 +285,7 @@
       p.then(function () { ttNote('pointer lock OK'); }).catch(function (err) {
         ttNote('pointer lock REJECTED: ' + err.name + (retried ? ' (retry failed)' : ' — retrying in 1.6s'));
         if (!retried) setTimeout(function () {
-          if (document.fullscreenElement === c && document.pointerLockElement !== c) ttRequestLock(c, true);
+          if (document.fullscreenElement && document.pointerLockElement !== c) ttRequestLock(c, true);
         }, 1600);
       });
     }
@@ -325,14 +333,15 @@
   }
   document.getElementById('fsbtn').addEventListener('click', function () {
     var c = document.getElementById('ttcanvas');
+    var box = document.getElementById('fsbox');   // fullscreen the WRAPPER: overlays must render
     if (document.fullscreenElement) { ttNote('fsbtn: exiting'); document.exitFullscreen(); }
-    else if (c.requestFullscreen) {
+    else if (box.requestFullscreen) {
       // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
       // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
       // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
       // (press-AND-HOLD Esc remains the browser's own exit).
       ttNote('fsbtn: entering');
-      c.requestFullscreen().then(function () {
+      box.requestFullscreen().then(function () {
         ttRequestLock(c, false);
         if (navigator.keyboard && navigator.keyboard.lock) {
           navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
