@@ -21,8 +21,12 @@ ROOT    = r"C:\Users\toont\dev\tt-wasm\assets"
 PICS    = os.path.join(ROOT, "pics")
 TT      = os.path.join(ROOT, "toontalk")
 
-try:    NONE = Image.Dither.NONE
-except AttributeError: NONE = Image.NONE
+try:
+    NONE = Image.Dither.NONE
+    FS = Image.Dither.FLOYDSTEINBERG
+except AttributeError:
+    NONE = Image.NONE
+    FS = Image.FLOYDSTEINBERG
 
 def m25_palette():
     d = open(M25US1, "rb").read()
@@ -73,6 +77,31 @@ def fix_pad_template(name, im):
                 px[x, y] = (v, v, v)
     return im
 
+def quantize_dithered(im_rgb, pal):
+    """Quantize WITH Floyd-Steinberg, as the original's art pipeline did (load_sprite's debug
+    trail shows the frames went through Alchemy, which dithers on 24->8). The first bake used
+    dither=NONE, and nearest-colour collapsed the story screens' dark textured lots into hard
+    near-black triangles (Ken, with an A/B against the retail build).
+
+    Dithering needs the TRANSPARENCY KEY protected both ways, though. The engine masks palette
+    index 0 only, and the M25 palette holds twenty (0,0,0) entries:
+      - a source pixel that IS exact black (the java exports' key) must land on index 0, or the
+        mask misses it and sprites grow opaque black fringes;
+      - a source pixel that is NOT the key must never land on index 0 -- error diffusion happily
+        drops dark interior pixels there, which would punch see-through holes in dark art.
+    Both fixed with mask ops (no numpy here): exact-black source -> index 0; index-0 output that
+    was not exact black -> entry 25, the palette's darkest opaque colour (8,8,24)."""
+    from PIL import ImageChops
+    q = im_rgb.quantize(palette=pal, dither=FS)
+    r, g, b = im_rgb.split()
+    to_mask = lambda ch: ch.point(lambda v: 255 if v == 0 else 0)
+    src_black = ImageChops.multiply(ImageChops.multiply(to_mask(r), to_mask(g)), to_mask(b))
+    q_zero = q.point(lambda i: 255 if i == 0 else 0).convert("L")
+    stray = ImageChops.multiply(q_zero, ImageChops.invert(src_black))
+    q.paste(25, mask=stray)          # non-key pixels may not be transparent
+    q.paste(0, mask=src_black)       # the key is always index 0
+    return q
+
 def pad4(im):
     # DWORD-align the WIDTH by replicating the right edge. The engine composites loose BMPs with
     # an UNPADDED source pitch in places (TTImage::display_on head-onto-body); retail art was
@@ -98,10 +127,17 @@ def main():
     for f in glob.glob(os.path.join(PICS, "*.tts")): os.remove(f)  # use the DAT's descriptors
 
     native = upscaled = quantized = missing = 0
+    # The story screens ship in the us1 as JPEG (compression=1): retail decoded the 24-bit art at
+    # runtime and dithered it to the palette. The dev/M25 8-bit BMPs of these are an inferior
+    # sibling bake -- flat near-black where the retail screen shows textured dark green (Ken's
+    # A/B photographs of the sinking-island lots). For these, the java PNG (same 24-bit renders)
+    # dithered to the M25 palette is the faithful source, so skip the native copies.
+    PREFER_JAVA = {"sinking", "crash", "hurt", "rescue"}
     # 1. native dev/M25 (true 8-bit) — highest quality
     have = {}
     for bmp in glob.glob(os.path.join(DEVM25, "*.BMP")):
         name = os.path.basename(bmp)[:-4].lower()
+        if name in PREFER_JAVA: continue
         im = Image.open(bmp)
         if im.width % 4:
             pad4(im).save(os.path.join(PICS, name + ".bmp"), "BMP")
@@ -113,7 +149,7 @@ def main():
         name = os.path.basename(png)[:-4].lower()
         if name in have: continue
         try:
-            im = fix_pad_template(name, Image.open(png).convert("RGB")).quantize(palette=pal, dither=NONE)
+            im = quantize_dithered(fix_pad_template(name, Image.open(png).convert("RGB")), pal)
             pad4(im).save(os.path.join(PICS, name + ".bmp"), "BMP"); have[name] = 1; quantized += 1
         except Exception as e:
             print("  png fail", name, e)
