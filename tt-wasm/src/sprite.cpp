@@ -5859,6 +5859,18 @@ boolean TTImage::display(long &width, long &height,
 			       (long)tt_frame_number); fflush(stdout);
 		}
 	}
+	/* The SHIP itself, same fields: the door draws exactly at its engine-computed ll, so if it
+	 * still misses the hull's doorway oval, it is the ship that is not where create_door's
+	 * ship_ll + (-4500,-4400) arithmetic believes. One draw is enough; it is on screen at start. */
+	if (code == BROKEN_ROCKET_SPRITE) {
+		static int rs_log = 0;
+		if (rs_log < 8) { rs_log++;
+			printf("[tt] shipdraw: img=%d mark=(%ld,%ld) drawn=(%ld,%ld) art_px=(%d,%d) xoff=%ld yoff=%ld f=%ld\n",
+			       (int)return_resource_index(), (long)tt_memory_graphics_mark_x, (long)tt_memory_graphics_mark_y,
+			       (long)width, (long)height, (int)pixel_width, (int)pixel_height,
+			       (long)x_offset, (long)y_offset, (long)tt_frame_number); fflush(stdout);
+		}
+	}
 #endif
 	boolean stretching_needed = (width != pixel_width || height != pixel_height);
 	boolean image_surface_provided_by_caller = (image_surface != NULL);
