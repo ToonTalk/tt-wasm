@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmplwx2m0jd.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpe_21blc0.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmplwx2m0jd.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpp93igxut.js
+// end include: C:\Users\toont\AppData\Local\Temp\tmpe_21blc0.js
+// include: C:\Users\toont\AppData\Local\Temp\tmp7isahyj2.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpp93igxut.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmp7isahyj2.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1126,13 +1126,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmpo0zgmq29.js
+// include: C:\Users\toont\AppData\Local\Temp\tmpq_8q8i99.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmpo0zgmq29.js
+  // end include: C:\Users\toont\AppData\Local\Temp\tmpq_8q8i99.js
 
 
 var programArgs = [];
@@ -10212,7 +10212,8 @@ function tt_ds_ghost_level() { var DS = Module.TT_ds; if (!DS || !DS.probe || !D
 function tt_ds_last_rescued() { var DS = Module.TT_ds; if (!DS || !DS.rescued || !DS.rescued.length) return -1; return DS.rescued[DS.rescued.length - 1]; }
 function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); DS.vols[id] = gain; if (DS.gains[id]) DS.gains[id].gain.value = gain; }
 function tt_ds_free(id) { var DS = Module.TT_ds; if (!DS) return; if (DS.srcs[id]) { var sf = DS.srcs[id]; try { sf.onended = null; } catch (e) {} try { sf.stop(); } catch (e) {} try { sf.disconnect(); } catch (e) {} delete DS.srcs[id]; } if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; } delete DS.vols[id]; }
-function tt_text_raster(text,len,cell_h,cell_w,out,out_w,out_h) { try { if (len <= 0 || out_w <= 0 || out_h <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); } if (g.cv.width < out_w || g.cv.height < out_h) { g.cv.width = Math.max(g.cv.width, out_w); g.cv.height = Math.max(g.cv.height, out_h); } var cx = g.cx; var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif'; var px = cell_h; cx.font = 'bold ' + px + 'px ' + fam; var m = cx.measureText(s); var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent; if (!(asc > 0)) asc = px * 0.75; if (!(desc >= 0)) desc = px * 0.25; if (asc + desc > cell_h && asc + desc > 0) { px = Math.max(1, Math.floor(px * cell_h / (asc + desc))); cx.font = 'bold ' + px + 'px ' + fam; m = cx.measureText(s); asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75; desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25; } var natural = m.width; if (!(natural > 0)) return 0; var sx = (cell_w > 0) ? (cell_w * len) / natural : 1; var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight; if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = natural; } var boxW = cell_w * len; var originX = boxW / (2 * sx) - (inkR - inkL) / 2; var base = cell_h / 2 + (asc - desc) / 2; if (base - asc < 0) base = asc; if (base + desc > cell_h) base = cell_h - desc; cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, out_w, out_h); cx.fillStyle = '#fff'; cx.textBaseline = 'alphabetic'; cx.setTransform(sx, 0, 0, 1, 0, 0); cx.fillText(s, originX, base); cx.setTransform(1, 0, 0, 1, 0, 0); var img = cx.getImageData(0, 0, out_w, out_h).data; for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3]; return 1; } catch (e) { return 0; } }
+function tt_text_hwidth(text,len,cell_h,cell_w) { try { if (len <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } var cx = g.cx, px = cell_h; var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif'; cx.font = 'bold ' + px + 'px ' + fam; var natural = cx.measureText(s).width; var sx = 1; if (cell_w > 0) { var a = g.avg[px]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[px] = a; } sx = cell_w / a; } return Math.ceil(natural * sx); } catch (e) { return len * (cell_w > 0 ? cell_w : cell_h); } }
+function tt_text_raster(text,len,cell_h,cell_w,out,out_w,out_h) { try { if (len <= 0 || out_w <= 0 || out_h <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } if (g.cv.width < out_w || g.cv.height < out_h) { g.cv.width = Math.max(g.cv.width, out_w); g.cv.height = Math.max(g.cv.height, out_h); } var cx = g.cx; var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif'; var px = cell_h; cx.font = 'bold ' + px + 'px ' + fam; var m = cx.measureText(s); var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent; if (!(asc > 0)) asc = px * 0.75; if (!(desc >= 0)) desc = px * 0.25; if (asc + desc > cell_h && asc + desc > 0) { px = Math.max(1, Math.floor(px * cell_h / (asc + desc))); cx.font = 'bold ' + px + 'px ' + fam; m = cx.measureText(s); asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75; desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25; } if (!(m.width > 0)) return 0; var sx = 1; if (cell_w > 0) { var a = g.avg[px]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[px] = a; } sx = cell_w / a; } var base = cell_h / 2 + (asc - desc) / 2; if (base - asc < 0) base = asc; if (base + desc > cell_h) base = cell_h - desc; var originX = 0; if (len === 1 && cell_w > 0) { var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight; if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = m.width; } originX = cell_w / (2 * sx) - (inkR - inkL) / 2; } cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, out_w, out_h); cx.fillStyle = '#fff'; cx.textBaseline = 'alphabetic'; cx.setTransform(sx, 0, 0, 1, 0, 0); cx.fillText(s, originX, base); cx.setTransform(1, 0, 0, 1, 0, 0); var img = cx.getImageData(0, 0, out_w, out_h).data; for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3]; return 1; } catch (e) { return 0; } }
 function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; for (var i = 0; i < vs.length; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; u.pitch = 1.3; u.rate = 1.0; u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
 
 // Imports from the Wasm binary.
@@ -10849,6 +10850,8 @@ var wasmImports = {
   tt_ds_stop_looping,
   /** @export */
   tt_ds_volume,
+  /** @export */
+  tt_text_hwidth,
   /** @export */
   tt_text_raster,
   /** @export */

@@ -243,10 +243,45 @@ static FontPick pick_font(GdiDC *dc) {
  * clipped. So ask the browser to draw the run with a real typeface at the exact requested size,
  * and blend the coverage it returns into the palette.
  *
- * GDI's lfWidth semantics are reproduced: a non-zero average character width stretches the face
- * horizontally, so the run occupies exactly len*cw — the same total the extent functions report,
- * which keeps the engine's fit-to-pad arithmetic (correct_font_size, place_text) consistent while
- * the glyphs themselves become proportional and correctly shaped. */
+ * GDI's lfWidth semantics: a non-zero average character width means the face is scaled so its
+ * AVERAGE character comes out that wide -- per-character widths stay proportional. The first
+ * version instead stretched every RUN to exactly len*cw, and the extent functions reported the
+ * same len*cw without looking at the string. Self-consistent, but every string measured as if
+ * monospaced: lowercase-heavy text reported far wider than it renders, the engine broke lines
+ * early, and the mission story needed four lines where the original needs three -- the last one
+ * fell off the screen (Ken: "One of them has the text truncated"). Both sides now use the same
+ * honest rule: width(s) = measureText(s) * (cw / natural average character width). */
+/* The GDI-faithful pixel width of a run: measureText * the lfWidth scale. */
+EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int cell_w), {
+  try {
+    if (len <= 0) return 0;
+    var s = '';
+    for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]);
+    var g = Module.TT_txt;
+    if (!g) {
+      g = Module.TT_txt = {};
+      g.cv = document.createElement('canvas');
+      g.cx = g.cv.getContext('2d', { willReadFrequently: true });
+      g.avg = {};
+    }
+    var cx = g.cx, px = cell_h;
+    var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
+    cx.font = 'bold ' + px + 'px ' + fam;
+    var natural = cx.measureText(s).width;
+    var sx = 1;
+    if (cell_w > 0) {
+      var a = g.avg[px];
+      if (!a) {
+        a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52;
+        if (!(a > 0)) a = px * 0.55;
+        g.avg[px] = a;
+      }
+      sx = cell_w / a;
+    }
+    return Math.ceil(natural * sx);
+  } catch (e) { return len * (cell_w > 0 ? cell_w : cell_h); }
+});
+
 EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int cell_w,
                             unsigned char *out, int out_w, int out_h), {
   try {
@@ -258,6 +293,7 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
       g = Module.TT_txt = {};
       g.cv = document.createElement('canvas');
       g.cx = g.cv.getContext('2d', { willReadFrequently: true });
+      g.avg = {};
     }
     if (g.cv.width < out_w || g.cv.height < out_h) {
       g.cv.width = Math.max(g.cv.width, out_w);
@@ -265,12 +301,6 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
     }
     var cx = g.cx;
     var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
-    /* Sit the run on the BASELINE the engine was told about. GetTextMetricsA reports
-     * tmAscent = cell_h*4/5, and the engine places text from the top of the cell assuming the
-     * glyphs rest on that baseline. This used to draw with the ink flush to the top of the cell
-     * instead (fillText at `asc`), so every digit rode high in its pad with the slack left
-     * underneath -- reporting one set of metrics while drawing to another. Shrink only when the
-     * ink will not fit around that baseline, which is what keeps descenders inside the cell. */
     var px = cell_h;
     cx.font = 'bold ' + px + 'px ' + fam;
     var m = cx.measureText(s);
@@ -284,28 +314,33 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
       asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75;
       desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25;
     }
-    var natural = m.width;
-    if (!(natural > 0)) return 0;
-    var sx = (cell_w > 0) ? (cell_w * len) / natural : 1;   /* GDI lfWidth stretch */
-    /* CENTRE THE INK in the cell the engine allotted, rather than hanging it off the alphabetic
-     * baseline at a fixed fraction of the cell. A number pad is drawn around exactly this cell, so
-     * whatever slack the glyph leaves shows up as lopsided margins: measured on three pads, every
-     * digit sat 4-6px left and 2-5px high (a '2' with 13px of plate to its left and 25px to its
-     * right). The advance box carries the glyph's side bearings and the area below the baseline
-     * carries the descent, and for a single digit neither is symmetric -- so place the INK, which
-     * is what is actually seen. Bearings come from measureText's bounding box, so this follows the
-     * real typeface rather than an assumed ratio. */
-    /* actualBoundingBoxLeft is measured POSITIVE TO THE LEFT of the origin, so for a run that
-     * starts at the origin and reads rightwards it is NEGATIVE. Rejecting negatives here (an
-     * earlier `inkL >= 0` guard) quietly fell back to "no correction" and the horizontal centring
-     * did nothing at all -- the digits stayed 3-4px left. Only reject values that are not numbers. */
-    var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight;
-    if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = natural; }   /* older engines */
-    var boxW = cell_w * len;
-    var originX = boxW / (2 * sx) - (inkR - inkL) / 2;    /* ink centred horizontally */
-    var base = cell_h / 2 + (asc - desc) / 2;             /* ink centred vertically */
-    if (base - asc < 0) base = asc;                       /* never clip the top */
-    if (base + desc > cell_h) base = cell_h - desc;       /* nor the bottom */
+    if (!(m.width > 0)) return 0;
+    /* lfWidth as GDI means it: scale so the AVERAGE character is cell_w wide. The same factor the
+     * extent functions report, so drawn width == measured width for every string. */
+    var sx = 1;
+    if (cell_w > 0) {
+      var a = g.avg[px];
+      if (!a) {
+        a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52;
+        if (!(a > 0)) a = px * 0.55;
+        g.avg[px] = a;
+      }
+      sx = cell_w / a;
+    }
+    /* Vertical: ink centred in the cell (measured on the pads and approved). Horizontal: runs
+     * draw at the origin as GDI does -- line breaking is the engine's job and extents are honest
+     * now -- but a SINGLE character keeps the ink-centring in its cw cell: the number display
+     * lays digits on its own fixed cell grid (number.cpp places each digit at i*character_width),
+     * and drawing a lone digit at the origin of that cell put it back 10px left of centre. */
+    var base = cell_h / 2 + (asc - desc) / 2;
+    if (base - asc < 0) base = asc;
+    if (base + desc > cell_h) base = cell_h - desc;
+    var originX = 0;
+    if (len === 1 && cell_w > 0) {
+      var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight;
+      if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = m.width; }
+      originX = cell_w / (2 * sx) - (inkR - inkL) / 2;   /* ink centred in the digit cell */
+    }
     cx.setTransform(1, 0, 0, 1, 0, 0);
     cx.clearRect(0, 0, out_w, out_h);
     cx.fillStyle = '#fff';
@@ -347,8 +382,12 @@ static void blend_put(GdiDC *dc, int x, int y, int ir, int ig, int ib, int a) {
 /* Returns false if the browser could not draw it, so the caller falls back to the bitmap font. */
 static bool draw_text_run(GdiDC *dc, int x, int y, const unsigned short *u16, int len, const FontPick &p) {
     if (len <= 0) return true;
-    int w = p.cw * len, h = p.ch;
-    if (w <= 0 || h <= 0 || w > 4096 || h > 1024) return false;
+    /* the buffer must fit the HONEST width -- the same number the extent functions report --
+     * and for a lone digit the whole cw cell, since the glyph is centred within it */
+    int w = tt_text_hwidth(u16, len, p.ch, p.cw) + 2, h = p.ch;
+    if (len == 1 && p.cw + 2 > w) w = p.cw + 2;
+    if (w <= 2) return true;                    /* nothing to draw (spaces measure fine) */
+    if (h <= 0 || w > 4096 || h > 1024) return false;
     unsigned char *cov = txt_buf(w * h);
     if (!cov) return false;
     if (!tt_text_raster(u16, len, p.ch, p.cw, cov, w, h)) return false;
@@ -451,14 +490,37 @@ LONG TabbedTextOutA(HDC hdc, int x, int y, LPCSTR str, int len, int, const INT *
 LONG TabbedTextOutW(HDC hdc, int x, int y, const wchar_t *str, int len, int, const INT *, int) {
     TextOutW(hdc, x, y, str, len); return 0;
 }
-BOOL GetTextExtentPoint32A(HDC hdc, LPCSTR, int len, LPSIZE sz) {
+/* Extents MEASURE THE STRING now. The old len*cw answer treated every font as monospace, so
+ * lowercase-heavy text reported far wider than it renders; the engine broke lines early and the
+ * mission story lost its last line off the bottom of the screen. */
+BOOL GetTextExtentPoint32A(HDC hdc, LPCSTR str, int len, LPSIZE sz) {
     FontPick p = pick_font((GdiDC *)hdc);
-    if (sz) { sz->cx = len * p.cw; sz->cy = p.ch; }
+    if (!sz) return 1;
+    sz->cx = len * p.cw; sz->cy = p.ch;          /* fallback if there is nothing to measure */
+    if (str && len > 0 && len <= 4096) {
+        unsigned short stack[256];
+        unsigned short *u = (len <= 256) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
+        if (u) {
+            for (int i = 0; i < len; i++) u[i] = (unsigned char)str[i];
+            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw);
+            if (u != stack) free(u);
+        }
+    }
     return 1;
 }
-BOOL GetTextExtentPoint32W(HDC hdc, const wchar_t *, int len, LPSIZE sz) {
+BOOL GetTextExtentPoint32W(HDC hdc, const wchar_t *str, int len, LPSIZE sz) {
     FontPick p = pick_font((GdiDC *)hdc);
-    if (sz) { sz->cx = len * p.cw; sz->cy = p.ch; }
+    if (!sz) return 1;
+    sz->cx = len * p.cw; sz->cy = p.ch;
+    if (str && len > 0 && len <= 4096) {
+        unsigned short stack[256];
+        unsigned short *u = (len <= 256) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
+        if (u) {
+            for (int i = 0; i < len; i++) u[i] = (unsigned short)str[i];
+            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw);
+            if (u != stack) free(u);
+        }
+    }
     return 1;
 }
 UINT SetTextAlign(HDC, UINT) { return 0; }
