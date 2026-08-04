@@ -855,6 +855,29 @@ void stop_speaking() {
 
 BOOL initialize_text_to_speech() {
   if (tt_sound_option == 0) return(FALSE); // no point trying since sound has been turned off
+#ifdef __EMSCRIPTEN__
+  /* The browser IS the speech engine, and none of the SAPI setup below applies to it: speak()
+   * hands the text to speechSynthesis long before any of this is consulted.
+   *
+   * Reporting failure here is not harmless, which is what made Marty mute in the mission game.
+   * The very first thing this function does is ask the ini for a SAPI voice for the current
+   * language, and the port's synthesised ini has no [User] TextToSpeechMode entry -- so it took
+   * the "there is no speaker for this language" branch and set tt_marty_talk to
+   * MARTY_TALK_BALLOONS. That is upstream of everything: text_to_speech() then returns false and
+   * speak_next_sentence() gives up on its first line, so Marty never reaches speak() at all.
+   * Ken's probe caught it exactly: "speaknext: tts=0 mode=0" after startup had reported mode=2.
+   *
+   * It is called from the titles (prgrmmr.cpp:3855, "this can take a couple seconds so do it
+   * while titles are displayed"), which is why the mission game was hit -- the free play Ken had
+   * confirmed working simply had not reached it yet. Same latent bug, different timing.
+   *
+   * Succeed without touching tt_marty_talk, leaving the mode the user or the command line chose. */
+  { static int p = 0;
+    if (p < 4) { p++;
+      printf("[tt] ttsinit: called (marty=%d) -- reporting success, mode left alone\n",
+             (int)tt_marty_talk); fflush(stdout); } }
+  return(TRUE);
+#endif
   if (gpITTSCentral != NULL) return(TRUE);
   if (about_to_quit()) return(FALSE);
 #if TT_DEBUG_ON

@@ -1687,9 +1687,12 @@ static boolean tt_message_loop_iteration() {
 		// the same as a stopped engine, and pixel sampling cannot tell them apart.
 		static long beat = 0;
 		if ((++beat % 240) == 0) {
-			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d time_travel=%d logging=%d now=%ld next_log=%ld\n",
+			/* marty= carried on the heartbeat because the mode is set by DIRECT ASSIGNMENT in a
+			 * dozen places, not only through new_talk_mode, so a probe on that function misses
+			 * the ones that matter -- exactly how the mission-game muting hid. 2 = speaks. */
+			printf("[tt] beat: iter=%ld frame=%ld paused=%d replaying=%d time_travel=%d logging=%d now=%ld next_log=%ld marty=%d\n",
 			       beat,(long)tt_frame_number,(int)paused,(int)replaying(),(int)tt_time_travel,
-			       (int)tt_logging,(long)tt_current_time,(long)tt_next_new_log_time);
+			       (int)tt_logging,(long)tt_current_time,(long)tt_next_new_log_time,(int)tt_marty_talk);
 			fflush(stdout);
 		};
 	}
