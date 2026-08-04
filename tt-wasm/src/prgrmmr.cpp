@@ -3622,6 +3622,13 @@ Programmer_Titles_Flying::Programmer_Titles_Flying() :
 };
 
 Programmer_Titles_Flying::~Programmer_Titles_Flying() {
+#ifdef __EMSCRIPTEN__
+	/* The titles are not decoration for the mission game: their react() cycles the four back-story
+	 * screens, and initial_programmer_status() returns PUZZLE_START, which is what puts the player
+	 * on the ground by the rocket instead of in a helicopter. They were ending on frame 1 here. */
+	printf("[tt] titlesdead: frame=%ld system_mode=%d delay=%d\n",
+	       (long)tt_frame_number,(int)tt_system_mode,(int)tt_delay_between_titles); fflush(stdout);
+#endif
 	background->destroy();
    tt_programmer->titles_over();
 	//if (tt_martian != NULL) {
@@ -3841,6 +3848,14 @@ ProgrammerStatus Programmer_Titles_Flying::react(boolean ,
 																 boolean ,
 																 millisecond ,
 																 boolean ) {
+#ifdef __EMSCRIPTEN__
+	{ static int t_log = 0;
+	  if (t_log < 10) { t_log++;
+	    printf("[tt] titlesreact: f=%ld displayed=%d key=%d buttons=%d bg=%d\n",
+	           (long)tt_frame_number,(int)displayed,(int)key,(int)button_status,
+	           background ? (int)background->return_background_index() : -1);
+	    fflush(stdout); } }
+#endif
 	if (!displayed) {
 		tt_screen->switch_to(background,FALSE,FALSE);
 		displayed = TRUE;

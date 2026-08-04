@@ -698,6 +698,23 @@ if (typeof window !== 'undefined') {
 // directory subsystem (ini_entry -> GetPrivateProfileString) finds real values instead of NULL.
 // Paths are placeholders under /toontalk/ for now (asset wiring comes later); what matters for
 // boot is that [Directories] MainDir etc. are non-empty so set_directory_names doesn't crash.
+// Is this boot running a MISSION? Two switches can say so and they differ:
+//   -puzzle <n>       names a specific puzzle file (what ?puzzle=N sends)
+//   -next_puzzle <n>  turns the mission game on -- and "-next_puzzle 0" is FREE PLAY, which is
+//                     exactly what starttt.htm's Free Play button sends, so here the number
+//                     matters rather than the presence of the switch.
+function ttIsPuzzle() {
+  var c = globalThis.TT_cmdline || '';
+  if (/(^|\s)-puzzle\s+\S+/.test(c)) return true;
+  var m = /-next_puzzle\s+(\d+)/.exec(c);
+  return !!(m && Number(m[1]) > 0);
+}
+// Titles are skippable only for a plain free-play boot — see the DelayBetweenTitles note below.
+function ttSkipTitles() {
+  var isDemo = globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0;
+  return !isDemo && !ttIsPuzzle();
+}
+
 Module['preRun'] = Module['preRun'] || [];
 Module['preRun'].push(function () {
   var ini = [
@@ -717,9 +734,16 @@ Module['preRun'].push(function () {
     // kiosk that should exit, so turn the option off — it is the engine's own switch, read at
     // log.cpp:1918.
     'ExitWhenDemoEnds=0',
-    // Skip title-screen dwell for normal boots; during .dmo replay keep the engine's
-    // default pacing so the recorded titles read at the intended speed.
-    (globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0 ? '' : 'DelayBetweenTitles=0'),
+    // Skip title-screen dwell for a plain free-play boot, where the titles are only a delay
+    // between the user and the city. NOT for a .dmo replay (the recorded titles must read at the
+    // intended speed), and NOT for the mission game, where the titles are not a formality at all:
+    // Programmer_Titles_Flying::react cycles the four back-story screens through them (Zizzle
+    // Island sinking, Marty rescuing, the crash, you parachuting down), and its
+    // initial_programmer_status() is what returns PUZZLE_START -- the status whose handler
+    // (prgrmmr.cpp:1210) puts the player ON THE GROUND at the rocket's exit point instead of in a
+    // helicopter. Setting the delay to zero here skipped the story AND the ground start, which is
+    // why missions began with a helicopter flight (Ken, with photographs of the original).
+    (ttSkipTitles() ? 'DelayBetweenTitles=0' : ''),
     // A browser is an absolute pointing device: use ToonTalk's native absolute-mouse mode
     // (built for pens/tablets) everywhere. Relative mode needs per-frame cursor re-centring,
     // which the web can only fake with Pointer Lock — and without the lock the cursor offset

@@ -10326,7 +10326,24 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
 		fflush(stdout);
 		tt_titles_just_ended = TRUE;
 		tt_titles_ended_on_frame = tt_frame_number;
-	} else if (tt_no_city_was_loaded) {
+	} else if (tt_no_city_was_loaded && tt_system_mode != PUZZLE) {
+		// NOT for the mission game. This block declares the titles finished before they have run,
+		// and feeds <Nothing/>, whose handler sets START_FLYING -- which is why missions began in
+		// a helicopter instead of showing the back story and putting the player on the ground
+		// (Ken, with photographs of the original: Zizzle Island sinking, Marty rescuing, the
+		// crash, you parachuting down, then standing by the wrecked rocket).
+		//
+		// The comment below -- "the web port has no titles sequence" -- was true when this was
+		// written and is not any more. Programmer_Titles_Flying is constructed at boot like the
+		// original's; this code was simply destroying it on frame 1, before its react() ever ran
+		// ([tt] titlesreact never fired while [tt] titlesdead reported frame=1 with delay=10, the
+		// engine's own ten seconds "to read the story"). For a puzzle the titles are not a
+		// formality: they cycle the four story screens, and their initial_programmer_status()
+		// returns PUZZLE_START, whose handler (prgrmmr.cpp:1210) places the programmer as
+		// Programmer_City_Walking at the rocket's exit point.
+		//
+		// Letting them run also sets the marker below properly, since titles_over() does it.
+		//
 		// The web port has no titles sequence, so the "titles are over" frame marker stays at
 		// its max_long initial value — which permanently gates OFF the tt_running_robots
 		// consumer in one_tt_cycle (`tt_frame_number > tt_titles_ended_on_frame`). That list is
