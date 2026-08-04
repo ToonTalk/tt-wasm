@@ -593,31 +593,6 @@ void House::create_door() {
    good_lower_left_corner(house_from_side_sprite(style),door_x,door_y);
    if (door_style == BROKEN_ROCKET_DOOR_SPRITE) {
       appearance_from_side->lower_left_corner(door_x,door_y);
-#ifdef __EMSCRIPTEN__
-      /* Measured against the original (Ken's photographs of the retail build, "ToonTalk - sisi"):
-       * the open door must sit exactly ONE SHIP-REGISTRATION above-right of where the drawn-corner
-       * anchor puts it -- the wedge was 58px low and ~7px off, and the ship's own registration is
-       * (-3,-58)px (true offsets +120,+2320 city). Adding the ship's true offsets to the anchor
-       * reproduces the original's door-on-ring placement; with them the door's dark opening lands
-       * on the hull's painted yellow ring (rockbrok's lower oval) as in the photographs. The
-       * deeper cause is a convention difference: this build folds a sprite's initial registration
-       * into its lower_left_corner (the first update applies old 0 -> offset as a move), so the
-       * rocket-door constants, authored for the original's corner, are one registration short. */
-      /* true_*_offset() returns old_offset*x_scale/256, and x_scale carries the 640->800 screen
-       * grow -- but the ship's own registration move was applied with the grow divided back out
-       * (the helicopter-vibration fix in Sprite::update_display), so divide it out here too or
-       * the anchor overshoots by a quarter (measured: 72px instead of 58). */
-      {
-         city_coordinate ax = appearance_from_side->true_x_offset();
-         city_coordinate ay = appearance_from_side->true_y_offset();
-         if (tt_screen_width > tt_graphics_video_mode_width)
-            ax = (ax*tt_graphics_video_mode_width)/tt_screen_width;
-         if (tt_screen_height > tt_graphics_video_mode_height)
-            ay = (ay*tt_graphics_video_mode_height)/tt_screen_height;
-         door_x += ax;
-         door_y += ay;
-      }
-#endif
       door_x += broken_rocket_x_offset;
       door_y += broken_rocket_y_offset;
    };
@@ -625,6 +600,26 @@ void House::create_door() {
 //	door_appearance->set_priority_function_of_lly(FALSE);
    door_appearance->set_priority_fixed(TRUE);
    door_appearance->update_display(); // otherwise takes a frame for its big offsets to be noticed
+#ifdef __EMSCRIPTEN__
+   /* The ORIGINAL applies a sprite's registration at x_scale/256 -- which at 800x600 includes the
+    * 640->800 grow, i.e. offsets land at 1.25x. This build's update path divides the grow back
+    * out (the helicopter-vibration compensation in Sprite::update_display), so the update_display
+    * above moved the door by its (-262,-90) registration at 1.0x -- one QUARTER short, which is
+    * the (65,22)px that left the wedge beside the hull's ring (Ken, with photographs of the
+    * retail build; the ring's own pixels in rockbrok.bmp sit exactly at the 1.25x arithmetic's
+    * rectangle). Restore the missing grow fraction: true_*_offset() returns the registration AT
+    * x_scale (the original's full amount), so the shortfall is true - true*640/800. */
+   if (door_style == BROKEN_ROCKET_DOOR_SPRITE) {
+      city_coordinate tx = door_appearance->true_x_offset();
+      city_coordinate ty = door_appearance->true_y_offset();
+      city_coordinate short_x = 0, short_y = 0;
+      if (tt_screen_width > tt_graphics_video_mode_width)
+         short_x = tx-(tx*tt_graphics_video_mode_width)/tt_screen_width;
+      if (tt_screen_height > tt_graphics_video_mode_height)
+         short_y = ty-(ty*tt_graphics_video_mode_height)/tt_screen_height;
+      if (short_x != 0 || short_y != 0) door_appearance->move_by(short_x,short_y);
+   };
+#endif
    // how should this work?  should sprite::sprite be changed??
 	if (appearance_from_side != NULL) { // might be a truck leaving a newly built house ...
 		door_appearance->set_priority(appearance_from_side->priority()-1);
