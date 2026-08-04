@@ -3710,7 +3710,23 @@ string process_for_text_to_speech(string to_say, int line_length) {
 };
 
 void Talk_Balloon::speak_next_sentence() {
-	if (!text_to_speech() && tt_marty_talk != MARTY_WITH_SUBTITLES) return; 
+#ifdef __EMSCRIPTEN__
+	/* balloonsay says this IS called ("-> SPEAKS") yet martysay never fires, so speech dies
+	 * between here and the speak() gate. Report every early exit on the way. The interesting one
+	 * is the deferral below: in SPEAKS_AND_TALK_BALLOONS the first call waits a frame for the
+	 * balloon to appear, and the flag it waits on is cleared in ONE place -- Talk_Balloon::display,
+	 * only when characters were actually shown -- so if that branch is not taken the reschedule
+	 * repeats forever and Marty stays silent behind a perfectly visible balloon. */
+	{ static int p = 0;
+	  if (p < 10) { p++;
+	    printf("[tt] speaknext: tts=%d mode=%d titles=%d off=%d len=%d wait_first_display=%d\n",
+	           (int)text_to_speech(), (int)tt_marty_talk,
+	           (int)(tt_programmer && tt_programmer->kind_of() == PROGRAMMER_TITLES),
+	           (int)speech_text_offset, (int)speech_text_length,
+	           (int)speech_should_wait_for_first_display);
+	    fflush(stdout); } }
+#endif
+	if (!text_to_speech() && tt_marty_talk != MARTY_WITH_SUBTITLES) return;
 	// second condition added 110401 since MARTY_WITH_SUBTITLES uses "simulated" speech
    speech_text_offset_increment = 0;
    if (tt_programmer->kind_of() != PROGRAMMER_TITLES &&
@@ -3736,8 +3752,14 @@ void Talk_Balloon::speak_next_sentence() {
 		 if (tt_marty_talk == MARTY_SPEAKS_AND_TALK_BALLOONS && !alternative_language_spoken()) { 
 			 // new on 040500 so that speech and text balloons are in better synch
 			 if (speech_should_wait_for_first_display) { // first time
-//				 speech_should_wait_for_first_display = FALSE; 
+//				 speech_should_wait_for_first_display = FALSE;
 				 // by using tt_dummy_picture this will run later regardless of tt_finish_all_animations (new 070600)
+#ifdef __EMSCRIPTEN__
+				 { static int d = 0;
+				   if (d < 10) { d++;
+				     printf("[tt] speakwait: deferring a frame for the balloon to show (attempt %d)\n", d);
+				     fflush(stdout); } }
+#endif
 				 tt_global_picture->do_after(1,this,SPEAK_NEXT_SENTENCE_CALLBACK); // wait a frame
 				 return;
 			 };
