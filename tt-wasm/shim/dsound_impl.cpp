@@ -139,9 +139,16 @@ EM_JS(void, tt_ds_stop_all, (), {
   var DS = Module.TT_ds;
   if (!DS || !DS.srcs) return;
   for (var k in DS.srcs) {
-    try { DS.srcs[k].onended = null; DS.srcs[k].stop(); } catch (e) {}
+    /* disconnect() as well as stop(): stop() can throw on a source that never successfully
+     * started, and this is the path that must guarantee silence -- it is what releasing the
+     * device calls. The other bulk stops were hardened in dab8287; this one was missed. */
+    var s = DS.srcs[k];
+    try { s.onended = null; } catch (e) {}
+    try { s.stop(); } catch (e) {}
+    try { s.disconnect(); } catch (e) {}
     delete DS.srcs[k];
   }
+  if (DS.all) { for (var i = 0; i < DS.all.length; i++) DS.all[i].dead = true; }
 });
 extern "C" void tt_stop_all_web_audio() { tt_ds_stop_all(); }
 
@@ -390,7 +397,22 @@ struct TTDirectSound : public IDirectSound {
 
   HRESULT QueryInterface(REFIID, void **ppv) { *ppv = this; refs++; return S_OK; }
   ULONG AddRef() { return ++refs; }
-  ULONG Release() { if (refs > 1) return --refs; return 0; }   /* singleton-ish; engine re-creates freely */
+  /* Releasing the DEVICE silences everything it was playing -- that is what DirectSound does, and
+   * the engine leans on it: release_direct_sound() (utils.cpp:788) tears down the sound cache and
+   * drops the object, then turn_on_direct_sound() builds a fresh one. Web Audio sources have no
+   * such parent, so without this the old ones play on with nothing left that refers to them.
+   *
+   * The rotor came back the moment Marty started speaking, and this is why: with speech finally
+   * available the engine runs its SAPI-era dance of releasing DirectSound while he talks and
+   * re-creating it afterwards, which had been dead code while text-to-speech reported failure.
+   * The stray-loop invariant cannot cover this one -- id_of_sound_to_play deliberately SURVIVES
+   * the release (utils.cpp:794 keeps it so resume_repeating_sound can restart the sound), so from
+   * the engine's point of view a repeating sound is still meant to be playing. */
+  ULONG Release() {
+    if (refs > 1) return --refs;
+    tt_ds_stop_all();
+    return 0;
+  }
 
   HRESULT CreateSoundBuffer(LPCDSBUFFERDESC desc, LPDIRECTSOUNDBUFFER *out, IUnknown *) {
     if (out == NULL) return 1;
