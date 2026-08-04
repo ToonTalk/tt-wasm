@@ -57,6 +57,7 @@ struct GdiObj {
     RECT rgn;
     /* font */
     int font_w, font_h;
+    bool font_fixed;              /* FIXED_PITCH: every glyph advances exactly font_w */
 };
 
 struct GdiDC {
@@ -225,13 +226,14 @@ HBRUSH  CreateDIBPatternBrush(HGLOBAL packed, UINT) {
  * (correct_font_size, get_extent_size, the shrink-and-grow gate that checks whether the fitted
  * font got skinny) computes exact sizes and expects the font to draw at them — quantized cells
  * overflowed pads and kept the shrinking-digits path from ever triggering. */
-struct FontPick { int base; int cw, ch; };
+struct FontPick { int base; int cw, ch; int fx; };
 static FontPick pick_font(GdiDC *dc) {
     int h = (dc && dc->font && dc->font->font_h > 0) ? dc->font->font_h : TT_FONT8_H;
     int w = (dc && dc->font && dc->font->font_w > 0) ? dc->font->font_w : (h * 2) / 3;
     if (h < 2) h = 2; if (h > 600) h = 600;
     if (w < 1) w = 1; if (w > 600) w = 600;
     FontPick p; p.cw = w; p.ch = h;
+    p.fx = (dc && dc->font && dc->font->font_fixed) ? 1 : 0;
     p.base = (h >= TT_FONT32_H) ? 2 : (h >= TT_FONT16_H) ? 1 : 0;
     return p;
 }
@@ -251,8 +253,10 @@ static FontPick pick_font(GdiDC *dc) {
  * early, and the mission story needed four lines where the original needs three -- the last one
  * fell off the screen (Ken: "One of them has the text truncated"). Both sides now use the same
  * honest rule: width(s) = measureText(s) * (cw / natural average character width). */
-/* The GDI-faithful pixel width of a run: measureText * the lfWidth scale. */
-EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int cell_w), {
+/* The GDI-faithful pixel width of a run: measureText * the lfWidth scale. fixed selects the
+ * monospace face, as GDI's FIXED_PITCH does -- there every advance IS the average, so the scale
+ * rule makes each glyph exactly cell_w wide, the original's fit guarantee for button letters. */
+EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int cell_w, int fixed), {
   try {
     if (len <= 0) return 0;
     var s = '';
@@ -265,16 +269,18 @@ EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int
       g.avg = {};
     }
     var cx = g.cx, px = cell_h;
-    var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
+    var fam = fixed ? '"Courier New", "Consolas", monospace'
+                    : '"Arial", "Helvetica", "Liberation Sans", sans-serif';
     cx.font = 'bold ' + px + 'px ' + fam;
     var natural = cx.measureText(s).width;
     var sx = 1;
     if (cell_w > 0) {
-      var a = g.avg[px];
+      var k = px + (fixed ? 'f' : 'p');
+      var a = g.avg[k];
       if (!a) {
         a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52;
         if (!(a > 0)) a = px * 0.55;
-        g.avg[px] = a;
+        g.avg[k] = a;
       }
       sx = cell_w / a;
     }
@@ -283,7 +289,7 @@ EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int
 });
 
 EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int cell_w,
-                            unsigned char *out, int out_w, int out_h), {
+                            unsigned char *out, int out_w, int out_h, int fixed), {
   try {
     if (len <= 0 || out_w <= 0 || out_h <= 0) return 0;
     var s = '';
@@ -300,7 +306,8 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
       g.cv.height = Math.max(g.cv.height, out_h);
     }
     var cx = g.cx;
-    var fam = '"Arial", "Helvetica", "Liberation Sans", sans-serif';
+    var fam = fixed ? '"Courier New", "Consolas", monospace'
+                    : '"Arial", "Helvetica", "Liberation Sans", sans-serif';
     var px = cell_h;
     cx.font = 'bold ' + px + 'px ' + fam;
     var m = cx.measureText(s);
@@ -319,11 +326,12 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
      * extent functions report, so drawn width == measured width for every string. */
     var sx = 1;
     if (cell_w > 0) {
-      var a = g.avg[px];
+      var k2 = px + (fixed ? 'f' : 'p');
+      var a = g.avg[k2];
       if (!a) {
         a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52;
         if (!(a > 0)) a = px * 0.55;
-        g.avg[px] = a;
+        g.avg[k2] = a;
       }
       sx = cell_w / a;
     }
@@ -384,13 +392,13 @@ static bool draw_text_run(GdiDC *dc, int x, int y, const unsigned short *u16, in
     if (len <= 0) return true;
     /* the buffer must fit the HONEST width -- the same number the extent functions report --
      * and for a lone digit the whole cw cell, since the glyph is centred within it */
-    int w = tt_text_hwidth(u16, len, p.ch, p.cw) + 2, h = p.ch;
+    int w = tt_text_hwidth(u16, len, p.ch, p.cw, p.fx) + 2, h = p.ch;
     if (len == 1 && p.cw + 2 > w) w = p.cw + 2;
     if (w <= 2) return true;                    /* nothing to draw (spaces measure fine) */
     if (h <= 0 || w > 4096 || h > 1024) return false;
     unsigned char *cov = txt_buf(w * h);
     if (!cov) return false;
-    if (!tt_text_raster(u16, len, p.ch, p.cw, cov, w, h)) return false;
+    if (!tt_text_raster(u16, len, p.ch, p.cw, cov, w, h, p.fx)) return false;
     int ir = g_pal_set ? g_pal[dc->text_index][0] : 255;
     int ig = g_pal_set ? g_pal[dc->text_index][1] : 255;
     int ib = g_pal_set ? g_pal[dc->text_index][2] : 255;
@@ -438,6 +446,11 @@ HFONT CreateFontIndirectA(const LOGFONTA *lf) {
     int w = lf ? (lf->lfWidth  < 0 ? -lf->lfWidth  : lf->lfWidth ) : 0;
     o->font_h = (h * 96 + 36) / 72; if (o->font_h < 1) o->font_h = 12;   /* LOGFONT points -> ~pixels */
     o->font_w = (w * 96 + 36) / 72; if (o->font_w < 1) o->font_w = o->font_h / 2;
+    /* FIXED_PITCH is how the original GUARANTEES a fit: set_font(width,height,TRUE,TRUE) sizes a
+     * monospace face so every glyph -- W included -- advances exactly lfWidth, and place_character
+     * hands it the whole button box. Rendering everything proportional made W ~1.7x the average
+     * width and it overflowed Pumpy's keycap (Ken item 1). */
+    o->font_fixed = lf && ((lf->lfPitchAndFamily & 0x3) == FIXED_PITCH);
     return (HFONT)o;
 }
 BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
@@ -502,7 +515,7 @@ BOOL GetTextExtentPoint32A(HDC hdc, LPCSTR str, int len, LPSIZE sz) {
         unsigned short *u = (len <= 256) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
         if (u) {
             for (int i = 0; i < len; i++) u[i] = (unsigned char)str[i];
-            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw);
+            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw, p.fx);
             if (u != stack) free(u);
         }
     }
@@ -517,7 +530,7 @@ BOOL GetTextExtentPoint32W(HDC hdc, const wchar_t *str, int len, LPSIZE sz) {
         unsigned short *u = (len <= 256) ? stack : (unsigned short *)malloc(len * sizeof(unsigned short));
         if (u) {
             for (int i = 0; i < len; i++) u[i] = (unsigned short)str[i];
-            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw);
+            sz->cx = tt_text_hwidth(u, len, p.ch, p.cw, p.fx);
             if (u != stack) free(u);
         }
     }
