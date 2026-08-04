@@ -1399,21 +1399,26 @@ void Sprite::update_display(city_coordinate delta_x, city_coordinate delta_y,
 //		x_offset = (x_offset*x_scale)/256;
 //		y_offset = (y_offset*y_scale)/256;
 #ifdef __EMSCRIPTEN__
-		if (code == HELIOLND || code == HELIOFLY) {
+		if (code == HELIOLND || code == HELIOFLY ||
+		    code == BROKEN_ROCKET_SPRITE || code == BROKEN_ROCKET_DOOR_SPRITE) {
 			static int oc_log = 0;
 			static int oc_hi_log = 0;
+			static int oc_rock_log = 0;
+			boolean rocket = (code == BROKEN_ROCKET_SPRITE || code == BROKEN_ROCKET_DOOR_SPRITE);
 			boolean hi = (current_scale > 1000);
-			if ((!hi && oc_log < 40) || (hi && oc_hi_log < 60)) { if (hi) oc_hi_log++; else oc_log++;
+			if ((rocket && oc_rock_log < 24) ||
+			    (!rocket && ((!hi && oc_log < 40) || (hi && oc_hi_log < 60)))) {
+				if (rocket) oc_rock_log++; else if (hi) oc_hi_log++; else oc_log++;
 				int64 pdy = (int64)(y_offset-old_y_offset)*y_scale;
 				if (tt_screen_height > tt_graphics_video_mode_height) {
 					pdy = (pdy*tt_graphics_video_mode_height)/tt_screen_height;
 				};
-				if (tt_em_verbose_probes())
-				printf("[tt] offcomp: code=%d xo=%ld oldx=%ld yo=%ld oldy=%ld xs=%u ys=%u cs=%ld gs=%ld dy+=%ld lly=%ld idx=%d\n",
+				if (rocket || tt_em_verbose_probes())
+				printf("[tt] offcomp: code=%d xo=%ld oldx=%ld yo=%ld oldy=%ld xs=%u ys=%u cs=%ld gs=%ld dy+=%ld lly=%ld llx=%ld idx=%d\n",
 				       (int)code, (long)x_offset, (long)old_x_offset, (long)y_offset, (long)old_y_offset,
 				       (unsigned)x_scale, (unsigned)y_scale,
 				       (long)current_scale, (long)ground_scale,
-				       (long)(pdy/256), (long)lly,
+				       (long)(pdy/256), (long)lly, (long)llx,
 				       (int)current_index); fflush(stdout);
 			}
 		}
