@@ -5846,6 +5846,19 @@ boolean TTImage::display(long &width, long &height,
 			       (long)x_offset, (long)y_offset, (unsigned)x_scale); fflush(stdout);
 		}
 	}
+	/* The rocket door, always on (bounded): Ken sees it flash and vanish on entering/leaving the
+	 * ship, and its opening cycle is a healthy 300ms -- so the question is what is DRAWN each
+	 * frame: which art (image_number), how big (art_px; 1x1 would be the time-travel-buttons
+	 * disease), and where (mark vs the ship). One line per draw while it is visible. */
+	if (code == BROKEN_ROCKET_DOOR_SPRITE) {
+		static int rd_log = 0;
+		if (rd_log < 40) { rd_log++;
+			printf("[tt] doordraw: img=%d mark=(%ld,%ld) drawn=(%ld,%ld) art_px=(%d,%d) f=%ld\n",
+			       (int)return_resource_index(), (long)tt_memory_graphics_mark_x, (long)tt_memory_graphics_mark_y,
+			       (long)width, (long)height, (int)pixel_width, (int)pixel_height,
+			       (long)tt_frame_number); fflush(stdout);
+		}
+	}
 #endif
 	boolean stretching_needed = (width != pixel_width || height != pixel_height);
 	boolean image_surface_provided_by_caller = (image_surface != NULL);

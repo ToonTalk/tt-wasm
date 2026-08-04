@@ -1127,15 +1127,27 @@ void House::close_door() {
 				door_status = DOOR_CLOSED;
 				door_appearance->set_closed(TRUE);
 				door_appearance->set_sprite_type(DOOR);
-				tt_screen->remove(door_appearance); 
+				tt_screen->remove(door_appearance);
+#ifdef __EMSCRIPTEN__
+				if (door_appearance->appearance_code() == BROKEN_ROCKET_DOOR_SPRITE) {
+					static int p = 0;
+					if (p < 8) { p++; printf("[tt] doorstate: CLOSED t=%ld f=%ld\n",
+					  (long)tt_current_time,(long)tt_frame_number); fflush(stdout); } }
+#endif
 			};
 			return;
 		case DOOR_OPEN:
-		case DOOR_OPENING: 
+		case DOOR_OPENING:
 			door_status = DOOR_CLOSING;
 			door_appearance->set_parameter((short) door_status);
 			door_changed_time
 			  = tt_current_time+door_appearance->total_cycle_duration();
+#ifdef __EMSCRIPTEN__
+			if (door_appearance->appearance_code() == BROKEN_ROCKET_DOOR_SPRITE) {
+				static int q = 0;
+				if (q < 8) { q++; printf("[tt] doorstate: CLOSING t=%ld f=%ld\n",
+				  (long)tt_current_time,(long)tt_frame_number); fflush(stdout); } }
+#endif
 			break;
 //		case DOOR_OPENING: // a bit of problem so just close it instantly
 //			door_status = DOOR_CLOSED;
