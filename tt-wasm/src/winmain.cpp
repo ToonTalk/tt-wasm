@@ -1325,9 +1325,10 @@ boolean Main::MessageLoopOnce() {
 		// Ken: Pumpy keeps pumping after the right button is released -- "the hose needs to leave
 		// the object to pause Pumpy", i.e. the engine still believes the button is down. Trace
 		// every change of the button state, and the flags that gate clearing it.
-		{ static int mb_last = -1; static int mb_prints = 0;
-		  if ((int) tt_mouse_button != mb_last && mb_prints < 40) {
-			mb_prints++; mb_last = (int) tt_mouse_button;
+		{ static int mb_last = -1; static int mb_cur_last = -1; static int mb_prints = 0;
+		  if (((int) tt_mouse_button != mb_last || (int) tt_current_mouse_button != mb_cur_last)
+		      && mb_prints < 60) {
+			mb_prints++; mb_last = (int) tt_mouse_button; mb_cur_last = (int) tt_current_mouse_button;
 			printf("[tt] mousebtn: tt_mouse_button=%d acquired=%d current=%d up_handled=%d unchanged=%d frame=%ld\n",
 			       (int) tt_mouse_button,(int) tt_mouse_acquired,(int) tt_current_mouse_button,
 			       (int) mouse_up_handled,(int) button_unchanged,(long) tt_frame_number);

@@ -817,6 +817,14 @@ Module['preRun'].push(function () {
     'GenerateRobotNames=1',
     'MaximumNumberOfHoles=2048',
     'RobotCounter=50',
+    // Ken: "Pumpy when used with the right press keeps pumping for a short while after releasing
+    // the right button", and against the original "it stops pumpy very soon after releasing".
+    // tt_expander_usage_maximum defaults to -1, meaning NO maximum (globals.cpp:784), which makes
+    // Expander::used_once_per_click() permanently false, so used_enough() is never true and
+    // turn_off() is never reached -- the pump runs on for as long as anything sits under the hose.
+    // The value below is not invented: it is what the original's own toontalk.ini carries, in all
+    // three copies on this machine (C:\Windows, Documents\ToonTalk, and the VirtualStore).
+    'MillisecondsPumpyUsedPerClick=500',
     // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
     // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
     // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its

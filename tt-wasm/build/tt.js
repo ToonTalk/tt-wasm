@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt55a8peu.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxszkzvht.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt55a8peu.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmptn8u_ijj.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxszkzvht.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyn_scxxr.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmptn8u_ijj.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyn_scxxr.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1032,6 +1032,14 @@ Module['preRun'].push(function () {
     'GenerateRobotNames=1',
     'MaximumNumberOfHoles=2048',
     'RobotCounter=50',
+    // Ken: "Pumpy when used with the right press keeps pumping for a short while after releasing
+    // the right button", and against the original "it stops pumpy very soon after releasing".
+    // tt_expander_usage_maximum defaults to -1, meaning NO maximum (globals.cpp:784), which makes
+    // Expander::used_once_per_click() permanently false, so used_enough() is never true and
+    // turn_off() is never reached -- the pump runs on for as long as anything sits under the hose.
+    // The value below is not invented: it is what the original's own toontalk.ini carries, in all
+    // three copies on this machine (C:\Windows, Documents\ToonTalk, and the VirtualStore).
+    'MillisecondsPumpyUsedPerClick=500',
     // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
     // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
     // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its
@@ -1210,13 +1218,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp2xv0a11.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp03eoslfb.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp2xv0a11.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp03eoslfb.js
 
 
 var programArgs = [];
