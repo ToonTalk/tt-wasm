@@ -880,7 +880,7 @@ void load_city_from_log() {
 #ifdef __EMSCRIPTEN__
 	{ // demo replay: is each segment's recorded city snapshot being loaded? (Ken 2026-07-19)
 		static int lc_log = 0;
-		if (lc_log < 6) { lc_log++;
+		if (lc_log < 40) { lc_log++;   // was 6 -- exhausted during startup, so silent by the time Ken time-travels
 			printf("[tt] loadcity: version=%d (needs>=44) tellg=%d peek=%d (marker=%d) segment=%d\n",
 			       (int)tt_log_version_number, (int)log_in->tellg(), (int)log_in->peek(), (int)FILE_NAME_MARKER,
 			       (int)tt_current_log_segment); fflush(stdout);
@@ -895,6 +895,17 @@ void load_city_from_log() {
 				if (!running_successive_demo()) {
 					// otherwise just ignore the file name
 					string full_city_file_name = extract_file_from_archive(city_file_name,tt_log_in_archive);
+#ifdef __EMSCRIPTEN__
+					// Ken: jumping in time moves the segment but the world does not come back. His
+					// console already shows the SAME extraction failing for the subtitle track
+					// ("[tt] subtitles: '...UST' from archive -> (not found)"), so report whether the
+					// city snapshot for this segment can be pulled out of the archive by name.
+					{ static int ex_log = 0; if (ex_log < 40) { ex_log++;
+					  printf("[tt] loadcity: '%s' from archive -> %s\n",city_file_name,
+					         (full_city_file_name != NULL) ? full_city_file_name
+					                                       : "(NOT FOUND -- city will not be restored)");
+					  fflush(stdout); } }
+#endif
 					if (full_city_file_name != NULL) {
 						tt_city->load_city(full_city_file_name,TRUE);
 #ifdef __EMSCRIPTEN__
