@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\AppData\Local\Temp\tmp5a75vpoa.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp4wq4vv_e.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -90,7 +90,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
         // web worker
         PACKAGE_PATH = encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf('/')) + '/');
       }
-      var PACKAGE_NAME = '.tmp/out/tt.data';
+      var PACKAGE_NAME = 'build/tt.data';
       var REMOTE_PACKAGE_BASE = 'tt.data';
       var REMOTE_PACKAGE_NAME = Module['locateFile'] ? Module['locateFile'](REMOTE_PACKAGE_BASE, '') : REMOTE_PACKAGE_BASE;
       var REMOTE_PACKAGE_SIZE = metadata['remote_package_size'];
@@ -178,9 +178,9 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
             // canOwn this data in the filesystem, it is a slice into the heap that will never change
         Module['FS_createDataFile'](name, null, data, true, true, true);
           }
-          Module['removeRunDependency']('datafile_.tmp/out/tt.data');
+          Module['removeRunDependency']('datafile_build/tt.data');
       }
-      Module['addRunDependency']('datafile_.tmp/out/tt.data');
+      Module['addRunDependency']('datafile_build/tt.data');
 
       if (!Module['preloadResults']) Module['preloadResults'] = {};
 
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\AppData\Local\Temp\tmp5a75vpoa.js
-// include: C:\Users\toont\AppData\Local\Temp\tmps7lyu9fg.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp4wq4vv_e.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcrspckot.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\AppData\Local\Temp\tmps7lyu9fg.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcrspckot.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -872,7 +872,11 @@ globalThis.TT_playLocalDemo = function (file) {
 // the segment in progress is not in it until it is closed — then hands the bytes to the browser
 // as a download. Exposed on the page so the button in tt.html (and the console) can call it.
 globalThis.TT_saveDemo = function () {
-  if (!globalThis.TT_recording) { console.warn('[tt] save: not recording — reload with ?timetravel=1'); return false; }
+  if (!globalThis.TT_recording) {
+    console.warn('[tt] save: not recording — tick "I want to be able to travel in time" on the ' +
+                 'opening screen (or add ?timetravel=1 when skipping the launcher)');
+    return false;
+  }
   var pathPtr = Module['_tt_finish_time_travel_archive'] && Module['_tt_finish_time_travel_archive']();
   if (!pathPtr) { console.warn('[tt] save: no time-travel archive yet'); return false; }
   var path = UTF8ToString(pathPtr).replace(/\\/g, '/').replace(/\/+/g, '/');
@@ -1153,13 +1157,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\AppData\Local\Temp\tmp2t3ch6m2.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgc7jrhxz.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\AppData\Local\Temp\tmp2t3ch6m2.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgc7jrhxz.js
 
 
 var programArgs = [];

@@ -200,7 +200,11 @@
       </button>
     </div>
     <label id="ltt">
-      <input type="checkbox" id="lttbox"><span id="lttnote">I want to be able to travel in time to
+      <!-- Checked by default, as the original was: globals.cpp:594 has tt_time_travel_enabled =
+           TRUE, and winmain.cpp:10098 turns time travel on for free play unless the command line
+           says otherwise. Shipping it unchecked made time travel something you had to opt into
+           before starting, so during ordinary play it was simply absent. -->
+      <input type="checkbox" id="lttbox" checked><span id="lttnote">I want to be able to travel in time to
       undo mistakes or replay what I just did. (Sometimes ToonTalk runs slowly when this is
       checked.)</span>
     </label>

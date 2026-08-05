@@ -657,7 +657,11 @@ globalThis.TT_playLocalDemo = function (file) {
 // the segment in progress is not in it until it is closed — then hands the bytes to the browser
 // as a download. Exposed on the page so the button in tt.html (and the console) can call it.
 globalThis.TT_saveDemo = function () {
-  if (!globalThis.TT_recording) { console.warn('[tt] save: not recording — reload with ?timetravel=1'); return false; }
+  if (!globalThis.TT_recording) {
+    console.warn('[tt] save: not recording — tick "I want to be able to travel in time" on the ' +
+                 'opening screen (or add ?timetravel=1 when skipping the launcher)');
+    return false;
+  }
   var pathPtr = Module['_tt_finish_time_travel_archive'] && Module['_tt_finish_time_travel_archive']();
   if (!pathPtr) { console.warn('[tt] save: no time-travel archive yet'); return false; }
   var path = UTF8ToString(pathPtr).replace(/\\/g, '/').replace(/\/+/g, '/');
