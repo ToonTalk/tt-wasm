@@ -825,6 +825,11 @@ Module['preRun'].push(function () {
     // The value below is not invented: it is what the original's own toontalk.ini carries, in all
     // three copies on this machine (C:\Windows, Documents\ToonTalk, and the VirtualStore).
     'MillisecondsPumpyUsedPerClick=500',
+    // Dusty has the same divergence, found by the same comparison: tt_vacuum_used_once_per_click
+    // defaults to FALSE (globals.cpp:783) and the original's ini sets DustyUsedOncePerClick=1.
+    // The flag is read inverted -- "if (is_on() && !tt_vacuum_used_once_per_click)" at
+    // tools.cpp:1939 -- so the port's vacuum STAYS ON where the original's is once per click.
+    'DustyUsedOncePerClick=1',
     // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
     // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
     // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its

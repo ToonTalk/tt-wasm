@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxszkzvht.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp35rs6j7s.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxszkzvht.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyn_scxxr.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp35rs6j7s.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5mruhjwq.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyn_scxxr.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5mruhjwq.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1040,6 +1040,11 @@ Module['preRun'].push(function () {
     // The value below is not invented: it is what the original's own toontalk.ini carries, in all
     // three copies on this machine (C:\Windows, Documents\ToonTalk, and the VirtualStore).
     'MillisecondsPumpyUsedPerClick=500',
+    // Dusty has the same divergence, found by the same comparison: tt_vacuum_used_once_per_click
+    // defaults to FALSE (globals.cpp:783) and the original's ini sets DustyUsedOncePerClick=1.
+    // The flag is read inverted -- "if (is_on() && !tt_vacuum_used_once_per_click)" at
+    // tools.cpp:1939 -- so the port's vacuum STAYS ON where the original's is once per click.
+    'DustyUsedOncePerClick=1',
     // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
     // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
     // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its
@@ -1218,13 +1223,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp03eoslfb.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5ucid2l4.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp03eoslfb.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5ucid2l4.js
 
 
 var programArgs = [];
