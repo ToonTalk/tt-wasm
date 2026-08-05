@@ -526,6 +526,28 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_tts_drop_erased() {
 	sensor->set_to_future_value(pad,pad,NULL);
 	printf("[tt] devtts2: survived set_to_future_value -- no crash\n"); fflush(stdout);
 };
+
+/* Dev hook: after dropping text on a text-to-speech sensor, does the sensor actually take on a
+ * SpeechSound appearance (a SOUND_PAD_WITH_PLATE -- a differently coloured pad that speaks when
+ * used)?  Run with erase=0 for a normal sensor and erase=1 for a wand-erased (blank) one.
+ * Console: Module._tt_dev_tts_probe(0) / Module._tt_dev_tts_probe(1). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_tts_probe(int erase) {
+	Remote_Picture *sensor = new Remote_Picture(tt_global_picture,TEXT_TO_SPEECH_REMOTE);
+	if (erase) {
+		sensor->become_blank(TRUE,FALSE);
+	};
+	Text *pad = new Text(0,0,copy_wide_string(_T("Abc")));
+	sensor->set_to_future_value(pad,pad,NULL);
+	Sprite *ap = sensor->pointer_to_appearance();
+	printf("[tt] ttsprobe: erase=%d appearance=%s",erase,(ap != NULL)?"YES":"NULL");
+	if (ap != NULL) {
+		printf(" plate=%d w=%ld h=%ld",(int) ap->plate_state(),
+		       (long) ap->current_width(),(long) ap->current_height());
+	};
+	printf("  [TEXT_PAD_WITH_PLATE=%d SOUND_PAD_WITH_PLATE=%d]\n",
+	       (int) TEXT_PAD_WITH_PLATE,(int) SOUND_PAD_WITH_PLATE);
+	fflush(stdout);
+};
 #endif
 
 boolean SpeechSound::make_sound() {
