@@ -380,6 +380,47 @@ globalThis.TT_recording = false;
 })();
 
 globalThis.TT_cmdline = '';
+
+// ?user=<name> opens one of the saved users that shipped with the retail product -- the Playground
+// city (Users/Playground2001X) and its notebook (Users/PlaygroundBookX). link.sh mirrors them to
+// build/users/<name>/ with a manifest; they are fetched into the place the engine looks for a
+// user, <My Documents>\ToonTalk\<name>\ (utils.cpp:9673 builds exactly that), before main() runs.
+// Held back with a run dependency because the engine reads the city during startup.
+(function setUpUser() {
+  if (typeof location === 'undefined') return;
+  var m = location.search.match(/[?&]user=([A-Za-z0-9_]+)/);
+  if (!m) return;
+  var name = m[1];
+  globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') + '-n ' + name;
+  Module['preRun'] = Module['preRun'] || [];
+  Module['preRun'].push(function () {
+    addRunDependency('tt-user');
+    var dir = '/toontalk/My Documents/ToonTalk/' + name;
+    var stage = function () {
+    try { FS.mkdirTree(dir); } catch (e) {}
+    fetch('users/' + name + '/manifest.json')
+      .then(function (r) { if (!r.ok) throw new Error('no manifest'); return r.json(); })
+      .then(function (list) {
+        return Promise.all(list.map(function (f) {
+          return fetch('users/' + name + '/' + f)
+            .then(function (r) { return r.arrayBuffer(); })
+            .then(function (buf) { FS.writeFile(dir + '/' + f, new Uint8Array(buf)); });
+        })).then(function () {
+          console.log('[tt] user: staged ' + list.length + ' files for ' + name);
+        });
+      })
+      .catch(function (e) { console.warn('[tt] user: ' + name + ' — ' + e.message); })
+      .then(function () { removeRunDependency('tt-user'); });
+    };
+    if (globalThis.TT_persistLoaded) {
+      stage();
+    } else {
+      globalThis.TT_afterPersist = globalThis.TT_afterPersist || [];
+      globalThis.TT_afterPersist.push(stage);
+    }
+  });
+})();
+
 (function setUpDemo() {
   if (typeof location === 'undefined') return;
   var m = location.search.match(/[?&]demo=([A-Za-z0-9_]+)/);
@@ -501,6 +542,7 @@ globalThis.TT_hasFile = function (path) {
   if (/[?&]demo=/.test(location.search)) return;
   if (/[?&]launcher=0/.test(location.search)) return;
   if (/[?&]puzzle=/.test(location.search)) return;   // the page has already said what to run
+  if (/[?&]user=/.test(location.search)) return;     // ?user= already supplies -n <name>
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
     if (typeof globalThis.TT_showLauncher !== 'function') return;
@@ -759,6 +801,11 @@ Module['preRun'].push(function () {
     FS.syncfs(true, function (err) {                 // true = load what is already stored
       if (err) console.warn('[tt] persist: load failed — ' + err);
       overlayCache();
+      // Anything that writes into this tree has to wait for the mount and this load, or IDBFS
+      // simply replaces what it wrote (that is what swallowed the staged Playground files).
+      globalThis.TT_persistLoaded = true;
+      (globalThis.TT_afterPersist || []).forEach(function (f) { try { f(); } catch (e) {} });
+      globalThis.TT_afterPersist = [];
       var names = [];
       try { names = FS.readdir(ROOT).filter(function (n) { return n !== '.' && n !== '..'; }); } catch (e) {}
       console.log('[tt] persist: loaded, ' + ROOT + ' holds [' + names.join(', ') + ']');

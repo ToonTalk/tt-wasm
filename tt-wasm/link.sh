@@ -85,6 +85,29 @@ if [ -d "$DEMOSRC" ]; then
     [ -f "build/demos/$b" ] || cp "$d" "build/demos/$b"
   done
 fi
+# The Playground city and notebook that shipped with the retail product (Users/Playground2001X,
+# Users/PlaygroundBookX). Served over HTTP like the demos rather than packed into tt.data: the two
+# XML files alone are 9.1MB and 8.3MB, and only a player who asks for the Playground needs them.
+# pre.js fetches one on demand for ?user=<name>. The .url sidecars are the original's own
+# bookkeeping and are not needed to load a user.
+USERSRC="/c/Program Files (x86)/Animated Programs/ToonTalk/Users"
+if [ -d "$USERSRC" ]; then
+  for u in "$USERSRC"/*/; do
+    [ -d "$u" ] || continue
+    b=$(basename "$u")
+    mkdir -p "build/users/$b"
+    names=""
+    for f in "$u"*; do
+      [ -f "$f" ] || continue
+      n=$(basename "$f")
+      case "$n" in *.url) continue;; esac
+      [ -f "build/users/$b/$n" ] || cp "$f" "build/users/$b/$n"
+      names="$names\"$n\","
+    done
+    printf '[%s]\n' "${names%,}" > "build/users/$b/manifest.json"
+  done
+fi
+
 # version the script URL AND the wasm/data URLs (Module.locateFile) so browsers never serve any
 # stale artifact after a rebuild — a stale tt.wasm under a fresh tt.js reintroduced fixed bugs.
 STAMP=$(date +%s)
