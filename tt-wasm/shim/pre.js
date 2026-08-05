@@ -259,6 +259,17 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     if (box && box.parentNode) box.parentNode.removeChild(box);
     box = null;
     globalThis.TT_pauseOverlay = false;
+    // Retake the pointer lock the chooser released, but only for the choices that go back to
+    // playing (1 = Back to Demo / Resume, 5 = Take Control). Leaving the demo wants an ordinary
+    // cursor. This runs inside the button's click handler, which is the user gesture the browser
+    // requires before granting the lock again.
+    if (document.fullscreenElement && (n === 1 || n === 5)) {
+      var c = document.getElementById('ttcanvas');
+      if (c && c.requestPointerLock && document.pointerLockElement !== c) {
+        try { var p = c.requestPointerLock(); if (p && p['catch']) p['catch'](function () {}); }
+        catch (e) {}
+      }
+    }
     if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
   };
   globalThis.TT_demoPause = function (duringDemo) {
@@ -294,6 +305,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
     (document.fullscreenElement || document.body).appendChild(box);
+    // ...and give the cursor back. While the canvas holds the pointer lock the OS cursor is hidden
+    // and every click is delivered to the locked element, so in full screen the three buttons
+    // cannot be reached at all (Ken: "I couldn't choose between the 3 options since weren't
+    // selectable by the browser's cursor. When I tabbed out and then back I was able to select an
+    // option" -- tabbing away is what dropped the lock). The chooser is modal, so nothing wants
+    // the lock while it is up; answer() takes it back for the choices that resume play.
+    if (document.pointerLockElement && document.exitPointerLock) {
+      document.exitPointerLock();
+    }
     // Closing the dialog (SC_CLOSE) is "Back to Demo" in the original's handler.
     box.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); answer(1); }
