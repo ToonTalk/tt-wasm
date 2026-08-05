@@ -4574,6 +4574,13 @@ void restore_time_travel_buttons() {
 		show_cursor(TRUE,TRUE); // added 031103 - moved 041103 so this happens regardless of the following
 	};
 	begin_pointing_cursor(); // new on 290404
+#ifdef __EMSCRIPTEN__
+	// Every other function here guards the array (displaying_pause_button, use_play_appearance,
+	// use_pause_appearance, prepare_to_time_travel all begin "if (buttons == NULL)"); this one
+	// dereferences buttons[0] unguarded.  Reached before prepare_to_time_travel() has built the
+	// buttons, buttons[0] reads through a null array and traps in Sprite::animation_in_progress().
+	if (buttons == NULL) return;
+#endif
 	if (!time_travel_buttons_hidden && !buttons[0]->animation_in_progress() && buttons[0]->visible()) return;
 	time_travel_buttons_hidden = FALSE;
 	for (int i = 0; i < number_of_buttons; i++) {
@@ -5021,6 +5028,34 @@ void release_time_travel_buttons() {
 	//	waiting_cursor = NULL;
 	//};
 };
+
+#ifdef __EMSCRIPTEN__
+/* Dev hook: press a time-travel button from the console without having to hit the drawn button
+ * with a synthetic click -- Module._tt_dev_time_travel_button(n), n as in TimeTravelButton
+ * (0 = to oldest, 1 = previous, 2 = play, 3 = next, 4 = newest).  Ken: going back in time sticks
+ * on "Loading, please wait.", i.e. done_waiting_for_load() is never reached. */
+void time_travel_react(TimeTravelButton button);
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_travel_button(int n) {
+	printf("[tt] ttdev: button %d -- current=%d oldest=%d youngest=%d buttons=%p hidden=%d\n",n,
+	       (int) tt_current_log_segment,(int) tt_oldest_log_segment,(int) tt_youngest_log_segment,
+	       (void *) buttons,(int) time_travel_buttons_hidden);
+	fflush(stdout);
+	if (buttons != NULL) {
+		for (int i = 0; i < number_of_buttons; i++) {
+			printf("[tt]   btn%d file=%s ptr=%p\n",i,button_file_names[i],(void *) buttons[i]);
+			fflush(stdout);
+		};
+		for (int i = 0; i < number_of_buttons; i++) {
+			if (buttons[i] == NULL) continue;
+			printf("[tt]   btn%d img=%p\n",i,(void *) buttons[i]->pointer_to_current_image());
+			fflush(stdout);
+		};
+	};
+	time_travel_react((TimeTravelButton) n);
+	printf("[tt] ttdev: returned from button %d -- current=%d\n",n,(int) tt_current_log_segment);
+	fflush(stdout);
+};
+#endif
 
 void time_travel_react(TimeTravelButton button) {
 	play_sound(POP_SOUND,FALSE,TRUE);
