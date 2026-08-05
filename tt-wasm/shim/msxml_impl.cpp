@@ -296,7 +296,33 @@ struct DomDocument : public IXMLDOMDocument {
     HRESULT get_parseError(IXMLDOMParseError **e) { *e = err; if (err) err->AddRef(); return S_OK; }
     HRESULT load(VARIANT src, VARIANT_BOOL *ok);
     HRESULT loadXML(BSTR xml, VARIANT_BOOL *ok);
-    HRESULT save(VARIANT) { return S_OK; }
+    /* Serialize the document to the named file.  This was "return S_OK" without writing anything,
+     * and nothing checks it: xml_save_document (xml.cpp:3239) only tests FAILED(), City::
+     * dump_to_new_file ignores its result, so the engine reported "dumped and zipped" for a city
+     * snapshot that never existed.  That is why a recorded session replayed segment by segment
+     * with the world frozen -- no cityNNNNN.cty was written, so none was ever zipped into the
+     * time-travel archive for the replay to restore from. */
+    HRESULT save(VARIANT dest) {
+        const wchar_t *w = NULL;
+        if (dest.vt == VT_BSTR) w = dest.bstrVal;
+        if (w == NULL) return E_INVALIDARG;
+        std::string path;
+        for (const wchar_t *p = w; *p; p++) path += (char)(*p & 0xFF);   /* names are ASCII here */
+        for (size_t i = 0; i < path.size(); i++) if (path[i] == '\\') path[i] = '/';
+        wstring s;
+        if (root) root->serialize(s);
+        std::string out;
+        out.reserve(s.size());
+        for (size_t i = 0; i < s.size(); i++) {          /* the reader is byte-oriented (loadXML) */
+            wchar_t c = s[i];
+            out += (c < 0x100) ? (char)c : '?';
+        }
+        FILE *f = fopen(path.c_str(), "wb");
+        if (f == NULL) return E_FAIL;
+        size_t wrote = out.empty() ? 0 : fwrite(out.data(), 1, out.size(), f);
+        fclose(f);
+        return (wrote == out.size()) ? S_OK : E_FAIL;
+    }
 };
 
 /* --------------------------------------------------------------- DomNode bodies needing DomDocument */

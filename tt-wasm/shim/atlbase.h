@@ -151,8 +151,24 @@ public:
     _variant_t(long v)           { vt = VT_I4;   lVal = v; }
     _variant_t(bool v)           { vt = VT_BOOL; boolVal = v ? -1 : 0; }
     _variant_t(double v)         { vt = VT_R8;   dblVal = v; }
-    _variant_t(const char *)     { vt = VT_BSTR; bstrVal = 0; }
-    _variant_t(const wchar_t *)  { vt = VT_BSTR; bstrVal = 0; }
+    /* These two dropped the string on the floor and stored a null BSTR, so every VARIANT built
+     * from a file name arrived empty. xml_save_document (xml.cpp:3239) passes the destination
+     * path this way -- "_variant_t varString = full_file_name; document->save(varString)" -- so
+     * saving a city could never know where to write, which is why time-travel snapshots were
+     * never produced and a recorded session replayed with the world frozen. Small leak: the
+     * destructor stays a no-op because these are copied by value all over the engine and freeing
+     * here would double-free. */
+    _variant_t(const char *s) {
+        vt = VT_BSTR; bstrVal = 0;
+        if (s == 0) return;
+        size_t n = 0; while (s[n]) n++;
+        BSTR b = SysAllocStringLen(0, (unsigned int) n);
+        if (b == 0) return;
+        for (size_t i = 0; i < n; i++) b[i] = (wchar_t)(unsigned char) s[i];
+        b[n] = 0;
+        bstrVal = b;
+    }
+    _variant_t(const wchar_t *s) { vt = VT_BSTR; bstrVal = s ? SysAllocString(s) : 0; }
     ~_variant_t() {}
 };
 #endif

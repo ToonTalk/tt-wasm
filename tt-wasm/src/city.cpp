@@ -279,6 +279,12 @@ boolean City::dump_to_new_file(ascii_string file_name, boolean save_media_too, b
 	if (check_xml_after_titles && xml_after_titles != NULL) {
 		// new on 040504 for flat demos
 		xml_save_document(xml_after_titles,file_name,NULL,NULL,zip_file); // don't zip it here
+#ifdef __EMSCRIPTEN__
+		// Ken: the city snapshot for each time-travel segment is never produced, though this
+		// function returns TRUE. Say which branch ran and whether a file actually appeared.
+		printf("[tt] citydump: after-titles branch -> '%s' exists=%d\n",
+		       file_name,(int) file_exists(file_name)); fflush(stdout);
+#endif
 		tt_saving_media = FALSE;
 		save_media_files_in_archive(NULL); // new on 200703
 	} else if (tt_dump_as_xml) {
@@ -295,7 +301,12 @@ boolean City::dump_to_new_file(ascii_string file_name, boolean save_media_too, b
 		tt_saving_media = FALSE;
       boolean copied_full_file_name;
       ascii_string full_file_name = compute_full_file_name(file_name,"xml.cty",copied_full_file_name);
-      xml_save_document(document,full_file_name,NULL,NULL,zip_file); // don't zip it here -- FALSE new on 040504  
+      xml_save_document(document,full_file_name,NULL,NULL,zip_file); // don't zip it here -- FALSE new on 040504
+#ifdef __EMSCRIPTEN__
+		printf("[tt] citydump: xml branch asked='%s' saved-as='%s' exists=%d/%d\n",
+		       file_name,full_file_name,(int) file_exists(file_name),(int) file_exists(full_file_name));
+		fflush(stdout);
+#endif
       xml_release_document(document);
 		if (tt_current_log_segment == 1 && tt_include_media_in_time_travel_archives && !zip_file && tt_log_out_archive != NULL && 
 			 tt_sprites_with_media_to_save != NULL) { 
