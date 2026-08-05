@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmphkp0yn9o.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm4d43w8k.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmphkp0yn9o.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnt9mu1a0.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm4d43w8k.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmprixgrymu.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnt9mu1a0.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmprixgrymu.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -313,6 +313,23 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
 // cycle (DirectInput is off), expecting engine screen pixels. Map the canvas mouse position
 // (accounting for CSS scaling) into TT_mouse_x/y. Default to centre until the first move.
 globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
+
+// Tell the engine which mouse mode it is actually in, once, at startup.
+// tt_mouse_mode defaults to RELATIVE_MOUSE_MODE (globals.cpp:729) and the only thing that ever
+// changed it was tt.html's pointerlockchange handler -- so with no pointer lock there is no event,
+// and the engine stays in RELATIVE mode while pre.js feeds ABSOLUTE cursor positions. It then
+// reads each position as a delta from the client centre, gets the SAME non-zero delta every frame,
+// and walks the hand steadily that way until it jams against the edge. That is Ken's "at the end
+// of the DMO the avatar's hand moves off to the upper right corner until it can move no more":
+// demo replay deliberately never takes the lock (wantLock() excludes it), so no event ever fires;
+// during the demo the replay overwrites the hand from the log and hides it, and the moment the log
+// runs out the drift is exposed.
+Module['postRun'] = Module['postRun'] || [];
+Module['postRun'].push(function () {
+  if (Module['_em_set_mouse_mode']) {
+    Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
+  }
+});
 globalThis.TT_msgq = globalThis.TT_msgq || [];
 (function attachMouse() {
   if (typeof document === 'undefined') return;
@@ -1177,13 +1194,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp3mhci3dw.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsnl2jgxx.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp3mhci3dw.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsnl2jgxx.js
 
 
 var programArgs = [];

@@ -98,6 +98,23 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
 // cycle (DirectInput is off), expecting engine screen pixels. Map the canvas mouse position
 // (accounting for CSS scaling) into TT_mouse_x/y. Default to centre until the first move.
 globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
+
+// Tell the engine which mouse mode it is actually in, once, at startup.
+// tt_mouse_mode defaults to RELATIVE_MOUSE_MODE (globals.cpp:729) and the only thing that ever
+// changed it was tt.html's pointerlockchange handler -- so with no pointer lock there is no event,
+// and the engine stays in RELATIVE mode while pre.js feeds ABSOLUTE cursor positions. It then
+// reads each position as a delta from the client centre, gets the SAME non-zero delta every frame,
+// and walks the hand steadily that way until it jams against the edge. That is Ken's "at the end
+// of the DMO the avatar's hand moves off to the upper right corner until it can move no more":
+// demo replay deliberately never takes the lock (wantLock() excludes it), so no event ever fires;
+// during the demo the replay overwrites the hand from the log and hides it, and the moment the log
+// runs out the drift is exposed.
+Module['postRun'] = Module['postRun'] || [];
+Module['postRun'].push(function () {
+  if (Module['_em_set_mouse_mode']) {
+    Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
+  }
+});
 globalThis.TT_msgq = globalThis.TT_msgq || [];
 (function attachMouse() {
   if (typeof document === 'undefined') return;
