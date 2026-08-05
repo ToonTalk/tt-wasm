@@ -15,6 +15,7 @@ if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'fu
       if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
       origCancel(pendingId);
       cb(performance.now());
+      globalThis.TT_loop_alive = performance.now();   /* the engine loop RETURNED (freeze detector) */
     };
     try {
       if (typeof Worker !== 'undefined' && typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
@@ -33,6 +34,7 @@ if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'fu
           pending = null;
           if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
           cb(t);
+          globalThis.TT_loop_alive = performance.now();   /* the engine loop RETURNED (freeze detector) */
         }
       });
       return pendingId;
@@ -468,6 +470,31 @@ globalThis.TT_hasFile = function (path) {
   if (typeof location !== 'undefined' && /[?&]demo=/.test(location.search)) return;
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
+})();
+
+// FREEZE DETECTOR. A hang in the wasm main loop is otherwise indistinguishable from "the app
+// stopped" (Ken: dropping "Abc" on an erased text-to-speech sensor froze it) -- and once frozen,
+// nothing can be asked of the page. Presents happen every frame while the engine runs, so if the
+// tab is visible, the engine has started, no modal overlay is up, and NO present has happened for
+// 10 seconds, dump the last engine trace lines to the console automatically. The tail names the
+// last thing the engine did before the hang.
+(function freezeDetector() {
+  if (typeof window === 'undefined') return;
+  var fired = false;
+  setInterval(function () {
+    if (fired) return;
+    if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+    if (globalThis.TT_pauseOverlay) return;
+    // liveness = "the engine loop RETURNED", not "a frame was presented": a paused engine
+    // presents nothing but still cycles, and must not read as frozen.
+    var alive = globalThis.TT_loop_alive;
+    if (!alive) return;                          // engine not started (or headless)
+    if (performance.now() - alive < 10000) return;
+    fired = true;
+    var tail = (window.TT_log || []).slice(-30);
+    console.error('[tt] FROZEN: no frame presented for 10s. Last engine lines before the hang:');
+    tail.forEach(function (l) { console.error('  ' + l); });
+  }, 2500);
 })();
 
 // Master volume, 0..1. Drives the one gain node every sound passes through (dsound_impl.cpp) and

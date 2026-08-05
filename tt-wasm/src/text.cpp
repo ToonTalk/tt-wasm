@@ -778,6 +778,13 @@ ReleaseStatus Text::item_released_on_top(Sprite *item, Sprite *by,
 		};
 	};
 	if (blank) {
+#ifdef __EMSCRIPTEN__
+		/* Ken: dropping "Abc" on an ERASED text-to-speech sensor froze the app. Bounded trail of
+		 * the whole chain so the last line before silence names the loop. */
+		{ static int p = 0; if (p < 12) { p++;
+		  printf("[tt] ttsdrop: blank receive, my_kind=%d item_kind=%d\n",
+		         (int)kind_of(),(int)item->kind_of()); fflush(stdout); } }
+#endif
 //		if (item->kind_of() == INTEGER || item->kind_of() == TEXT) {
 		if (receive_item(item,by,default_duration(),this,item)) { // conditionalized on 010799
 			record_event(RELEASE_ITEM_ON,by,floor,this,TRUE); // this was commented out prior to 130499 but it is necessary robots trained to coerce a number to a string
@@ -1109,6 +1116,10 @@ wide_string Text::compute_new_text(Sprite *other, long &new_text_length, Sprite 
 };
 
 void Text::set_to_future_value(Sprite *other, Sprite *original_recipient, Sprite *by) {
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0; if (p < 12) { p++;
+	  printf("[tt] ttsdrop: set_to_future_value enter, kind=%d\n",(int)kind_of()); fflush(stdout); } }
+#endif
 	if (tt_number_to_text_exact && other->to_be_smashed() && other->kind_of() == INTEGER) {
 		// new on 111004
 		// following updated since Excel only sort of accepts 2 1/3 (not when there are many digits !?!)
@@ -1149,6 +1160,10 @@ void Text::set_to_future_value(Sprite *other, Sprite *original_recipient, Sprite
 	city_coordinate old_width = width;
 	city_coordinate old_height = height;
 	set_wide_text(new_text,new_text_length); // future_text); // ,future_text_length);
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0; if (p < 12) { p++;
+	  printf("[tt] ttsdrop: set_wide_text returned\n"); fflush(stdout); } }
+#endif
 	become_non_blank();
 //	future_text = NULL;
 	if (original_recipient != NULL && reachable_from_remote_looks(original_recipient,this) && (old_width != width || old_height != height)) { 

@@ -494,7 +494,16 @@ SpriteType MCISound::dump_type() {
 
 boolean SpeechSound::make_sound() {
 #if TT_TEXT_TO_SPEECH
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0; if (p < 12) { p++;
+	  printf("[tt] ttsdrop: make_sound enter len=%d\n",(int)text_length); fflush(stdout); } }
+	boolean answer = speak_after_preprocessing(wide_text,text_length);
+	{ static int q = 0; if (q < 12) { q++;
+	  printf("[tt] ttsdrop: make_sound done\n"); fflush(stdout); } }
+	return(answer);
+#else
 	return(speak_after_preprocessing(wide_text,text_length));
+#endif
 #endif
 };
 
@@ -557,6 +566,11 @@ void SpeechSound::java(java_stream &out) { // new on 301100
 void SpeechSound::set_wide_text(wide_string text, int new_text_length,
 										  boolean text_was_updated,
 										  boolean size_constrained_regardless) {
+#ifdef __EMSCRIPTEN__
+	{ static int p = 0; if (p < 12) { p++;
+	  printf("[tt] ttsdrop: SpeechSound::set_wide_text enter len=%d updated=%d\n",
+	         (int)new_text_length,(int)text_was_updated); fflush(stdout); } }
+#endif
 	// new on 071104 to replace numbers with names
 	if (text == NULL || new_text_length == 0 || text_was_updated) { // don't do this while typing (since too confusing)
 		Sound::set_wide_text(text,new_text_length,text_was_updated,size_constrained_regardless);
