@@ -2759,10 +2759,23 @@ boolean jump_to_log_segment(int version_number, boolean possibly_successive) {
 		possibly_successive = FALSE;
 	};
 	try {
-		return(close_input_log(TRUE,TRUE,version_number,possibly_successive)); 
+#ifdef __EMSCRIPTEN__
+		// Ken: jumping changes the segment but the city does not come back, and "Loading, please
+		// wait." never clears. Report whether the segment load actually succeeded.
+		boolean jumped = close_input_log(TRUE,TRUE,version_number,possibly_successive);
+		printf("[tt] jumpseg: close_input_log(ver=%d) -> %d  cur_seg=%d\n",
+		       version_number,(int) jumped,(int) tt_current_log_segment); fflush(stdout);
+		return(jumped);
+#else
+		return(close_input_log(TRUE,TRUE,version_number,possibly_successive));
 		// replaced FALSE with possibly_successive on 100204
 		// FALSE added on 040803 so not confused into thinking there are successive demos when jumping
+#endif
 	} catch (CycleInterruptionReason reason) {
+#ifdef __EMSCRIPTEN__
+		printf("[tt] jumpseg: close_input_log(ver=%d) THREW reason=%d (LOG_FILE_MISSING would retry)\n",
+		       version_number,(int) reason); fflush(stdout);
+#endif
 #if TT_DEBUG_ON
 		debug_this();
 #endif

@@ -11867,6 +11867,11 @@ void loading_wait(boolean not_interruptable, boolean initializing_direct_play) {
 		//tt_screen->display(FALSE);
 		tt_main_window->Paint();
 		subtitle_showing = TRUE;
+#ifdef __EMSCRIPTEN__
+		{ static int p = 0; if (p < 24) { p++;
+		  printf("[tt] loadwait: showing (not_interruptable=%d frame=%ld)\n",
+		         (int) not_interruptable,(long) tt_frame_number); fflush(stdout); } }
+#endif
 		delete [] subtitle;
 	} else {
 		if (waiting_window != NULL) return; // already up
@@ -11888,6 +11893,12 @@ void loading_wait(boolean not_interruptable, boolean initializing_direct_play) {
 };
 
 void done_waiting_for_load() {
+#ifdef __EMSCRIPTEN__
+	// Paired with the "loadwait: showing" print below: "Loading, please wait." stays on screen
+	// forever if this never runs, since this is the only thing that takes the subtitle down.
+	{ static int p = 0; if (p < 24) { p++;
+	  printf("[tt] loadwait: done (subtitle_showing=%d)\n",(int) subtitle_showing); fflush(stdout); } }
+#endif
 	if (subtitle_showing) {
 		reset_grid();
 		tt_screen->screen_dirty();
