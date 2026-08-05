@@ -2616,7 +2616,42 @@ xml_text *create_xml_text(wide_string data_string, xml_document *document) {
    return(data);
 };
 
-xml_document *document_from_string(string xml_string, int length, boolean originally_from_a_file, boolean warn) { 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Dev hook: how does the XML parser scale? Loading the retail Playground city (9.1MB of XML)
+ * wedges the renderer, and the suspicion is that the hand-written DOM in shim/msxml_impl.cpp is
+ * super-linear -- it was written for the small documents the engine normally hands it.
+ * Console: Module._tt_dev_xml_bench(n) builds a document with n elements and times the parse. */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_xml_bench(int elements) {
+	// n > 0: n small elements. n < 0: ONE text node of |n| bytes -- the shape the retail Playground
+	// city actually has (9MB in only ~7300 elements, i.e. mostly character data), and the shape a
+	// naive per-character string append would make quadratic.
+	std::string s;
+	if (elements < 0) {
+		size_t bytes = (size_t)(-elements);
+		s.reserve(bytes + 32);
+		s += "<Root>";
+		s.append(bytes,'x');
+		s += "</Root>";
+	} else {
+		s.reserve((size_t) elements * 24 + 32);
+		s += "<Root>";
+		for (int i = 0; i < elements; i++) {
+			s += "<E a=\"1\">x</E>";
+		};
+		s += "</Root>";
+	};
+	double t0 = emscripten_get_now();
+	xml_document *d = document_from_string((string) s.c_str(),(int) s.size());
+	double t1 = emscripten_get_now();
+	printf("[tt] xmlbench: elements=%d bytes=%d parse=%.1fms ok=%d\n",
+	       elements,(int) s.size(),t1-t0,(int)(d != NULL));
+	fflush(stdout);
+	if (d != NULL) xml_release_document(d);
+};
+#endif
+
+xml_document *document_from_string(string xml_string, int length, boolean originally_from_a_file, boolean warn) {
 	// abstracted on 230203 -- length arg added 281003
 	// should really have been named xml_document_from_string
 	// originally_from_a_file added 291104 to handle parse errors better
