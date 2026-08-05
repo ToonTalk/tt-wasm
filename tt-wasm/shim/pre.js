@@ -114,6 +114,22 @@ Module['postRun'].push(function () {
   if (Module['_em_set_mouse_mode']) {
     Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
   }
+  // Take the "what to run" parameters back out of the address bar once startup has read them.
+  // The opening screen reloads with ?demo=<name> (or ?puzzle=N) because the engine needs its
+  // command line before main() runs -- but leaving that in the URL means Reload silently re-runs
+  // the demo instead of returning to the opening screen, which is not how the page behaved before
+  // the launcher existed (Ken: "a refresh behaves differently than before they were added").
+  // Typing such a URL still works; it just does not survive a refresh. Dev toggles (?probes,
+  // ?tts, ?pointerlock) are deliberately left alone so they persist across reloads.
+  try {
+    if (typeof history !== 'undefined' && history.replaceState && location.search) {
+      var u = new URL(location.href);
+      ['demo', 'puzzle', 'segment', 'launcher', 'floor', 'cb'].forEach(function (k) {
+        u.searchParams['delete'](k);
+      });
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    }
+  } catch (e) {}
 });
 globalThis.TT_msgq = globalThis.TT_msgq || [];
 (function attachMouse() {

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm4d43w8k.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpqx5zo1sc.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm4d43w8k.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmprixgrymu.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpqx5zo1sc.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi9tsz6b2.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmprixgrymu.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi9tsz6b2.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -329,6 +329,22 @@ Module['postRun'].push(function () {
   if (Module['_em_set_mouse_mode']) {
     Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
   }
+  // Take the "what to run" parameters back out of the address bar once startup has read them.
+  // The opening screen reloads with ?demo=<name> (or ?puzzle=N) because the engine needs its
+  // command line before main() runs -- but leaving that in the URL means Reload silently re-runs
+  // the demo instead of returning to the opening screen, which is not how the page behaved before
+  // the launcher existed (Ken: "a refresh behaves differently than before they were added").
+  // Typing such a URL still works; it just does not survive a refresh. Dev toggles (?probes,
+  // ?tts, ?pointerlock) are deliberately left alone so they persist across reloads.
+  try {
+    if (typeof history !== 'undefined' && history.replaceState && location.search) {
+      var u = new URL(location.href);
+      ['demo', 'puzzle', 'segment', 'launcher', 'floor', 'cb'].forEach(function (k) {
+        u.searchParams['delete'](k);
+      });
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    }
+  } catch (e) {}
 });
 globalThis.TT_msgq = globalThis.TT_msgq || [];
 (function attachMouse() {
@@ -1194,13 +1210,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsnl2jgxx.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuokigitw.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsnl2jgxx.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuokigitw.js
 
 
 var programArgs = [];
