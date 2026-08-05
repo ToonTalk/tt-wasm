@@ -1101,6 +1101,7 @@ void House::open_door() {
  * door's placement against the hull can be verified without walking the avatar into the door
  * region -- synthetic clicks never manage the collision, and the door only draws while open. */
 extern House *pointer_to_rocket();
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_open_rocket_door() {
 	House *rocket = pointer_to_rocket();
 	if (rocket != NULL) {

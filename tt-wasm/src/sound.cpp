@@ -492,6 +492,42 @@ SpriteType MCISound::dump_type() {
    };
 };
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Dev hook: replay the crashing construction from Ken's symbolized stack --
+ * Remote_Picture::set_appearance_to_speech_sound makes a fresh SpeechSound from the dropped text
+ * and immediately sizes it (set_to_good_size / set_size). Ken's build died inside that sizing
+ * with "memory access out of bounds". This makes the same fresh-SpeechSound-then-size sequence
+ * callable from the console: Module._tt_dev_tts_size(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_tts_size() {
+	printf("[tt] devtts: constructing SpeechSound(\"Abc\")\n"); fflush(stdout);
+	SpeechSound *s = new SpeechSound(0,0,copy_wide_string(_T("Abc")));
+	printf("[tt] devtts: constructed, w=%ld h=%ld -- set_to_good_size\n",
+	       (long)s->current_width(),(long)s->current_height()); fflush(stdout);
+	s->set_to_good_size(NULL);
+	printf("[tt] devtts: good size -> w=%ld h=%ld\n",
+	       (long)s->current_width(),(long)s->current_height()); fflush(stdout);
+	s->set_size(s->current_width(),s->current_height());
+	printf("[tt] devtts: set_size done -- no crash\n"); fflush(stdout);
+	s->destroy();
+};
+
+/* Dev hook: replay Ken's actual crash -- drop a text pad on an ERASED text-to-speech sensor.
+ * set_appearance() ignores new appearances for blank sensors (number.cpp "// ignore it"), so
+ * set_appearance_to_speech_sound() then calls set_text_appearance_size(appearance) with
+ * appearance==NULL.  Console: Module._tt_dev_tts_drop_erased(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_tts_drop_erased() {
+	printf("[tt] devtts2: new Remote_Picture(TEXT_TO_SPEECH_REMOTE)\n"); fflush(stdout);
+	Remote_Picture *sensor = new Remote_Picture(tt_global_picture,TEXT_TO_SPEECH_REMOTE);
+	printf("[tt] devtts2: become_blank (erase, as the wand does)\n"); fflush(stdout);
+	sensor->become_blank(TRUE,FALSE);
+	Text *pad = new Text(0,0,copy_wide_string(_T("Abc")));
+	printf("[tt] devtts2: set_to_future_value(pad) -- pre-fix this traps in set_size\n"); fflush(stdout);
+	sensor->set_to_future_value(pad,pad,NULL);
+	printf("[tt] devtts2: survived set_to_future_value -- no crash\n"); fflush(stdout);
+};
+#endif
+
 boolean SpeechSound::make_sound() {
 #if TT_TEXT_TO_SPEECH
 #ifdef __EMSCRIPTEN__

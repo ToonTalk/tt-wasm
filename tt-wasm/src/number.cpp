@@ -10090,6 +10090,18 @@ wide_string Remote_Picture::text_value() { // new on 170102 so it behaves as it 
 };
 
 void Remote_Picture::set_text_appearance_size(Sprite *text) {
+#ifdef __EMSCRIPTEN__
+	// The set_appearance_to_*_sound() callers pass the `appearance` member, but for a BLANK
+	// (erased) clipboard/file/MCI/speech sensor set_appearance() ignores the new appearance
+	// ("// ignore it" above) and leaves `appearance` NULL -- the original then dereferenced
+	// NULL here (an access violation on Win32 too; latent original bug, hit by dropping a
+	// text pad on an erased text-to-speech sensor).  Nothing to size, so just return.
+	if (text == NULL) {
+		printf("[tt] ttsdrop: set_text_appearance_size(NULL) -- blank sensor kept no appearance, skipping\n");
+		fflush(stdout);
+		return;
+	};
+#endif
    if (leader != NULL) {
       text->set_size(width,height);
    } else { // otherwise free to have good dimensions of the text
