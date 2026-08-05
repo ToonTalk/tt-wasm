@@ -9,7 +9,16 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"; cd "$HERE" || exit 1
 EMCC=/c/Users/toont/dev/emsdk/upstream/emscripten/emcc.exe
-mkdir -p build logs
+mkdir -p build logs .tmp
+
+# Keep every temp file emcc/node generate inside .tmp instead of %TEMP%.
+# Reason: emcc runs file_packager, writes its ~105KB generated asset-loader JS to a temp file and
+# feeds it back to the JS compiler as a pre-js.  Windows Defender's ML heuristic
+# (Trojan:Script/ObfusScript.A!ml, threat 2147842389) false-positives on that generated blob, so
+# node's readFileSync fails with an opaque "UNKNOWN: unknown error, open ...tmpXXXX.js" and the
+# whole link dies with "Internal compiler error JS compiler".  Concentrating the temp files here
+# means the Defender exclusion needed to build is ONE project folder rather than all of %TEMP%.
+export TMPDIR="$HERE/.tmp" TEMP="$HERE/.tmp" TMP="$HERE/.tmp"
 
 # 0. compile the shim .cpp that carry real code (COM data symbols, entry, MSXML DOM) into obj/
 for s in guids diformats entry msxml_impl ddraw_impl gdi_impl dunzip_impl dzip_impl dsound_impl; do
@@ -54,6 +63,15 @@ EXTRA="${1:-}"
   -sSTACK_SIZE=16777216 \
   -sUSE_ZLIB=1 -lidbfs.js -sASSERTIONS=2 $EXTRA -o build/tt.js 2>logs/link.err
 rc=$?; echo "link exit=$rc"
+if [ $rc -ne 0 ] && grep -q "UNKNOWN: unknown error, open" logs/link.err; then
+  # Don't let this one masquerade as a code error again -- emcc reports it as
+  # "Internal compiler error JS compiler", which sends you hunting through the shim for hours.
+  echo "*** This is NOT a code error: Windows Defender is blocking the asset-loader JS that"
+  echo "*** emcc generates (false positive Trojan:Script/ObfusScript.A!ml, threat 2147842389)."
+  echo "*** Fix: add a Defender FOLDER exclusion for   $HERE/.tmp"
+  echo "*** (Windows Security > Virus & threat protection > Manage settings > Exclusions),"
+  echo "*** and consider submitting the file to Microsoft as a false positive."
+fi
 [ $rc -ne 0 ] && { echo "--- link errors ---"; tail -30 logs/link.err; exit 1; }
 # The recorded .dmo demos (~36MB) are served over HTTP rather than preloaded into tt.data —
 # pre.js fetches the one named by ?demo=<name>. Mirror them from the retail install if present
