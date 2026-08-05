@@ -285,6 +285,15 @@ void set_member(std::vector<Member> &members, const std::string &name,
 /* Expand one item, which may end in a wildcard, into real file paths. */
 void expand_item(const std::string &item, std::vector<std::string> &files) {
     std::string p = slashes(item);
+    /* The engine quotes a source path whenever it may contain spaces (zip.cpp:273,
+     * quote_file_name), which is exactly what real DZIP expects. Without stripping the quotes here
+     * the name never opens, expand_item yields nothing, and ZIP_ADD silently adds no member.
+     * That is why a recorded session's city*.cty snapshots -- written into "Temporary File Cache",
+     * a name with spaces -- never reached the archive, so replaying one moved between segments
+     * with the world frozen at its starting state. */
+    if (p.size() >= 2 && p[0] == '"' && p[p.size() - 1] == '"') {
+        p = p.substr(1, p.size() - 2);
+    }
     if (p.find('*') == std::string::npos && p.find('?') == std::string::npos) {
         FILE *f = fopen(p.c_str(), "rb");
         if (f) { fclose(f); files.push_back(p); }
@@ -339,7 +348,15 @@ extern "C" int FAR PASCAL dzip(LPZIPCMDSTRUCT z) {
                 expand_item(items[i], files);
                 for (size_t k = 0; k < files.size(); k++) {
                     Bytes data;
-                    if (!read_file(files[k], data)) continue;
+                    bool got = read_file(files[k], data);
+                    /* Ken: recorded sessions replay but never restore the world, because no
+                     * city*.cty member is in the archive even though the engine reports dumping
+                     * and zipping one. Say what each ZIP_ADD actually read and under what name. */
+                    printf("[tt] dzipadd: '%s' read=%d size=%d -> member '%s'\n", files[k].c_str(),
+                           (int) got, (int) data.size(),
+                           archive_name_for(files[k], basename_only).c_str());
+                    fflush(stdout);
+                    if (!got) continue;
                     set_member(members, archive_name_for(files[k], basename_only),
                                data.empty() ? (const unsigned char *)"" : &data[0], data.size(),
                                z->compFactor);

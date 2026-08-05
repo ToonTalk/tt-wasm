@@ -862,12 +862,39 @@ void dump_city_to_log() {
 		char full_city_file_name[MAX_PATH];
 		strcpy(full_city_file_name,tt_extracted_file_temp_directory);
 		strcat(full_city_file_name,city_file_name);
+#ifdef __EMSCRIPTEN__
+		/* tt_extracted_file_temp_directory carries Windows separators, and under Emscripten's
+		 * filesystem '\' is an ordinary filename character, not a separator -- so this path never
+		 * resolves and the snapshot is dropped before the zip writer is ever reached.  Proof: with
+		 * a probe inside ZIP_ADD, every log segment arrives (as ".../Temporary File Cache/
+		 * log00001.dmo", forward slashes) and no city*.cty ever does, which is why a recorded
+		 * session replays segment by segment with the world frozen at its starting state. */
+		for (char *s = full_city_file_name; *s != '\0'; s++) {
+			if (*s == '\\') *s = '/';
+		};
+#endif
 		if (tt_titles_ended_on_frame > tt_frame_number) {
 			// new on 050805 since city is saved incorrectly during the titles
 			tt_dump_city_to_file_name_when_titles_over = copy_string(full_city_file_name);
+#ifdef __EMSCRIPTEN__
+			// Ken: replaying a recorded session jumps between segments but the world never changes,
+			// because cityNNNNN.cty is not in the archive. These three prints say which of the ways
+			// of not writing it happened: deferred to titles-over, dump failed, or written and zipped.
+			printf("[tt] citywrite: DEFERRED to titles-over '%s' (titles_end=%ld frame=%ld)\n",
+			       full_city_file_name,(long) tt_titles_ended_on_frame,(long) tt_frame_number);
+			fflush(stdout);
+#endif
 		} else if (tt_city->dump_to_new_file(full_city_file_name,TRUE,TRUE,FALSE)) { // don't zip it here since zipped below
 			// made conditional on 150105
 			zip_file(tt_log_out_archive,full_city_file_name); // this could be done later when "there is time"
+#ifdef __EMSCRIPTEN__
+			printf("[tt] citywrite: dumped and zipped '%s'\n",full_city_file_name); fflush(stdout);
+#endif
+#ifdef __EMSCRIPTEN__
+		} else {
+			printf("[tt] citywrite: dump_to_new_file FAILED '%s' -- nothing added to the archive\n",
+			       full_city_file_name); fflush(stdout);
+#endif
 		};
 //	};
 	restore_cursor();
