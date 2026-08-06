@@ -124,7 +124,7 @@ Module['postRun'].push(function () {
   try {
     if (typeof history !== 'undefined' && history.replaceState && location.search) {
       var u = new URL(location.href);
-      ['demo', 'puzzle', 'segment', 'launcher', 'floor', 'cb'].forEach(function (k) {
+      ['demo', 'puzzle', 'segment', 'launcher', 'floor', 'cb', 'user'].forEach(function (k) {
         u.searchParams['delete'](k);
       });
       history.replaceState(null, '', u.pathname + u.search + u.hash);
