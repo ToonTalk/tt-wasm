@@ -156,13 +156,108 @@ addToLibrary({
   // many engine sites allocate via GlobalAlloc; the 0-stub returned NULL and the next write hit
   // address 0. GMEM_ZEROINIT / LMEM_ZEROINIT = 0x40. Handles are fixed pointers (Lock = identity).
   GlobalAlloc__deps: ['malloc'],
-  GlobalAlloc: function(flags, size) { size = size || 1; var p = _malloc(size); if (p && (flags & 0x40)) HEAPU8.fill(0, p, p + size); return p; },
+  GlobalAlloc: function(flags, size) {
+    size = size || 1; var p = _malloc(size);
+    if (p && (flags & 0x40)) HEAPU8.fill(0, p, p + size);
+    // GlobalSize has a caller that matters: the paste path does `size = GlobalSize(handle)` and
+    // then `if (text_length < size) size = text_length + 1`, so a zero-stub returning 0 collapses
+    // the pasted text to nothing. malloc does not remember sizes for us, so record them.
+    if (p) { var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {}); m[p] = size; }
+    return p;
+  },
+  GlobalSize: function(p) { var m = globalThis.TT_globalSizes; return (m && m[p]) || 0; },
   GlobalReAlloc__deps: ['realloc'],
-  GlobalReAlloc: function(p, size, flags) { return _realloc(p, size || 1); },
+  GlobalReAlloc: function(p, size, flags) {
+    size = size || 1; var q = _realloc(p, size);
+    var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {});
+    if (p) delete m[p];
+    if (q) m[q] = size;
+    return q;
+  },
   GlobalFree__deps: ['free'],
-  GlobalFree: function(p) { if (p) _free(p); return 0; },
+  GlobalFree: function(p) {
+    if (p) { _free(p); var m = globalThis.TT_globalSizes; if (m) delete m[p]; }
+    return 0;
+  },
   GlobalLock: function(p) { return p; },
   GlobalUnlock: function(p) { return 1; },
+
+  // --- Clipboard (Ken: "The clipboard sensor doesn't work") ---------------------------------
+  // The engine reads the clipboard SYNCHRONOUSLY, mid-frame: IsClipboardFormatAvailable, then
+  // OpenClipboard / GetClipboardData / GlobalLock / CloseClipboard. The browser's clipboard read
+  // is asynchronous and permission-gated, so it cannot answer inside that call. The way across is
+  // a mirror: keep the last text we have seen in JS, serve THAT synchronously, and refresh it out
+  // of band. Reading is therefore "the clipboard as of the last paste or permission grant", which
+  // is the honest best a page can do -- and a real Ctrl-V always lands, because a paste event
+  // carries its own data.
+  // CF_TEXT = 1, CF_UNICODETEXT = 13, CF_HDROP = 15 (files: never available here).
+  $TT_clip: {},
+  $TT_clip__postset:
+    'globalThis.TT_clipText = "";' +
+    'TT_clip.bufs = {};' +
+    'TT_clip.set = function (s) { globalThis.TT_clipText = (s == null) ? "" : String(s); };' +
+    // A paste gesture hands us the text directly -- no permission needed, always current.
+    'try { document.addEventListener("paste", function (e) {' +
+    '  try { TT_clip.set((e.clipboardData || globalThis.clipboardData).getData("text/plain")); } catch (err) {}' +
+    '}); } catch (e) {}' +
+    // Otherwise ask, whenever the page regains focus. Rejection is normal (no permission, not
+    // focused, unsupported) and must stay silent: the mirror simply keeps its previous value.
+    'TT_clip.refresh = function () {' +
+    '  try { if (navigator.clipboard && navigator.clipboard.readText) {' +
+    '    navigator.clipboard.readText().then(function (t) { TT_clip.set(t); }, function () {}); } } catch (e) {}' +
+    '};' +
+    'try { globalThis.addEventListener("focus", TT_clip.refresh); } catch (e) {}',
+  IsClipboardFormatAvailable__deps: ['$TT_clip'],
+  IsClipboardFormatAvailable: function(fmt) {
+    if (fmt === 15) return 0;                       // CF_HDROP: no file drops from a web page
+    return (globalThis.TT_clipText && globalThis.TT_clipText.length) ? 1 : 0;
+  },
+  OpenClipboard__deps: ['$TT_clip'],
+  OpenClipboard: function(hwnd) { TT_clip.refresh(); return 1; },  // refresh for NEXT time
+  CloseClipboard: function() { return 1; },
+  EmptyClipboard__deps: ['$TT_clip'],
+  EmptyClipboard: function() { TT_clip.set(""); return 1; },
+  GetClipboardData__deps: ['$TT_clip', 'malloc', 'free'],
+  GetClipboardData: function(fmt) {
+    if (fmt === 15) return 0;
+    var s = globalThis.TT_clipText || "";
+    if (!s.length) return 0;
+    // The clipboard owns what it hands back, so the engine never frees this. Keep one buffer per
+    // format and release the previous one instead of leaking a copy per read.
+    var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {});
+    var old = TT_clip.bufs[fmt];
+    if (old) { _free(old); delete m[old]; }
+    var p, bytes;
+    if (fmt === 13) {                               // CF_UNICODETEXT: UTF-16, NUL terminated
+      bytes = (s.length + 1) * 2;
+      p = _malloc(bytes);
+      if (!p) return 0;
+      for (var i = 0; i < s.length; i++) HEAPU16[(p >> 1) + i] = s.charCodeAt(i) & 0xFFFF;
+      HEAPU16[(p >> 1) + s.length] = 0;
+    } else {                                        // CF_TEXT: bytes, NUL terminated
+      bytes = lengthBytesUTF8(s) + 1;
+      p = _malloc(bytes);
+      if (!p) return 0;
+      stringToUTF8(s, p, bytes);
+    }
+    TT_clip.bufs[fmt] = p;
+    m[p] = bytes;                                   // so GlobalSize can answer for it
+    return p;
+  },
+  SetClipboardData__deps: ['$TT_clip'],
+  SetClipboardData: function(fmt, handle) {
+    if (!handle) return 0;
+    var s = (fmt === 13) ? UTF16ToString(handle) : UTF8ToString(handle);
+    TT_clip.set(s);
+    // Push to the real clipboard too. Fire and forget: without a user gesture or permission this
+    // rejects, and the mirror still holds the text so copy-inside-ToonTalk keeps working.
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(s).then(function () {}, function () {});
+      }
+    } catch (e) {}
+    return handle;
+  },
   LocalAlloc__deps: ['malloc'],
   LocalAlloc: function(flags, size) { size = size || 1; var p = _malloc(size); if (p && (flags & 0x40)) HEAPU8.fill(0, p, p + size); return p; },
   LocalReAlloc__deps: ['realloc'],

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmppago1l8v.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpx83vc9i2.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmppago1l8v.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpavtrdi77.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpx83vc9i2.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpf2ievbfq.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpavtrdi77.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpf2ievbfq.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1350,13 +1350,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7i3bm_t1.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmprjd36ro8.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7i3bm_t1.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmprjd36ro8.js
 
 
 var programArgs = [];
@@ -2199,7 +2199,7 @@ async function createWasm() {
 
   function _ClipCursor(){ return 0; }
 
-  function _CloseClipboard(){ return 0; }
+  function _CloseClipboard() { return 1; }
 
   var initRandomFill = () => {
       // This block is not needed on v19+ since crypto.getRandomValues is builtin
@@ -5368,7 +5368,9 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       return 0;
     }
 
-  function _EmptyClipboard(){ return 0; }
+  var TT_clip = {
+  };
+  function _EmptyClipboard() { TT_clip.set(""); return 1; }
 
   function _EndDialog(){ return 0; }
 
@@ -5408,7 +5410,34 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       return (k && k[vk]) ? -32768 : 0;
     }
 
-  function _GetClipboardData(){ return 0; }
+  
+  
+  function _GetClipboardData(fmt) {
+      if (fmt === 15) return 0;
+      var s = globalThis.TT_clipText || "";
+      if (!s.length) return 0;
+      // The clipboard owns what it hands back, so the engine never frees this. Keep one buffer per
+      // format and release the previous one instead of leaking a copy per read.
+      var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {});
+      var old = TT_clip.bufs[fmt];
+      if (old) { _free(old); delete m[old]; }
+      var p, bytes;
+      if (fmt === 13) {                               // CF_UNICODETEXT: UTF-16, NUL terminated
+        bytes = (s.length + 1) * 2;
+        p = _malloc(bytes);
+        if (!p) return 0;
+        for (var i = 0; i < s.length; i++) HEAPU16[(p >> 1) + i] = s.charCodeAt(i) & 0xFFFF;
+        HEAPU16[(p >> 1) + s.length] = 0;
+      } else {                                        // CF_TEXT: bytes, NUL terminated
+        bytes = lengthBytesUTF8(s) + 1;
+        p = _malloc(bytes);
+        if (!p) return 0;
+        stringToUTF8(s, p, bytes);
+      }
+      TT_clip.bufs[fmt] = p;
+      m[p] = bytes;                                   // so GlobalSize can answer for it
+      return p;
+    }
 
   function _GetCurrentProcess(){ return 0; }
 
@@ -5608,9 +5637,20 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _GetWindowRect(h, r) { HEAP32[r >> 2] = 0; HEAP32[(r >> 2) + 1] = 0; HEAP32[(r >> 2) + 2] = 1024; HEAP32[(r >> 2) + 3] = 768; return 1; }
 
-  function _GlobalAlloc(flags, size) { size = size || 1; var p = _malloc(size); if (p && (flags & 0x40)) HEAPU8.fill(0, p, p + size); return p; }
+  function _GlobalAlloc(flags, size) {
+      size = size || 1; var p = _malloc(size);
+      if (p && (flags & 0x40)) HEAPU8.fill(0, p, p + size);
+      // GlobalSize has a caller that matters: the paste path does `size = GlobalSize(handle)` and
+      // then `if (text_length < size) size = text_length + 1`, so a zero-stub returning 0 collapses
+      // the pasted text to nothing. malloc does not remember sizes for us, so record them.
+      if (p) { var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {}); m[p] = size; }
+      return p;
+    }
 
-  function _GlobalFree(p) { if (p) _free(p); return 0; }
+  function _GlobalFree(p) {
+      if (p) { _free(p); var m = globalThis.TT_globalSizes; if (m) delete m[p]; }
+      return 0;
+    }
 
   function _GlobalLock(p) { return p; }
 
@@ -5626,9 +5666,15 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       return 1;
     }
 
-  function _GlobalReAlloc(p, size, flags) { return _realloc(p, size || 1); }
+  function _GlobalReAlloc(p, size, flags) {
+      size = size || 1; var q = _realloc(p, size);
+      var m = globalThis.TT_globalSizes || (globalThis.TT_globalSizes = {});
+      if (p) delete m[p];
+      if (q) m[q] = size;
+      return q;
+    }
 
-  function _GlobalSize(){ return 0; }
+  function _GlobalSize(p) { var m = globalThis.TT_globalSizes; return (m && m[p]) || 0; }
 
   function _GlobalUnlock(p) { return 1; }
 
@@ -5657,7 +5703,10 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _IsCharUpperA(){ return 0; }
 
-  function _IsClipboardFormatAvailable(){ return 0; }
+  function _IsClipboardFormatAvailable(fmt) {
+      if (fmt === 15) return 0;                       // CF_HDROP: no file drops from a web page
+      return (globalThis.TT_clipText && globalThis.TT_clipText.length) ? 1 : 0;
+    }
 
   function _IsIconic(){ return 0; }
 
@@ -8442,7 +8491,7 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       return m;
     }
 
-  function _OpenClipboard(){ return 0; }
+  function _OpenClipboard(hwnd) { TT_clip.refresh(); return 1; }
 
   
   
@@ -8497,7 +8546,20 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _SetCapture(){ return 0; }
 
-  function _SetClipboardData(){ return 0; }
+  
+  function _SetClipboardData(fmt, handle) {
+      if (!handle) return 0;
+      var s = (fmt === 13) ? UTF16ToString(handle) : UTF8ToString(handle);
+      TT_clip.set(s);
+      // Push to the real clipboard too. Fire and forget: without a user gesture or permission this
+      // rejects, and the mirror still holds the text so copy-inside-ToonTalk keeps working.
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(s).then(function () {}, function () {});
+        }
+      } catch (e) {}
+      return handle;
+    }
 
   function _SetCursor(){ return 0; }
 
@@ -9955,6 +10017,7 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
   FS.createPreloadedFile = FS_createPreloadedFile;
   FS.preloadFile = FS_preloadFile;
   FS.staticInit();;
+globalThis.TT_clipText = "";TT_clip.bufs = {};TT_clip.set = function (s) { globalThis.TT_clipText = (s == null) ? "" : String(s); };try { document.addEventListener("paste", function (e) {  try { TT_clip.set((e.clipboardData || globalThis.clipboardData).getData("text/plain")); } catch (err) {}}); } catch (e) {}TT_clip.refresh = function () {  try { if (navigator.clipboard && navigator.clipboard.readText) {    navigator.clipboard.readText().then(function (t) { TT_clip.set(t); }, function () {}); } } catch (e) {}};try { globalThis.addEventListener("focus", TT_clip.refresh); } catch (e) {};
 
       Module['requestAnimationFrame'] = MainLoop.requestAnimationFrame;
       Module['pauseMainLoop'] = MainLoop.pause;
@@ -10415,6 +10478,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'TT_isAlpha',
   'TT_writeCStr',
   'TT_readIniValue',
+  'TT_clip',
   'TT_resolvePath',
   'TT_sysStatics',
   'TT_palettes',
