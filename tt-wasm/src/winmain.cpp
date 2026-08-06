@@ -822,6 +822,9 @@ void restore_surface(draw_surface surface) {
          log("Ignoring problem restoring direct draw surface since ToonTalk is minimized.");
 		} else if (result == DDERR_WRONGMODE && !re_initializing_direct_draw) { // new on 150404 trying to recover by re-initializing directX
 			UnwindProtect<boolean> set(re_initializing_direct_draw,TRUE);
+#ifdef __EMSCRIPTEN__
+			{ extern int tt_em_idd_from[4]; tt_em_idd_from[0]++; }
+#endif
 			tt_main_window->initialize_direct_draw();
       } else {
          dderr(result,_T("Restoring a lost DirectDraw surface."));
@@ -2361,7 +2364,38 @@ void MainWindow::initialize() {
 };
 
 extern "C" void tt_png_set_palette(const unsigned int *colorrefs, int count); /* shim/png_impl.cpp */
+#ifdef __EMSCRIPTEN__
+/* how many times the palette has been rebuilt; the city-load walk in xml.cpp reports it so a
+ * repeated re-initialization shows up as a ratio against elements walked rather than as an
+ * unreadable flood of identical console lines */
+int tt_em_palette_inits = 0;
+/* which recovery path keeps re-entering initialize_direct_draw:
+ * 0 = DDERR_WRONGMODE restore, 1 = lock_back_surface, 2 = lock_front_surface, 3 = Main loop */
+int tt_em_idd_from[4] = {0, 0, 0, 0};
+#endif
 void MainWindow::initialize_palette() {
+#ifdef __EMSCRIPTEN__
+	tt_em_palette_inits++;
+	/* The one repeat caller (initialize_direct_draw, re-entered by toggle_pause on every un-pause)
+	 * guards this with `direct_draw_palette == NULL`. On Windows that handle is created on the
+	 * first pass, so the palette is built once. The port has no DirectDraw object at all --
+	 * direct_draw and direct_draw_palette stay NULL forever -- so the guard never closes, and
+	 * since ask_response_to_load_interruption() un-pauses on every poll of a long load, a 9MB city
+	 * rebuilt the whole palette hundreds of times. That was ~36ms a rebuild and essentially the
+	 * entire load time. The palette is a pure function of the art's colour table, so cache that
+	 * table and skip the rebuild while it is unchanged (a different picture directory still
+	 * rebuilds, as does the first call). */
+	{
+		static RGBQUAD cached_colors[colors_count];
+		static boolean have_cached_colors = FALSE;
+		if (default_header != NULL) {
+			if (have_cached_colors && tt_colors_available > 0 &&
+				 memcmp(cached_colors,default_header->bmiColors,sizeof(cached_colors)) == 0) return;
+			memcpy(cached_colors,default_header->bmiColors,sizeof(cached_colors));
+			have_cached_colors = TRUE;
+		};
+	}
+#endif
 	tt_colors_available = 0;
    HDC visible_device_context = GetDC(window_handle);
 	if ((GetDeviceCaps(visible_device_context,RASTERCAPS) & RC_PALETTE) &&
@@ -2378,6 +2412,7 @@ void MainWindow::initialize_palette() {
 		PALETTEENTRY pe[colors_count];
 		GetPaletteEntries(palette_handle,0,colors_count,pe);
 #ifdef __EMSCRIPTEN__
+		if (tt_em_palette_inits <= 3) /* it repeats; the count is what matters, not another copy */
 		printf("[tt] palinit: hdr[2]=%d,%d,%d pe[2]=%d,%d,%d pe[20]=%d,%d,%d use=%d\n",
 			default_header->bmiColors[2].rgbRed, default_header->bmiColors[2].rgbGreen, default_header->bmiColors[2].rgbBlue,
 			pe[2].peRed, pe[2].peGreen, pe[2].peBlue, pe[20].peRed, pe[20].peGreen, pe[20].peBlue,
@@ -3686,6 +3721,9 @@ boolean lock_back_surface() {
 #if TT_DEBUG_ON
       log(_T("Lost back surface -- re-initializing direct draw..."));
 #endif
+#ifdef __EMSCRIPTEN__
+      tt_em_idd_from[1]++;
+#endif
       tt_main_window->initialize_direct_draw(); // any harm doing this again??
 #if TT_DEBUG_ON
       if (tt_debug_mode == 130502) {
@@ -3739,6 +3777,9 @@ boolean lock_front_surface() {
    if (front_surface == NULL) { // added on 070699 since crashed when virtual memory was too low
 #if TT_DEBUG_ON
       log(_T("Lost front surface -- re-initializing direct draw..."));
+#endif
+#ifdef __EMSCRIPTEN__
+      tt_em_idd_from[2]++;
 #endif
       tt_main_window->initialize_direct_draw(); // any harm doing this again??
 #if TT_DEBUG_ON
@@ -7849,9 +7890,10 @@ void toggle_pause(boolean interrupted, boolean shutting_down, boolean ask) {
    };
 #endif
 #ifdef __EMSCRIPTEN__
+   { static int pp = 0; if (pp < 12) { pp++;   /* toggle_pause is hot; a flood tells us nothing more */
    printf("[tt] pausepath: toggle_pause toggling=%d init=%d paused=%d ask=%d shut=%d replaying=%d\n",
           (int)toggling_pause,(int)initialization_completed,(int)paused,(int)ask,(int)shutting_down,(int)replaying());
-   fflush(stdout);
+   fflush(stdout); } }
 #endif
    if (toggling_pause) return; // no recursive calls
    if (!initialization_completed) return; // too early

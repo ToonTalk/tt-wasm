@@ -1770,6 +1770,9 @@ boolean one_tt_cycle() {
 				tt_main_window->set_window_size(tt_screen_width,tt_screen_height,TRUE);
 				tt_main_window->compute_screen_dimensions(tt_screen_width,tt_screen_height);
 				release_direct_draw(TRUE);
+#ifdef __EMSCRIPTEN__
+				{ extern int tt_em_idd_from[4]; tt_em_idd_from[3]++; }
+#endif
 				tt_main_window->initialize_direct_draw(); // new on 240105
 				delete tt_screen;
 				tt_screen = new Screen();

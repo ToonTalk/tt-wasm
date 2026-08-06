@@ -306,7 +306,14 @@ Tag tag_token(xml_node *element) {
 		tt_em_tag_count++;
 		if (tt_em_tag_count % 2048 == 0) {
 			double ms = emscripten_get_now()-tt_em_tag_t0;
-			printf("[tt] tagwalk: %d tags, %.0fms\n",tt_em_tag_count,ms); fflush(stdout);
+			/* presents and palette rebuilds per element: the walk is linear but ~6ms/element, so
+			 * the cost is something being re-run per element, not the tree size itself */
+			extern int tt_em_palette_inits;
+			extern int tt_em_idd_from[4];
+			int presents = EM_ASM_INT({ return globalThis.TT_presents|0; });
+			printf("[tt] tagwalk: %d tags, %.0fms, presents=%d, palinits=%d, idd=%d/%d/%d/%d\n",
+				    tt_em_tag_count,ms,presents,tt_em_palette_inits,
+				    tt_em_idd_from[0],tt_em_idd_from[1],tt_em_idd_from[2],tt_em_idd_from[3]); fflush(stdout);
 			EM_ASM({
 				try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {}
 			},tt_em_tag_count,ms);

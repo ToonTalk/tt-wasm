@@ -50,10 +50,20 @@ if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'fu
 // primary surface changes (Flip / Blt-to-primary). In a browser it paints #ttcanvas —
 // 8-bit indices through the PALETTEENTRY LUT (RGB + flags, 4 bytes each) into RGBA
 // ImageData, flipping rows (the surface is bottom-up, DIB-style). Headless it just counts.
-var TT_ctx = null, TT_img = null, TT_presents = 0;
+var TT_ctx = null, TT_img = null, TT_img32 = null, TT_presents = 0;
+globalThis.TT_presents = 0;         // mirrored so the C++ city-load probe can report frames/element
+// Palette expansion runs 480,000 times a frame, so it is worth doing as one 32-bit store per
+// pixel instead of four byte stores plus three palette reads. TT_lut holds each palette entry
+// pre-swizzled into a packed RGBA word; it is rebuilt only when the palette bytes actually
+// change (comparing 1024 bytes to decide is free next to the pixel loop it guards).
+var TT_lut = new Uint32Array(256), TT_lutPal = new Uint8Array(1024), TT_lutValid = false;
+var TT_little_endian = (function () {
+  var b = new ArrayBuffer(4); new Uint32Array(b)[0] = 1; return new Uint8Array(b)[0] === 1;
+})();
 globalThis.TT_present_times = [];   // ring of recent present timestamps (for the ?fps=1 overlay)
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
+  globalThis.TT_presents = TT_presents;
   if (typeof performance !== 'undefined') {
     var pt = globalThis.TT_present_times;
     pt.push(performance.now());
@@ -74,9 +84,30 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
     c.width = w; c.height = h;
     TT_ctx = c.getContext('2d');
     TT_img = TT_ctx.createImageData(w, h);
+    TT_img32 = new Uint32Array(TT_img.data.buffer);
   }
   var src = HEAPU8, dst = TT_img.data;
   var pal = palPtr ? HEAPU8.subarray(palPtr, palPtr + 1024) : null;
+  if (TT_little_endian) {
+    // refresh the lookup table if the palette moved or changed under us
+    var stale = !TT_lutValid;
+    if (!stale && pal) { for (var q = 0; q < 1024; q += 4) if (TT_lutPal[q] !== pal[q] ||
+        TT_lutPal[q + 1] !== pal[q + 1] || TT_lutPal[q + 2] !== pal[q + 2]) { stale = true; break; } }
+    else if (!pal) stale = !TT_lutValid;
+    if (stale) {
+      for (var e = 0; e < 256; e++) {
+        var k4 = e * 4;
+        var r = pal ? pal[k4] : e, g = pal ? pal[k4 + 1] : e, bl = pal ? pal[k4 + 2] : e;
+        TT_lut[e] = (255 << 24) | (bl << 16) | (g << 8) | r;   // packed RGBA, little-endian
+      }
+      if (pal) TT_lutPal.set(pal);
+      TT_lutValid = true;
+    }
+    var d32 = TT_img32, lut = TT_lut, N32 = w * h;
+    for (var i32 = 0; i32 < N32; i32++) d32[i32] = lut[src[ptr + i32]];
+    TT_ctx.putImageData(TT_img, 0, 0);
+    return;
+  }
   // Surface memory is TOP-DOWN (row 0 = top scanline), matching what the engine's TT_DIRECTX
   // build expects of DirectDraw surfaces (blt_to_back_surface pre-flips its y-up marks into
   // top-down rects). Present rows straight. A bottom-up present here mirrored every sprite's

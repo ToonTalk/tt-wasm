@@ -236,7 +236,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_png_set_palette(const unsigned int *colo
     }
     for (int i = count; i < 256; i++) { g_engine_pal[i][0] = g_engine_pal[i][1] = g_engine_pal[i][2] = 0; }
     g_have_engine_pal = true;
-    printf("[tt] png: engine palette adopted (%d entries)\n", count); fflush(stdout);
+    { static int ap = 0; if (ap < 3) { ap++;   /* the engine re-runs palette init; say so once */
+      printf("[tt] png: engine palette adopted (%d entries)\n", count); fflush(stdout); } }
 }
 
 /* Is an existing twin usable? Twins written before the 8-bit switch are 24-bit and render as
