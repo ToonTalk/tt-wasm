@@ -4701,7 +4701,27 @@ short int Notebook::add_remotes(RemoteIdentifier *identifiers, int start, int st
 	Remote_Integer *remote_integer;
 	for (int i = start/2; i < stop; i++) {
 		RemoteIdentifier identifier = identifiers[i];
-		text = variable_width_text_pad(S(IDS_X_LONG_LABEL+identifier),text_pad_see_all);
+		string long_label = S(IDS_X_LONG_LABEL+identifier);
+#ifdef __EMSCRIPTEN__
+		/* Ken: "The MCI sensor doesn't make sense anymore but if we remove it a DMO expecting a
+		 * different sensor on a particular page number might break. Either replace it with
+		 * something or put a message that this sensor is obsolete instead of the sensor" -- with
+		 * a kid-friendly word. Both of these drive MCI (the source calls FILE_TO_SOUND "uses MCI"
+		 * itself), and mciSendString has nothing behind it in a browser, so they can only sit
+		 * there doing nothing without saying why.
+		 * The sensor itself is deliberately left in its cubby: replacing it would change what a
+		 * page HOLDS as well as what it says, and page numbers staying stable is the whole point.
+		 * So the page a child reads explains it, and the thing beside it is simply inert. */
+		switch (identifier) {
+			case TEXT_TO_MCI_REMOTE:
+			case FILE_TO_SOUND_REMOTE:
+				long_label = "This sensor is retired.\rIt played sounds and movies\ra way that today's computers\rno longer understand.";
+				break;
+			default:
+				break;
+		};
+#endif
+		text = variable_width_text_pad(long_label,text_pad_see_all);
 		add_page(page++,text);
 		cubby = new Cubby();
 		if (remote_address(identifier)) { // put both in the same box
