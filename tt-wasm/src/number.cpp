@@ -8783,9 +8783,23 @@ boolean Remote_Picture::receive_item(Sprite *item, Sprite *by, millisecond durat
 							//};
 							item->set_size_and_location_to_those_of(this);
 						};
-						call_in_a_mouse(this,make_indirect_picture(item),item->pointer_to_background(),by,FALSE,FALSE,duration,
+						{
+						/* Read the background BEFORE make_indirect_picture runs. Both are arguments to
+						 * the same call, and C++ leaves their evaluation order unspecified --
+						 * make_indirect_picture MOVES item off its floor (add_item/set_background/
+						 * remove_item), so which background arrives here depends on the compiler.
+						 * MSVC evaluates arguments right to left, so the original read it first and
+						 * passed the floor item was on; clang goes left to right and passes whatever
+						 * item has after being moved. The PICTURE case below has no side effect
+						 * between its two arguments, which is why dropping a ball works and dropping
+						 * the text pad "ball" does not (Ken). Sequencing it explicitly keeps the
+						 * original's meaning on either compiler. */
+						Background *item_floor = item->pointer_to_background();
+						Picture *wrapper = make_indirect_picture(item);
+						call_in_a_mouse(this,wrapper,item_floor,by,FALSE,FALSE,duration,
 											 original_recipient,original_item);
 						return(TRUE);
+						};
 					case PICTURE:
 						if (item->is_flipped()) return(FALSE); // new on 210601
 						if (by->kind_of() != PROGRAMMER) { // robots have no geometry control -- added 270199

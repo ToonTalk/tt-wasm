@@ -6062,6 +6062,23 @@ java_string au_file_for_java(const_java_string wave_file_name) {
    return(NULL);
 };
 
+#ifdef __EMSCRIPTEN__
+/* Ken: "Dropping a ball on the wall sensor worked fine but dropping the text pad 'ball' crashed
+ * the app." Remote_Picture::receive_item (number.cpp) sends a PICTURE straight to call_in_a_mouse
+ * but wraps an INTEGER/TEXT in make_indirect_picture first -- that wrapper is the only thing on
+ * the text path that is not on the picture path, so exercise it on a text pad by itself.
+ * Console: Module._tt_dev_indirect_text(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_indirect_text() {
+	printf("[tt] indtext: making text pad\n"); fflush(stdout);
+	Text *t = variable_width_text_pad("ball",TRUE);
+	printf("[tt] indtext: text=%p kind=%d w=%ld h=%ld\n",(void *) t,(int) (t ? t->kind_of() : -1),
+	       (long) (t ? t->current_width() : -1),(long) (t ? t->current_height() : -1));
+	fflush(stdout);
+	Picture *p = make_indirect_picture(t,FALSE);   /* FALSE: no floor juggling, just the wrapper */
+	printf("[tt] indtext: picture=%p\n",(void *) p); fflush(stdout);
+};
+#endif
+
 Picture *make_indirect_picture(Sprite *item, boolean add_too) {
 	if (item == NULL) { // new on 220203 for robustness
 		return(NULL);
