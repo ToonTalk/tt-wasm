@@ -2541,6 +2541,22 @@ sound_buffer previously_loaded_sound(int index) { // this was separated from loa
 
 // this is very much like find_image_for_file - could they share code??
 
+#ifdef __EMSCRIPTEN__
+sound_buffer load_sound_from_file(ascii_string file_name, int &index);
+/* Dev hook: load a user .wav exactly as a sound pad does, so the mmio shim can be exercised
+ * without hunting for a sound pad in the UI. Console: Module._tt_dev_load_wav(ptr to path). */
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_dev_load_wav(const char *path) {
+	int index = -1;
+	sound_buffer b = load_sound_from_file((ascii_string) path,index);
+	printf("[tt] devwav: '%s' -> buffer=%s index=%d direct_sound=%s\n",path,
+	       (b != NULL) ? "YES" : "NULL",index,(direct_sound != NULL) ? "up" : "NULL");
+	fflush(stdout);
+	if (b != NULL)
+		play_sound_buffer(b);
+	return(b != NULL);
+};
+#endif
+
 sound_buffer load_sound_from_file(ascii_string file_name, int &index) {
 	// changed on 201199 so buffers are shared
 	// changed on 241199 so references are by index (unless not yet initialized)

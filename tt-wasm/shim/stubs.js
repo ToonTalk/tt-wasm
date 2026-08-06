@@ -243,13 +243,4 @@ addToLibrary({
   __gmpz_xor: function(){ return 0; },
   _set_new_handler: function(){ return 0; },
   dzip: function(){ return 0; },
-  mmioAdvance: function(){ return 0; },
-  mmioAscend: function(){ return 0; },
-  mmioClose: function(){ return 0; },
-  mmioDescend: function(){ return 0; },
-  mmioGetInfo: function(){ return 0; },
-  mmioOpenA: function(){ return 0; },
-  mmioRead: function(){ return 0; },
-  mmioSeek: function(){ return 0; },
-  mmioSetInfo: function(){ return 0; },
 });

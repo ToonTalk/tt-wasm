@@ -27,6 +27,18 @@ typedef HANDLE HWAVEOUT, HWAVEIN, HMIDIOUT, HMIDIIN, HMMIO;
 #endif
 
 /* --- waveform format (also used by DirectSound buffers) --- */
+
+/* The real <mmsystem.h> wraps its whole body in <pshpack1.h>, so every one of these structures is
+ * byte-packed -- they describe bytes as they sit in a RIFF file, not as a compiler would lay them
+ * out. Without the packing WAVEFORMAT's trailing WORD is padded out to the DWORD alignment its
+ * members force, making sizeof(WAVEFORMAT) 16 and sizeof(PCMWAVEFORMAT) 20 instead of 14 and 16.
+ * That is what made every user sound silent: wave.cpp rejects a 'fmt ' chunk smaller than
+ * sizeof(PCMWAVEFORMAT), and a real PCM 'fmt ' chunk is 16 or 18 bytes, so 18 < 20 failed and
+ * WaveLoadFile returned ER_NOTWAVEFILE. (It would also have read wBitsPerSample from the wrong
+ * offset.) Only these three matter on wasm32 -- MMIOINFO, MMCKINFO and WAVEHDR are all-4-byte
+ * members, so packing them changes nothing. */
+#pragma pack(push, 1)
+
 #ifndef _WAVEFORMATEX_
 #define _WAVEFORMATEX_
 typedef struct tWAVEFORMATEX {
@@ -56,6 +68,8 @@ typedef struct pcmwaveformat_tag {
     WAVEFORMAT wf;
     WORD       wBitsPerSample;
 } PCMWAVEFORMAT, *LPPCMWAVEFORMAT;
+
+#pragma pack(pop)
 
 typedef struct wavehdr_tag {
     LPSTR  lpData;
