@@ -631,7 +631,15 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
        * on any name containing "male" (including "female") and cannot judge quality at all.
        * Leaving u.voice unset uses the browser default throughout, which also makes every
        * sentence match the first. ?ttsvoice= and ?ttsaccent= above still override deliberately. */
-      if (!vs.length) { /* nothing to choose from yet; the voiceschanged hook will retry */ }
+      /* Ken, on both Marty and the text-to-speech sensor: "produces a good result the first time
+       * it is played - after that it sounds very strange." The first utterance goes out before
+       * getVoices() has loaded, so the browser picks its own default; once the list arrives the
+       * browser can resolve "no voice set" differently and the voice audibly changes mid-session.
+       * Leaving u.voice unset is therefore not enough -- pin the voice the browser itself marks
+       * default, which is the one that first utterance used, so every later sentence matches it. */
+      for (var d = 0; d < vs.length && !globalThis.TT_martyVoice; d++) {
+        if (vs[d]['default']) globalThis.TT_martyVoice = vs[d];
+      }
     }
     if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice;
     /* Marty is a martian. Pitch near the top of the allowed range (the spec caps it at 2) with a

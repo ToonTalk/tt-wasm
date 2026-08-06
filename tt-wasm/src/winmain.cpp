@@ -9980,9 +9980,26 @@ boolean win_main_initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, ascii_
           delete [] default_language;
        };
        if (tt_language == NO_LANGUAGE_SPECIFIED) {
+#ifdef __EMSCRIPTEN__
+          /* Falling through to UNKNOWN_LANGUAGE is not survivable here. Every string indexed BY
+           * language is looked up as base + 2*(language-AMERICAN), so at UNKNOWN (13) they all
+           * land past the end of the table and the engine substitutes IDC_NO_SUCH_STRING -- which
+           * is why the Hand Visible?/Shift?/Control? sensors read "Ahh, sorry I can't remember
+           * what I was going to say". Adding [Versions] Language1 to the synthesised ini fixed the
+           * lookup locally but Ken still saw the apology, so the resolution above cannot be relied
+           * on. This build is the US one and nothing else ships, so name it rather than leaving
+           * the whole string table indexed off the end. */
+          tt_language = AMERICAN;
+          printf("[tt] lang: ini gave no language; defaulting to AMERICAN\n"); fflush(stdout);
+#else
           tt_language = UNKNOWN_LANGUAGE;
+#endif
        };
     };
+#ifdef __EMSCRIPTEN__
+    printf("[tt] lang: resolved tt_language=%d (AMERICAN=%d)\n",(int) tt_language,(int) AMERICAN);
+    fflush(stdout);
+#endif
 #if TT_DEBUG_ON
     add_to_log_if_interesting_error();
 #endif
