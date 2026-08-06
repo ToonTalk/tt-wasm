@@ -26,6 +26,10 @@
 #include <zlib.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>   /* KEEPALIVE so the decoder can be exercised from the console */
+
+/* Bump whenever the PNG -> 8-bit mapping changes, so twins already written regenerate.
+ * 1 = first 8-bit twins; 2 = exact black maps to the transparency key index. */
+#define TT_BMP_TWIN_VERSION 2u
 #else
 #define EMSCRIPTEN_KEEPALIVE
 #endif
@@ -87,11 +91,10 @@ bool unfilter(unsigned char *raw, unsigned rows, unsigned rowbytes, unsigned bpp
     return true;
 }
 
-/* ToonTalk's own art is palettised with a transparency convention; user PNGs carry a real alpha
- * channel, which a 24-bit BMP cannot express. Compositing over WHITE keeps drawings and photos
- * looking right on the notebook's white pages -- the common case by far. A picture whose
- * transparency is meant to show the floor through it will show white instead; making that exact
- * needs the engine's transparent-colour convention for user pictures, which is a separate job. */
+/* Used for the semi-transparent case only. ToonTalk's transparency is a colour key (palette entry
+ * 0), so fully transparent and solid-black pixels both go straight to index 0 in write_bmp8;
+ * partial alpha has no equivalent in an 8-bit keyed BMP, and compositing it over WHITE keeps
+ * drawings and photos looking right on the notebook's white pages. */
 void composite_over_white(int r, int g, int b, int a, unsigned char *out_bgr) {
     if (a >= 255) { out_bgr[0] = (unsigned char)b; out_bgr[1] = (unsigned char)g; out_bgr[2] = (unsigned char)r; return; }
     out_bgr[0] = (unsigned char)((b * a + 255 * (255 - a)) / 255);
@@ -164,6 +167,11 @@ bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *r
     memcpy(hdr + 26, &planes, 2);
     memcpy(hdr + 28, &bpp, 2);
     memcpy(hdr + 34, &imgsize, 4);
+    /* Twin format version, parked in biXPelsPerMeter (the engine's loader ignores it). Bumped when
+     * the mapping changes so twins already on disk regenerate -- the palette comparison in
+     * tt_bmp_twin_ok cannot see a rule change, only a palette change. 2 = exact black is keyed. */
+    unsigned twin_version = TT_BMP_TWIN_VERSION;
+    memcpy(hdr + 38, &twin_version, 4);
     unsigned clrs = 256;
     memcpy(hdr + 46, &clrs, 4);                     /* biClrUsed */
     memcpy(hdr + 50, &clrs, 4);                     /* biClrImportant */
@@ -181,7 +189,16 @@ bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *r
         const unsigned char *asrc = alpha_topdown ? alpha_topdown + (size_t)(h - 1 - y) * w : NULL;
         for (unsigned x = 0; x < w; x++) {
             if (asrc && asrc[x] < 128) { row[x] = 0; continue; }   /* transparent -> the key index */
-            row[x] = (unsigned char)nearest_index(pal, src[x * 3], src[x * 3 + 1], src[x * 3 + 2]);
+            int r = src[x * 3], g = src[x * 3 + 1], b = src[x * 3 + 2];
+            /* ToonTalk keys on a COLOUR, not on alpha: palette entry 0 is the transparency index
+             * and initialize_palette sets it to black. The retail Playground pictures are saved as
+             * fully opaque RGBA PNGs (0% of pixels have alpha < 255) whose background is solid
+             * black -- that black IS the intended transparency, and with nearest_index refusing to
+             * return 0 it could only come out as a black box. Exact black only: near-black artwork
+             * still quantises to a real index, which is what nearest_index's rule was protecting
+             * against when the palette it searched was the wrong one. */
+            if (r == 0 && g == 0 && b == 0) { row[x] = 0; continue; }
+            row[x] = (unsigned char)nearest_index(pal, r, g, b);
         }
         ok = (fwrite(row, 1, stride, f) == stride);
     }
@@ -250,6 +267,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_bmp_twin_ok(const char *path) {
     if (got < sizeof hdr || hdr[0] != 'B' || hdr[1] != 'M') { fclose(f); return 0; }
     int bpp = hdr[28] | (hdr[29] << 8);
     if (bpp != 8) { fclose(f); return 0; }        /* 24-bit twin from an older build */
+    unsigned twin_version = (unsigned)hdr[38] | ((unsigned)hdr[39] << 8) |
+                            ((unsigned)hdr[40] << 16) | ((unsigned)hdr[41] << 24);
+    if (twin_version != TT_BMP_TWIN_VERSION) { fclose(f); return 0; }  /* built by an older rule */
     /* A twin also goes stale if it was quantised against a DIFFERENT palette -- the fixed cube
      * before the engine's own table was available, say. The table it carries is the one it was
      * built for, so compare a sample of it; any mismatch means regenerate. */
