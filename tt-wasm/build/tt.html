@@ -248,9 +248,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786021257 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786021610 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786021257'; },
+    locateFile: function (f) { return f + '?v=1786021610'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -424,6 +424,15 @@
     if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
   };
   (function buildLauncher() {
+    // Only when the page does NOT already know what to run. pre.js's gateOnLauncher skips
+    // ?demo=/?puzzle=/?user=/?launcher=0 and therefore never calls TT_showLauncher for them --
+    // so revealing the screen here regardless left it covering a perfectly good engine, showing
+    // "loading ToonTalk..." forever (Ken, with ?user=PlaygroundBookX: the console showed the
+    // Playground fully loaded and running behind it). Same conditions as gateOnLauncher, plus
+    // ?floor=1 which goes straight to the bootstrap floor.
+    if (/[?&](demo|puzzle|user)=/.test(location.search) ||
+        /[?&]launcher=0/.test(location.search) ||
+        /[?&]floor=1/.test(location.search)) return;
     var box = document.getElementById('launcher');
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     var stage = document.getElementById('stage');
@@ -572,6 +581,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786021257"></script>
+<script src="tt.js?v=1786021610"></script>
 </body>
 </html>

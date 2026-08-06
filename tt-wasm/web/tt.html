@@ -424,6 +424,15 @@
     if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
   };
   (function buildLauncher() {
+    // Only when the page does NOT already know what to run. pre.js's gateOnLauncher skips
+    // ?demo=/?puzzle=/?user=/?launcher=0 and therefore never calls TT_showLauncher for them --
+    // so revealing the screen here regardless left it covering a perfectly good engine, showing
+    // "loading ToonTalk..." forever (Ken, with ?user=PlaygroundBookX: the console showed the
+    // Playground fully loaded and running behind it). Same conditions as gateOnLauncher, plus
+    // ?floor=1 which goes straight to the bootstrap floor.
+    if (/[?&](demo|puzzle|user)=/.test(location.search) ||
+        /[?&]launcher=0/.test(location.search) ||
+        /[?&]floor=1/.test(location.search)) return;
     var box = document.getElementById('launcher');
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     var stage = document.getElementById('stage');
