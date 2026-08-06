@@ -37,6 +37,16 @@
     object-fit: contain; border: none; border-radius: 0; background: #000;
   }
   #controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  /* Ken: "the controls should after a while slowly disappear off the bottom if there are no mouse
+     events". Slide down and fade rather than vanish, so it reads as getting out of the way; any
+     mouse movement or key brings them straight back. pointer-events go with the opacity so a
+     hidden bar cannot swallow a click aimed at the page. */
+  #controls, #status, #help {
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  body.ttidle #controls, body.ttidle #status, body.ttidle #help {
+    opacity: 0; transform: translateY(22px); pointer-events: none;
+  }
   #vol { display: flex; align-items: center; gap: 6px; color: #a9a9bd; font-size: 13px; }
   #volslider { width: 90px; accent-color: #AB0519; }
   #lfslabel, #lvolrow {
@@ -610,6 +620,31 @@
       });
     });
     show('main');
+  })();
+
+  // Idle: slide the page furniture out of the way after a few quiet seconds so the canvas is all
+  // that is left, and bring it back on the first sign of life. Deliberately driven by real input
+  // events rather than by the engine's own activity -- a demo replaying on its own should be
+  // allowed to go clean, and the engine draws continuously in any case, so engine frames would
+  // never let it settle. The launcher is exempt: hiding the controls under an unstarted session
+  // would just look broken.
+  (function () {
+    var IDLE_MS = 6000, timer = null, hidden = false;
+    var wake = function () {
+      if (hidden) { document.body.classList.remove('ttidle'); hidden = false; }
+      if (timer) clearTimeout(timer);
+      var box = document.getElementById('launcher');
+      if (box && !box.hidden) return;              // still on the opening screen
+      timer = setTimeout(function () {
+        document.body.classList.add('ttidle');
+        hidden = true;
+      }, IDLE_MS);
+    };
+    ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, wake, { passive: true });
+    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) wake(); });
+    wake();
   })();
 
   // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
