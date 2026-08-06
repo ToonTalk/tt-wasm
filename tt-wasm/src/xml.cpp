@@ -28,6 +28,9 @@ class Picture; // experiment on 231102
 
 #if !defined(__TT_GLOBALS_H)   
 #include "globals.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>   /* emscripten_get_now / EM_ASM for the walk instrumentation */
+#endif
 #endif
 #if !defined(__TT_TEXT_H)   
 #include "text.h"
@@ -290,6 +293,26 @@ Tag tag_token_from_string(BSTR tag_string) {
 
 Tag tag_token(xml_node *element) {
    if (element == NULL) return(NO_SUCH_TAG);
+#ifdef __EMSCRIPTEN__
+	/* Playground city: data.xml is 7MB / 159,546 elements, and the walk wedges the tab with no
+	 * way to observe it from inside -- the xml_entity budget never fires because most elements are
+	 * consumed by handle_xml_tag dispatch without re-entering xml_entity. tag_token IS hit for
+	 * every element, so count here and mirror progress into localStorage, which ANOTHER tab on the
+	 * same origin can read while this one is busy. Cleared when a city load begins. */
+	{
+		static int tt_em_tag_count = 0;
+		static double tt_em_tag_t0 = 0;
+		if (tt_em_tag_count == 0) tt_em_tag_t0 = emscripten_get_now();
+		tt_em_tag_count++;
+		if (tt_em_tag_count % 2048 == 0) {
+			double ms = emscripten_get_now()-tt_em_tag_t0;
+			printf("[tt] tagwalk: %d tags, %.0fms\n",tt_em_tag_count,ms); fflush(stdout);
+			EM_ASM({
+				try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {}
+			},tt_em_tag_count,ms);
+		};
+	}
+#endif
    BSTR tag_string;
    if (FAILED(element->get_nodeName(&tag_string))) {
       return(NO_SUCH_TAG);  // warn??
@@ -2617,7 +2640,6 @@ xml_text *create_xml_text(wide_string data_string, xml_document *document) {
 };
 
 #ifdef __EMSCRIPTEN__
-#include <emscripten.h>
 /* Dev hook: how does the XML parser scale? Loading the retail Playground city (9.1MB of XML)
  * wedges the renderer, and the suspicion is that the hand-written DOM in shim/msxml_impl.cpp is
  * super-linear -- it was written for the small documents the engine normally hands it.
