@@ -1001,6 +1001,15 @@ Module['preRun'].push(function () {
     'FileSearchPath=?doc',
     '',
     '[Versions]',
+    // BOTH spellings, and the numbered one is the one that matters. winmain.cpp resolves the
+    // language by first reading [Defaults] Language (the language the user picked, = 1 below) and
+    // then looking up "Language" + that number here -- so with only 'Language=' present the read
+    // returned NULL, tt_language fell through to UNKNOWN_LANGUAGE (13), and every string indexed
+    // BY LANGUAGE missed. That is what made the Hand Visible?, Shift? and Control? sensors read
+    // "Ahh, sorry I can't remember what I was going to say...": their text is
+    // SC(IDS_YES + 2*(language-AMERICAN)), which at language 13 asks for id 2574 and gets the
+    // engine's no-such-string apology -- a long sentence, hence Ken's pad running off the screen.
+    'Language1=American',
     'Language=American',
     'EnglishIsAmerican=1',
     '32Bit=1',

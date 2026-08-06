@@ -10301,6 +10301,25 @@ void release_last_yes_no() { // new on 130104 to fix a tiny leak
    if (last_no != NULL) delete [] last_no;
 };
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Ken: the Hand Visible?, Shift? and Control? sensors show "Ah, sorry, I forgot what I was going
+ * to say" and draw as a bar off the edge of the screen -- and the width follows from the text, so
+ * the text is the bug. That sentence is IDC_NO_SUCH_STRING (5592), what the engine says when a
+ * resource lookup FAILS. These sensors get their text from IDS_YES/IDS_NO offset by language:
+ *   last_yes = SC(IDS_YES + 2*(language-AMERICAN))
+ * 2550/2551 are present, so the lookup can only miss if `language` is not AMERICAN. This reports
+ * what that path actually produces without needing the sensor on screen. */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_sensor_text(int identifier_number) {
+	Remote_Picture *r = new Remote_Picture(tt_global_picture,(RemoteIdentifier) identifier_number);
+	NaturalLanguage lang = r->natural_language();
+	const_string s = r->narrow_text_value(lang);
+	printf("[tt] sensortext: id=%d lang=%d tt_language=%d -> '%s'\n",
+	       identifier_number,(int) lang,(int) tt_language,s ? s : "(NULL)");
+	fflush(stdout);
+};
+#endif
+
 const_string Remote_Picture::narrow_text_value(NaturalLanguage language) {
 	long long_value;
 	current_long_value(long_value);

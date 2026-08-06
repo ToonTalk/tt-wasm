@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgjre81hp.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpexx1mjx8.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgjre81hp.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpu4px0x9n.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpexx1mjx8.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmplg72e5j5.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpu4px0x9n.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmplg72e5j5.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1216,6 +1216,15 @@ Module['preRun'].push(function () {
     'FileSearchPath=?doc',
     '',
     '[Versions]',
+    // BOTH spellings, and the numbered one is the one that matters. winmain.cpp resolves the
+    // language by first reading [Defaults] Language (the language the user picked, = 1 below) and
+    // then looking up "Language" + that number here -- so with only 'Language=' present the read
+    // returned NULL, tt_language fell through to UNKNOWN_LANGUAGE (13), and every string indexed
+    // BY LANGUAGE missed. That is what made the Hand Visible?, Shift? and Control? sensors read
+    // "Ahh, sorry I can't remember what I was going to say...": their text is
+    // SC(IDS_YES + 2*(language-AMERICAN)), which at language 13 asks for id 2574 and gets the
+    // engine's no-such-string apology -- a long sentence, hence Ken's pad running off the screen.
+    'Language1=American',
     'Language=American',
     'EnglishIsAmerican=1',
     '32Bit=1',
@@ -1350,13 +1359,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpr6h31_w3.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1qks8e_b.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpr6h31_w3.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1qks8e_b.js
 
 
 var programArgs = [];
@@ -10506,25 +10515,25 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17073700: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17073800: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17073870: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17073968: () => { globalThis.TT_replayOver = true; },  
- 17074005: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17074101: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17074200: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17074299: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17074401: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17074544: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17074644: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17074785: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17074858: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17074952: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17075045: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17075105: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
- 17075167: () => { return globalThis.TT_presents|0; },  
- 17075204: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
- 17075284: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
+  17073764: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17073864: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17073934: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17074032: () => { globalThis.TT_replayOver = true; },  
+ 17074069: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17074165: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17074264: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17074363: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17074465: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17074608: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17074708: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17074849: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17074922: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17075016: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17075109: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17075169: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
+ 17075231: () => { return globalThis.TT_presents|0; },  
+ 17075268: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
+ 17075348: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -10552,6 +10561,7 @@ var _tt_dev_open_rocket_door = Module['_tt_dev_open_rocket_door'] = makeInvalidE
 var _tt_dev_time_label = Module['_tt_dev_time_label'] = makeInvalidEarlyAccess('_tt_dev_time_label');
 var _tt_dev_time_travel_button = Module['_tt_dev_time_travel_button'] = makeInvalidEarlyAccess('_tt_dev_time_travel_button');
 var _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = makeInvalidEarlyAccess('_tt_finish_time_travel_archive');
+var _tt_dev_sensor_text = Module['_tt_dev_sensor_text'] = makeInvalidEarlyAccess('_tt_dev_sensor_text');
 var _tt_dev_load_media = Module['_tt_dev_load_media'] = makeInvalidEarlyAccess('_tt_dev_load_media');
 var _tt_png_set_palette = Module['_tt_png_set_palette'] = makeInvalidEarlyAccess('_tt_png_set_palette');
 var _em_set_mouse_mode = Module['_em_set_mouse_mode'] = makeInvalidEarlyAccess('_em_set_mouse_mode');
@@ -10597,6 +10607,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['tt_dev_time_label'] != 'undefined', 'missing Wasm export: tt_dev_time_label');
   assert(typeof wasmExports['tt_dev_time_travel_button'] != 'undefined', 'missing Wasm export: tt_dev_time_travel_button');
   assert(typeof wasmExports['tt_finish_time_travel_archive'] != 'undefined', 'missing Wasm export: tt_finish_time_travel_archive');
+  assert(typeof wasmExports['tt_dev_sensor_text'] != 'undefined', 'missing Wasm export: tt_dev_sensor_text');
   assert(typeof wasmExports['tt_dev_load_media'] != 'undefined', 'missing Wasm export: tt_dev_load_media');
   assert(typeof wasmExports['tt_png_set_palette'] != 'undefined', 'missing Wasm export: tt_png_set_palette');
   assert(typeof wasmExports['em_set_mouse_mode'] != 'undefined', 'missing Wasm export: em_set_mouse_mode');
@@ -10638,6 +10649,7 @@ function assignWasmExports(wasmExports) {
   _tt_dev_time_label = Module['_tt_dev_time_label'] = createExportWrapper('tt_dev_time_label', 0);
   _tt_dev_time_travel_button = Module['_tt_dev_time_travel_button'] = createExportWrapper('tt_dev_time_travel_button', 1);
   _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = createExportWrapper('tt_finish_time_travel_archive', 0);
+  _tt_dev_sensor_text = Module['_tt_dev_sensor_text'] = createExportWrapper('tt_dev_sensor_text', 1);
   _tt_dev_load_media = Module['_tt_dev_load_media'] = createExportWrapper('tt_dev_load_media', 1);
   _tt_png_set_palette = Module['_tt_png_set_palette'] = createExportWrapper('tt_png_set_palette', 2);
   _em_set_mouse_mode = Module['_em_set_mouse_mode'] = createExportWrapper('em_set_mouse_mode', 1);
