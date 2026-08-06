@@ -55,6 +55,9 @@ long background_counter = 1;
 
 #if !defined(__TT_PRGRMMR_H)   
 #include "prgrmmr.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>   /* emscripten_get_now, for the city-load timing below */
+#endif
 #endif
 
 //Backgrounds::Backgrounds(Background *background, Backgrounds *backgrounds) : // new on 090804
@@ -397,6 +400,24 @@ boolean Background::handle_xml(string file_name) { // new on 041102
 #if TT_DEBUG_ON
       // for now - conditionalize later...
    DWORD start = timeGetTime();
+#endif
+#ifdef __EMSCRIPTEN__
+   // Loading the 9MB retail Playground city wedges the renderer. The parser is already ruled out
+   // (linear: 5.6MB in 725ms, measured by tt_dev_xml_bench), so time the two halves separately --
+   // reading+parsing the file, then walking the DOM to build the world.
+   {
+      double t0 = emscripten_get_now();
+      xml_document *doc = document_from_file(file_name);
+      double t1 = emscripten_get_now();
+      printf("[tt] cityload: parsed '%s' in %.0fms (doc=%s) -- now walking it\n",
+             file_name,t1-t0,doc != NULL ? "OK" : "NULL");
+      fflush(stdout);
+      boolean r = handle_xml(doc);
+      double t2 = emscripten_get_now();
+      printf("[tt] cityload: walk took %.0fms, total %.0fms, result=%d\n",t2-t1,t2-t0,(int) r);
+      fflush(stdout);
+      return(r);
+   }
 #endif
    boolean result = handle_xml(document_from_file(file_name));
 #if TT_DEBUG_ON
