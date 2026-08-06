@@ -10042,6 +10042,8 @@ void associate_image_and_file_name(UserImage *image, string file_name) { // abst
 	number_of_user_images++;
 };
 
+extern "C" int tt_png_to_bmp(const char *png_path, const char *bmp_path); /* shim/png_impl.cpp */
+
 UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name,
 										 boolean &ok, boolean warn, int pixel_width, int pixel_height) {
 	// removed , boolean share_images_with_same_file_name on 280403
@@ -10053,6 +10055,10 @@ UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_strin
 	 * makes them load at all. Without it prepare_to_time_travel built seven image-less sprites whose
 	 * current_width()/height() were 0, which is why no buttons were visible and why the layout and
 	 * the drift distance (log.cpp:4508, 4784) collapsed to nothing. */
+	{ static int fif = 0; if (fif < 14) { fif++;
+	  printf("[tt] findimg: private='%s' original='%s'\n",
+	         private_media_file_name ? private_media_file_name : "(null)",
+	         original_file_name ? original_file_name : "(null)"); fflush(stdout); } }
 	ascii_string gif_as_bmp = NULL;
 	if (original_file_name != NULL) {
 		int n = strlen(original_file_name);
@@ -10060,6 +10066,30 @@ UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_strin
 			gif_as_bmp = copy_string(original_file_name);
 			strcpy(gif_as_bmp+n-4,".bmp");
 			original_file_name = gif_as_bmp;
+		};
+	};
+	/* Same trick for user media, which is PNG. Unlike the GIFs above -- retail art, converted once
+	 * at stage time -- these are extracted from notebook/city/demo archives while running, so they
+	 * have to be converted on demand. Decode beside the original the first time and reuse it after;
+	 * a refusal (unsupported PNG variant) leaves original_file_name alone, so the picture is merely
+	 * blank as before rather than breaking the load. Ken: the Playground notebook's images were all
+	 * missing, with all 505 PNGs present on disk. */
+	if (gif_as_bmp == NULL && original_file_name != NULL) {
+		int n = strlen(original_file_name);
+		if (n > 4 && stricmp(original_file_name+n-4,".png") == 0) {
+			ascii_string png_as_bmp = copy_string(original_file_name);
+			strcpy(png_as_bmp+n-4,".bmp");
+			FILE *have = fopen(png_as_bmp,"rb");
+			if (have != NULL) {
+				fclose(have);
+				gif_as_bmp = png_as_bmp;
+				original_file_name = gif_as_bmp;
+			} else if (tt_png_to_bmp(original_file_name,png_as_bmp)) {
+				gif_as_bmp = png_as_bmp;
+				original_file_name = gif_as_bmp;
+			} else {
+				delete [] png_as_bmp;
+			};
 		};
 	};
 	struct FreeGifName { // so every return path below releases it

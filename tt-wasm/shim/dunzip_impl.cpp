@@ -154,6 +154,27 @@ bool extract_member(int k) {
  * safe while archives are read-only. Now that dzip_impl.cpp writes them (time travel appends a
  * segment every few seconds), the writer must drop the cache or the next read of the SAME path
  * serves the pre-write bytes. */
+/* User media inside notebook/city/demo archives is PNG, and the engine reads only BMP. Convert
+ * beside the extracted file so every later lookup -- whichever path finds it -- gets a readable
+ * image. Done here rather than at the point of use because the engine reaches media through
+ * several routes (find_image_for_file, UserPicture's extension search, the private media cache),
+ * and extraction is the one place they all pass through. Cheap: skipped when the twin exists. */
+extern "C" int tt_png_to_bmp(const char *png_path, const char *bmp_path);   /* shim/png_impl.cpp */
+
+static void make_bmp_twin(const char *path) {
+    size_t n = strlen(path);
+    if (n < 5) return;
+    const char *ext = path + n - 4;
+    if (!(ext[0] == '.' && fold(ext[1]) == 'p' && fold(ext[2]) == 'n' && fold(ext[3]) == 'g')) return;
+    char bmp[900];
+    if (n + 1 > sizeof bmp) return;
+    memcpy(bmp, path, n + 1);
+    memcpy(bmp + n - 4, ".bmp", 5);
+    FILE *have = fopen(bmp, "rb");
+    if (have) { fclose(have); return; }
+    tt_png_to_bmp(path, bmp);
+}
+
 extern "C" void tt_zip_forget_archive(const char *path) {
     if (path == nullptr || (g_arc && strcmp(path, g_arc_path) == 0)) drop_archive();
 }
@@ -239,13 +260,17 @@ extern "C" int dunzip(LPUNZIPCMDSTRUCT u) {
                     }
                     if (!u->overWriteFlag) {
                         FILE *probe = fopen(path, "rb");
-                        if (probe) { fclose(probe); continue; }
+                        /* Already extracted (a previous session's persisted media, say) -- but its
+                         * BMP twin may still be missing, e.g. everything extracted before the PNG
+                         * decoder existed. Make it now rather than skipping straight past. */
+                        if (probe) { fclose(probe); make_bmp_twin(path); continue; }
                     }
                     FILE *out = fopen(path, "wb");
                     if (!out) continue;
                     fwrite(g_mem, 1, g_mem_size, out);
                     fclose(out);
                     wrote++;
+                    make_bmp_twin(path);
                 }
             }
             if (dz_log <= 80) {
