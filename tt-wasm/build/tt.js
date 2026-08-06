@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmptd6tjqad.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpundiv4ft.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmptd6tjqad.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpk5xqlyav.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpundiv4ft.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpkg8atps4.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpk5xqlyav.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpkg8atps4.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1297,13 +1297,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp99dsfv_5.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmplu22v3cn.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp99dsfv_5.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmplu22v3cn.js
 
 
 var programArgs = [];
@@ -10444,6 +10444,7 @@ function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis 
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _free = makeInvalidEarlyAccess('_free');
 var _malloc = makeInvalidEarlyAccess('_malloc');
+var _tt_bmp_twin_ok = Module['_tt_bmp_twin_ok'] = makeInvalidEarlyAccess('_tt_bmp_twin_ok');
 var _tt_png_to_bmp = Module['_tt_png_to_bmp'] = makeInvalidEarlyAccess('_tt_png_to_bmp');
 var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
 var _realloc = makeInvalidEarlyAccess('_realloc');
@@ -10486,6 +10487,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
   assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
+  assert(typeof wasmExports['tt_bmp_twin_ok'] != 'undefined', 'missing Wasm export: tt_bmp_twin_ok');
   assert(typeof wasmExports['tt_png_to_bmp'] != 'undefined', 'missing Wasm export: tt_png_to_bmp');
   assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');
   assert(typeof wasmExports['realloc'] != 'undefined', 'missing Wasm export: realloc');
@@ -10524,6 +10526,7 @@ function assignWasmExports(wasmExports) {
   _fflush = createExportWrapper('fflush', 1);
   _free = createExportWrapper('free', 1);
   _malloc = createExportWrapper('malloc', 1);
+  _tt_bmp_twin_ok = Module['_tt_bmp_twin_ok'] = createExportWrapper('tt_bmp_twin_ok', 1);
   _tt_png_to_bmp = Module['_tt_png_to_bmp'] = createExportWrapper('tt_png_to_bmp', 2);
   _main = Module['_main'] = createExportWrapper('main', 2);
   _realloc = createExportWrapper('realloc', 2);

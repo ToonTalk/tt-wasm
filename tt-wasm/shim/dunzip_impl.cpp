@@ -160,6 +160,7 @@ bool extract_member(int k) {
  * several routes (find_image_for_file, UserPicture's extension search, the private media cache),
  * and extraction is the one place they all pass through. Cheap: skipped when the twin exists. */
 extern "C" int tt_png_to_bmp(const char *png_path, const char *bmp_path);   /* shim/png_impl.cpp */
+extern "C" int tt_bmp_twin_ok(const char *bmp_path);                        /* 8-bit, i.e. usable */
 
 static void make_bmp_twin(const char *path) {
     size_t n = strlen(path);
@@ -170,8 +171,7 @@ static void make_bmp_twin(const char *path) {
     if (n + 1 > sizeof bmp) return;
     memcpy(bmp, path, n + 1);
     memcpy(bmp + n - 4, ".bmp", 5);
-    FILE *have = fopen(bmp, "rb");
-    if (have) { fclose(have); return; }
+    if (tt_bmp_twin_ok(bmp)) return;   /* a 24-bit twin from an older build counts as stale */
     tt_png_to_bmp(path, bmp);
 }
 

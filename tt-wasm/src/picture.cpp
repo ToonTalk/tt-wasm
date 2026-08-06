@@ -10043,6 +10043,7 @@ void associate_image_and_file_name(UserImage *image, string file_name) { // abst
 };
 
 extern "C" int tt_png_to_bmp(const char *png_path, const char *bmp_path); /* shim/png_impl.cpp */
+extern "C" int tt_bmp_twin_ok(const char *bmp_path);                      /* 8-bit => usable */
 
 UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name,
 										 boolean &ok, boolean warn, int pixel_width, int pixel_height);
@@ -10106,14 +10107,7 @@ UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_strin
 			if (n <= 4 || stricmp(*names[i]+n-4,".png") != 0) continue;
 			ascii_string as_bmp = copy_string(*names[i]);
 			strcpy(as_bmp+n-4,".bmp");
-			FILE *have = fopen(as_bmp,"rb");
-			boolean usable = FALSE;
-			if (have != NULL) {
-				fclose(have);
-				usable = TRUE;
-			} else {
-				usable = tt_png_to_bmp(*names[i],as_bmp);
-			};
+			boolean usable = tt_bmp_twin_ok(as_bmp) ? TRUE : (tt_png_to_bmp(*names[i],as_bmp) ? TRUE : FALSE);
 			if (usable) {
 				*slots[i] = as_bmp;
 				*names[i] = as_bmp;

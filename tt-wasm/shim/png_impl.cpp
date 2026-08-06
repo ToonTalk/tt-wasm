@@ -99,6 +99,83 @@ void composite_over_white(int r, int g, int b, int a, unsigned char *out_bgr) {
     out_bgr[2] = (unsigned char)((r * a + 255 * (255 - a)) / 255);
 }
 
+/* The engine is palettised: its own art is 8-bit throughout, and it carries an
+ * IDS_USER_PICTURE_NOT_256_COLORS error for pictures that are not. A 24-bit BMP loads but is then
+ * read as one byte per pixel, so each RGB triple becomes three random palette indices -- which is
+ * precisely the coloured static Ken photographed. So emit 8-bit with the BMP's own colour table.
+ *
+ * The table is a fixed 6x6x6 colour cube plus a 40-step grey ramp (216+40 = 256). Fixed rather
+ * than median-cut because it needs no second pass over the image and never depends on which
+ * picture was decoded first; the cube is what web-era 256-colour art used and is a reasonable fit
+ * for hand-drawn ToonTalk pictures. Photographs will band somewhat -- if that shows, median cut
+ * per image is the upgrade. */
+void build_palette(unsigned char pal[256][3]) {
+    int i = 0;
+    for (int r = 0; r < 6; r++)
+        for (int g = 0; g < 6; g++)
+            for (int b = 0; b < 6; b++, i++) {
+                pal[i][0] = (unsigned char)(r * 51);
+                pal[i][1] = (unsigned char)(g * 51);
+                pal[i][2] = (unsigned char)(b * 51);
+            }
+    for (int k = 0; i < 256; i++, k++) {
+        unsigned char v = (unsigned char)(k * 255 / 39);
+        pal[i][0] = pal[i][1] = pal[i][2] = v;
+    }
+}
+
+int nearest_index(const unsigned char pal[256][3], int r, int g, int b) {
+    int best = 0; long bestd = 0x7fffffffL;
+    for (int i = 0; i < 256; i++) {
+        long dr = r - pal[i][0], dg = g - pal[i][1], db = b - pal[i][2];
+        long d = dr * dr + dg * dg + db * db;
+        if (d < bestd) { bestd = d; best = i; if (d == 0) break; }
+    }
+    return best;
+}
+
+bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *rgb_topdown) {
+    unsigned char pal[256][3];
+    build_palette(pal);
+    unsigned stride = (w + 3) & ~3u;                /* 1 byte per pixel, rows 4-byte aligned */
+    unsigned imgsize = stride * h;
+    unsigned off = 54 + 256 * 4;
+    unsigned char hdr[54];
+    memset(hdr, 0, sizeof hdr);
+    hdr[0] = 'B'; hdr[1] = 'M';
+    unsigned filesize = off + imgsize;
+    memcpy(hdr + 2, &filesize, 4);
+    memcpy(hdr + 10, &off, 4);
+    unsigned hsize = 40; memcpy(hdr + 14, &hsize, 4);
+    memcpy(hdr + 18, &w, 4);
+    memcpy(hdr + 22, &h, 4);                        /* positive => bottom-up */
+    unsigned short planes = 1, bpp = 8;
+    memcpy(hdr + 26, &planes, 2);
+    memcpy(hdr + 28, &bpp, 2);
+    memcpy(hdr + 34, &imgsize, 4);
+    unsigned clrs = 256;
+    memcpy(hdr + 46, &clrs, 4);                     /* biClrUsed */
+    memcpy(hdr + 50, &clrs, 4);                     /* biClrImportant */
+    FILE *f = fopen(path, "wb");
+    if (!f) return false;
+    bool ok = (fwrite(hdr, 1, sizeof hdr, f) == sizeof hdr);
+    for (int i = 0; i < 256 && ok; i++) {           /* RGBQUAD is B,G,R,reserved */
+        unsigned char q[4] = { pal[i][2], pal[i][1], pal[i][0], 0 };
+        ok = (fwrite(q, 1, 4, f) == 4);
+    }
+    unsigned char *row = (unsigned char *)calloc(stride, 1);
+    if (!row) { fclose(f); return false; }
+    for (unsigned y = 0; y < h && ok; y++) {        /* flip: BMP stores bottom row first */
+        const unsigned char *src = rgb_topdown + (size_t)(h - 1 - y) * w * 3;
+        for (unsigned x = 0; x < w; x++)
+            row[x] = (unsigned char)nearest_index(pal, src[x * 3], src[x * 3 + 1], src[x * 3 + 2]);
+        ok = (fwrite(row, 1, stride, f) == stride);
+    }
+    free(row);
+    fclose(f);
+    return ok;
+}
+
 bool write_bmp24(const char *path, unsigned w, unsigned h, const unsigned char *bgr_topdown) {
     unsigned stride = ((w * 3) + 3) & ~3u;          /* BMP rows are 4-byte aligned */
     unsigned imgsize = stride * h;
@@ -132,7 +209,20 @@ bool write_bmp24(const char *path, unsigned w, unsigned h, const unsigned char *
 
 } // namespace
 
-/* Decode png_path into a 24-bit BMP at bmp_path. Returns 1 on success, 0 on any refusal --
+/* Is an existing twin usable? Twins written before the 8-bit switch are 24-bit and render as
+ * coloured static, so callers must treat those as stale and regenerate rather than reuse. */
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_bmp_twin_ok(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    unsigned char hdr[30];
+    size_t got = fread(hdr, 1, sizeof hdr, f);
+    fclose(f);
+    if (got < sizeof hdr || hdr[0] != 'B' || hdr[1] != 'M') return 0;
+    int bpp = hdr[28] | (hdr[29] << 8);
+    return (bpp == 8) ? 1 : 0;
+}
+
+/* Decode png_path into a BMP at bmp_path. Returns 1 on success, 0 on any refusal --
  * callers treat 0 as "leave the PNG alone", which keeps an unsupported file merely blank rather
  * than breaking the load. */
 extern "C" EMSCRIPTEN_KEEPALIVE int tt_png_to_bmp(const char *png_path, const char *bmp_path) {
@@ -204,11 +294,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_png_to_bmp(const char *png_path, const ch
             } else {
                 r = src[x * 4]; g = src[x * 4 + 1]; b = src[x * 4 + 2]; a = src[x * 4 + 3];
             }
-            composite_over_white(r, g, b, a, dst);
+            composite_over_white(r, g, b, a, dst);   /* writes B,G,R */
         }
     }
     free(raw); free(file);
-    int ok = write_bmp24(bmp_path, w, h, bgr) ? 1 : 0;
+    /* write_bmp8 wants R,G,B order; the buffer above is B,G,R -- swap in place. */
+    for (size_t i = 0; i + 2 < (size_t)w * h * 3; i += 3) {
+        unsigned char t = bgr[i]; bgr[i] = bgr[i + 2]; bgr[i + 2] = t;
+    }
+    int ok = write_bmp8(bmp_path, w, h, bgr) ? 1 : 0;
     free(bgr);
     if (ok) { printf("[tt] png: decoded %ux%u colour=%d -> %s\n", w, h, colour, bmp_path); fflush(stdout); }
     return ok;
