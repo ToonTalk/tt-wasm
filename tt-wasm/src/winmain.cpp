@@ -2360,6 +2360,7 @@ void MainWindow::initialize() {
 // Update();
 };
 
+extern "C" void tt_png_set_palette(const unsigned int *colorrefs, int count); /* shim/png_impl.cpp */
 void MainWindow::initialize_palette() {
 	tt_colors_available = 0;
    HDC visible_device_context = GetDC(window_handle);
@@ -2440,6 +2441,14 @@ void MainWindow::initialize_palette() {
 		};
       tt_colors[tt_white] = RGB(255,255,255);
 	};
+#ifdef __EMSCRIPTEN__
+	/* Hand the finished palette to the PNG decoder. User pictures are converted to 8-bit BMPs, and
+	 * the engine reads those bytes as indices into THIS table rather than the BMP's own -- so
+	 * quantising against anything else gives right shapes in wrong colours, which is what Ken saw
+	 * ("colors are wrong including some transparent pixels"). Both palette branches above join
+	 * here, so this covers each. */
+	tt_png_set_palette((const unsigned int *) tt_colors,tt_colors_available);
+#endif
    const int max_brightness = 220;
    const int max_total_brightness = 10*210;
    int i;

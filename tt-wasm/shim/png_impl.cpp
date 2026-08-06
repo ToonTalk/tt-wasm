@@ -109,6 +109,16 @@ void composite_over_white(int r, int g, int b, int a, unsigned char *out_bgr) {
  * picture was decoded first; the cube is what web-era 256-colour art used and is a reasonable fit
  * for hand-drawn ToonTalk pictures. Photographs will band somewhat -- if that shows, median cut
  * per image is the upgrade. */
+/* The engine does NOT use a BMP's own colour table for user pictures -- it treats the bytes as
+ * indices into ITS palette (tt_colors). A self-describing table therefore produced right shapes in
+ * wrong colours, which is what Ken saw. The engine hands its live palette in here at startup, and
+ * quantisation targets that. Index 0 is the engine's transparency key, so it is excluded from
+ * matching and reserved for genuinely transparent source pixels -- the same rule
+ * tools/stage_from_install.py applies to the retail art (exact key -> 0; anything else -> never 0).
+ * Falls back to the fixed cube below only if the engine never supplied a palette. */
+unsigned char g_engine_pal[256][3];
+bool g_have_engine_pal = false;
+
 void build_palette(unsigned char pal[256][3]) {
     int i = 0;
     for (int r = 0; r < 6; r++)
@@ -125,8 +135,8 @@ void build_palette(unsigned char pal[256][3]) {
 }
 
 int nearest_index(const unsigned char pal[256][3], int r, int g, int b) {
-    int best = 0; long bestd = 0x7fffffffL;
-    for (int i = 0; i < 256; i++) {
+    int best = 1; long bestd = 0x7fffffffL;
+    for (int i = 1; i < 256; i++) {          /* never index 0: that is the transparency key */
         long dr = r - pal[i][0], dg = g - pal[i][1], db = b - pal[i][2];
         long d = dr * dr + dg * dg + db * db;
         if (d < bestd) { bestd = d; best = i; if (d == 0) break; }
@@ -134,9 +144,10 @@ int nearest_index(const unsigned char pal[256][3], int r, int g, int b) {
     return best;
 }
 
-bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *rgb_topdown) {
+bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *rgb_topdown,
+                const unsigned char *alpha_topdown) {
     unsigned char pal[256][3];
-    build_palette(pal);
+    if (g_have_engine_pal) memcpy(pal, g_engine_pal, sizeof pal); else build_palette(pal);
     unsigned stride = (w + 3) & ~3u;                /* 1 byte per pixel, rows 4-byte aligned */
     unsigned imgsize = stride * h;
     unsigned off = 54 + 256 * 4;
@@ -167,8 +178,11 @@ bool write_bmp8(const char *path, unsigned w, unsigned h, const unsigned char *r
     if (!row) { fclose(f); return false; }
     for (unsigned y = 0; y < h && ok; y++) {        /* flip: BMP stores bottom row first */
         const unsigned char *src = rgb_topdown + (size_t)(h - 1 - y) * w * 3;
-        for (unsigned x = 0; x < w; x++)
+        const unsigned char *asrc = alpha_topdown ? alpha_topdown + (size_t)(h - 1 - y) * w : NULL;
+        for (unsigned x = 0; x < w; x++) {
+            if (asrc && asrc[x] < 128) { row[x] = 0; continue; }   /* transparent -> the key index */
             row[x] = (unsigned char)nearest_index(pal, src[x * 3], src[x * 3 + 1], src[x * 3 + 2]);
+        }
         ok = (fwrite(row, 1, stride, f) == stride);
     }
     free(row);
@@ -209,17 +223,49 @@ bool write_bmp24(const char *path, unsigned w, unsigned h, const unsigned char *
 
 } // namespace
 
+/* Called by the engine once its palette is built, so quantisation targets the colours the
+ * blitter will actually use. COLORREF is 0x00BBGGRR. */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_png_set_palette(const unsigned int *colorrefs, int count) {
+    if (!colorrefs || count <= 0) return;
+    if (count > 256) count = 256;
+    for (int i = 0; i < count; i++) {
+        unsigned int c = colorrefs[i];
+        g_engine_pal[i][0] = (unsigned char)(c & 0xFF);           /* R */
+        g_engine_pal[i][1] = (unsigned char)((c >> 8) & 0xFF);    /* G */
+        g_engine_pal[i][2] = (unsigned char)((c >> 16) & 0xFF);   /* B */
+    }
+    for (int i = count; i < 256; i++) { g_engine_pal[i][0] = g_engine_pal[i][1] = g_engine_pal[i][2] = 0; }
+    g_have_engine_pal = true;
+    printf("[tt] png: engine palette adopted (%d entries)\n", count); fflush(stdout);
+}
+
 /* Is an existing twin usable? Twins written before the 8-bit switch are 24-bit and render as
  * coloured static, so callers must treat those as stale and regenerate rather than reuse. */
 extern "C" EMSCRIPTEN_KEEPALIVE int tt_bmp_twin_ok(const char *path) {
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
-    unsigned char hdr[30];
+    unsigned char hdr[54];
     size_t got = fread(hdr, 1, sizeof hdr, f);
-    fclose(f);
-    if (got < sizeof hdr || hdr[0] != 'B' || hdr[1] != 'M') return 0;
+    if (got < sizeof hdr || hdr[0] != 'B' || hdr[1] != 'M') { fclose(f); return 0; }
     int bpp = hdr[28] | (hdr[29] << 8);
-    return (bpp == 8) ? 1 : 0;
+    if (bpp != 8) { fclose(f); return 0; }        /* 24-bit twin from an older build */
+    /* A twin also goes stale if it was quantised against a DIFFERENT palette -- the fixed cube
+     * before the engine's own table was available, say. The table it carries is the one it was
+     * built for, so compare a sample of it; any mismatch means regenerate. */
+    if (g_have_engine_pal) {
+        unsigned char tbl[256 * 4];
+        size_t t = fread(tbl, 1, sizeof tbl, f);
+        fclose(f);
+        if (t < sizeof tbl) return 0;
+        for (int i = 0; i < 256; i++) {
+            if (tbl[i * 4 + 0] != g_engine_pal[i][2] ||   /* stored B,G,R */
+                tbl[i * 4 + 1] != g_engine_pal[i][1] ||
+                tbl[i * 4 + 2] != g_engine_pal[i][0]) return 0;
+        }
+        return 1;
+    }
+    fclose(f);
+    return 1;
 }
 
 /* Decode png_path into a BMP at bmp_path. Returns 1 on success, 0 on any refusal --
@@ -278,7 +324,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_png_to_bmp(const char *png_path, const ch
     }
 
     unsigned char *bgr = (unsigned char *)malloc((size_t)w * h * 3);
-    if (!bgr) { free(raw); free(file); return 0; }
+    unsigned char *alpha = (unsigned char *)malloc((size_t)w * h);
+    if (!bgr || !alpha) { free(bgr); free(alpha); free(raw); free(file); return 0; }
     for (unsigned y = 0; y < h; y++) {
         const unsigned char *src = raw + (size_t)y * (rowbytes + 1) + 1;
         unsigned char *dst = bgr + (size_t)y * w * 3;
@@ -295,6 +342,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_png_to_bmp(const char *png_path, const ch
                 r = src[x * 4]; g = src[x * 4 + 1]; b = src[x * 4 + 2]; a = src[x * 4 + 3];
             }
             composite_over_white(r, g, b, a, dst);   /* writes B,G,R */
+            alpha[(size_t)y * w + x] = (unsigned char)a;
         }
     }
     free(raw); free(file);
@@ -302,8 +350,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_png_to_bmp(const char *png_path, const ch
     for (size_t i = 0; i + 2 < (size_t)w * h * 3; i += 3) {
         unsigned char t = bgr[i]; bgr[i] = bgr[i + 2]; bgr[i + 2] = t;
     }
-    int ok = write_bmp8(bmp_path, w, h, bgr) ? 1 : 0;
-    free(bgr);
+    int ok = write_bmp8(bmp_path, w, h, bgr, alpha) ? 1 : 0;
+    free(bgr); free(alpha);
     if (ok) { printf("[tt] png: decoded %ux%u colour=%d -> %s\n", w, h, colour, bmp_path); fflush(stdout); }
     return ok;
 }
