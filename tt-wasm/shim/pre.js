@@ -325,8 +325,13 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     row.style.cssText = 'padding:0 12px 14px;display:flex;gap:10px;justify-content:center';
     // Out of a demo there is nothing to go "back" to and no demo to take control OF: the only
     // meaningful choices are carry on or leave. Same button numbers either way — 1 resumes.
+    // Out of a demo the original's PAUSED_DIALOG (ttus.rc:58-62) reads "Back to ToonTalk",
+    // "Come back later", "Leave ToonTalk" and, on its own row, "Save Everything". "Come back
+    // later" minimises the window, which means nothing for a browser tab, so it is left out;
+    // the other three are the original's own wording. Save is handled below rather than through
+    // a choice, so the chooser stays up and reports, as the original's does.
     (duringDemo ? [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]]
-                : [['Resume', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
+                : [['Back to ToonTalk', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
       var el = document.createElement('button');
       el.textContent = b[0];
       el.style.cssText = 'font:inherit;padding:4px 10px;min-width:96px;cursor:pointer';
@@ -335,6 +340,28 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       if (i === 0) setTimeout(function () { try { el.focus(); } catch (e) {} }, 0);  // DEFPUSHBUTTON
     });
     panel.appendChild(caption); panel.appendChild(text); panel.appendChild(row);
+    // "Save Everything" -- its own full-width row in the original, and it does NOT dismiss:
+    // ask_continue_or_quit's case 4 saves, reports, and leaves you still paused.
+    if (!duringDemo) {
+      var saveRow = document.createElement('div');
+      saveRow.style.cssText = 'padding:0 12px 14px;text-align:center';
+      var saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save Everything';
+      saveBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+      var saveNote = document.createElement('div');
+      saveNote.style.cssText = 'padding:6px 12px 0;text-align:center;font-size:11px';
+      saveBtn.onclick = function () {
+        var ok = false;
+        try { ok = !!(Module['_tt_save_city'] && Module['_tt_save_city']()); } catch (e) {}
+        // The city lands in the user's own folder, which is the IDBFS mount, so push it to
+        // browser storage now rather than hoping the pagehide sync wins the race.
+        if (ok) { try { FS.syncfs(false, function () {}); } catch (e) {} }
+        saveNote.textContent = ok ? 'City saved.' : 'Could not save the city.';
+      };
+      saveRow.appendChild(saveBtn);
+      panel.appendChild(saveRow);
+      panel.appendChild(saveNote);
+    }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
     (document.fullscreenElement || document.body).appendChild(box);

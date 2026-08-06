@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpibtlo3o1.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0h9mw4lw.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpibtlo3o1.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvk7vzu5i.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0h9mw4lw.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpd628afme.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvk7vzu5i.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpd628afme.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -540,8 +540,13 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     row.style.cssText = 'padding:0 12px 14px;display:flex;gap:10px;justify-content:center';
     // Out of a demo there is nothing to go "back" to and no demo to take control OF: the only
     // meaningful choices are carry on or leave. Same button numbers either way — 1 resumes.
+    // Out of a demo the original's PAUSED_DIALOG (ttus.rc:58-62) reads "Back to ToonTalk",
+    // "Come back later", "Leave ToonTalk" and, on its own row, "Save Everything". "Come back
+    // later" minimises the window, which means nothing for a browser tab, so it is left out;
+    // the other three are the original's own wording. Save is handled below rather than through
+    // a choice, so the chooser stays up and reports, as the original's does.
     (duringDemo ? [['Back to Demo', 1], ['Take Control', 5], ['Leave Demo', 3]]
-                : [['Resume', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
+                : [['Back to ToonTalk', 1], ['Leave ToonTalk', 3]]).forEach(function (b, i) {
       var el = document.createElement('button');
       el.textContent = b[0];
       el.style.cssText = 'font:inherit;padding:4px 10px;min-width:96px;cursor:pointer';
@@ -550,6 +555,28 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       if (i === 0) setTimeout(function () { try { el.focus(); } catch (e) {} }, 0);  // DEFPUSHBUTTON
     });
     panel.appendChild(caption); panel.appendChild(text); panel.appendChild(row);
+    // "Save Everything" -- its own full-width row in the original, and it does NOT dismiss:
+    // ask_continue_or_quit's case 4 saves, reports, and leaves you still paused.
+    if (!duringDemo) {
+      var saveRow = document.createElement('div');
+      saveRow.style.cssText = 'padding:0 12px 14px;text-align:center';
+      var saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save Everything';
+      saveBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+      var saveNote = document.createElement('div');
+      saveNote.style.cssText = 'padding:6px 12px 0;text-align:center;font-size:11px';
+      saveBtn.onclick = function () {
+        var ok = false;
+        try { ok = !!(Module['_tt_save_city'] && Module['_tt_save_city']()); } catch (e) {}
+        // The city lands in the user's own folder, which is the IDBFS mount, so push it to
+        // browser storage now rather than hoping the pagehide sync wins the race.
+        if (ok) { try { FS.syncfs(false, function () {}); } catch (e) {} }
+        saveNote.textContent = ok ? 'City saved.' : 'Could not save the city.';
+      };
+      saveRow.appendChild(saveBtn);
+      panel.appendChild(saveRow);
+      panel.appendChild(saveNote);
+    }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
     (document.fullscreenElement || document.body).appendChild(box);
@@ -1270,13 +1297,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpbr4pok54.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp_c75m64l.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpbr4pok54.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp_c75m64l.js
 
 
 var programArgs = [];
@@ -10380,22 +10407,22 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17072844: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17072944: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17073014: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17073112: () => { globalThis.TT_replayOver = true; },  
- 17073149: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17073245: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17073344: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17073443: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17073545: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17073688: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17073788: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17073929: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17074002: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17074096: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17074189: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17074249: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
+  17072924: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17073024: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17073094: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17073192: () => { globalThis.TT_replayOver = true; },  
+ 17073229: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17073325: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17073424: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17073523: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17073625: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17073768: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17073868: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17074009: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17074082: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17074176: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17074269: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17074329: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -10428,6 +10455,7 @@ var _tt_dev_tts_drop_erased = Module['_tt_dev_tts_drop_erased'] = makeInvalidEar
 var _tt_dev_tts_probe = Module['_tt_dev_tts_probe'] = makeInvalidEarlyAccess('_tt_dev_tts_probe');
 var _tt_tts_finished = Module['_tt_tts_finished'] = makeInvalidEarlyAccess('_tt_tts_finished');
 var _tt_dispatch_to_wndproc = Module['_tt_dispatch_to_wndproc'] = makeInvalidEarlyAccess('_tt_dispatch_to_wndproc');
+var _tt_save_city = Module['_tt_save_city'] = makeInvalidEarlyAccess('_tt_save_city');
 var _tt_demo_pause_choice = Module['_tt_demo_pause_choice'] = makeInvalidEarlyAccess('_tt_demo_pause_choice');
 var _tt_dev_xml_bench = Module['_tt_dev_xml_bench'] = makeInvalidEarlyAccess('_tt_dev_xml_bench');
 var _emscripten_stack_get_end = makeInvalidEarlyAccess('_emscripten_stack_get_end');
@@ -10467,6 +10495,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['tt_dev_tts_probe'] != 'undefined', 'missing Wasm export: tt_dev_tts_probe');
   assert(typeof wasmExports['tt_tts_finished'] != 'undefined', 'missing Wasm export: tt_tts_finished');
   assert(typeof wasmExports['tt_dispatch_to_wndproc'] != 'undefined', 'missing Wasm export: tt_dispatch_to_wndproc');
+  assert(typeof wasmExports['tt_save_city'] != 'undefined', 'missing Wasm export: tt_save_city');
   assert(typeof wasmExports['tt_demo_pause_choice'] != 'undefined', 'missing Wasm export: tt_demo_pause_choice');
   assert(typeof wasmExports['tt_dev_xml_bench'] != 'undefined', 'missing Wasm export: tt_dev_xml_bench');
   assert(typeof wasmExports['emscripten_stack_get_end'] != 'undefined', 'missing Wasm export: emscripten_stack_get_end');
@@ -10502,6 +10531,7 @@ function assignWasmExports(wasmExports) {
   _tt_dev_tts_probe = Module['_tt_dev_tts_probe'] = createExportWrapper('tt_dev_tts_probe', 1);
   _tt_tts_finished = Module['_tt_tts_finished'] = createExportWrapper('tt_tts_finished', 1);
   _tt_dispatch_to_wndproc = Module['_tt_dispatch_to_wndproc'] = createExportWrapper('tt_dispatch_to_wndproc', 3);
+  _tt_save_city = Module['_tt_save_city'] = createExportWrapper('tt_save_city', 0);
   _tt_demo_pause_choice = Module['_tt_demo_pause_choice'] = createExportWrapper('tt_demo_pause_choice', 1);
   _tt_dev_xml_bench = Module['_tt_dev_xml_bench'] = createExportWrapper('tt_dev_xml_bench', 1);
   _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end'];

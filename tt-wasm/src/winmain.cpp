@@ -11361,6 +11361,26 @@ static void tt_show_demo_pause_overlay(boolean during_demo) {
 	EM_ASM({ if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }, during_demo ? 1 : 0);
 };
 
+/* Save the city, as the paused dialog's "Save Everything" does. The original's PAUSED_DIALOG
+ * (ttus.rc:62) offers it alongside Back to ToonTalk / Come back later / Leave ToonTalk, and its
+ * handler is ask_continue_or_quit's case 4 -- dump_to_new_file(tt_file_name), then a message,
+ * staying paused rather than leaving. Ken: "when exiting free play an option should be to save
+ * the current city." Exposed separately from tt_demo_pause_choice so the chooser can stay up and
+ * report the result, which is what the original does. */
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_save_city() {
+	if (tt_city == NULL || tt_file_name == NULL) {
+		printf("[tt] savecity: nothing to save (city=%p name=%s)\n",
+		       (void *) tt_city,tt_file_name ? tt_file_name : "(null)");
+		fflush(stdout);
+		return(0);
+	};
+	wait_cursor();
+	boolean ok = tt_city->dump_to_new_file(tt_file_name);
+	restore_cursor();
+	printf("[tt] savecity: '%s' -> %d\n",tt_file_name,(int) ok); fflush(stdout);
+	return(ok ? 1 : 0);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
 	printf("[tt] demopause: choice %d\n",button_number); fflush(stdout);
 	waiting_for_user_dialog = FALSE;
