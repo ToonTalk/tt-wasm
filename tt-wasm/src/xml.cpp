@@ -2926,7 +2926,43 @@ boolean xml_entity(xml_document *document, Entity *entity) {
    return(xml_entity(parent,entity));
 };
 
+#ifdef __EMSCRIPTEN__
+/* The 9MB Playground city wedges the renderer inside the DOM walk (the original loads the same
+ * file in ~5s, so this is port-side super-linearity, not inherent cost). The page is unreadable
+ * while wedged, so make the walk report on itself: count elements, print progress every 500, and
+ * with ?citybudget=<ms> ABORT the walk when the budget is spent -- the page comes back alive and
+ * the console then says how far it got and how fast, which locates the hot spot. */
+static boolean xml_entity_em_inner(xml_node *parent, Entity *entity, boolean also_no_more_tags);
+static int tt_em_xml_entity_count = 0;
+static double tt_em_xml_entity_t0 = 0;
+static int tt_em_xml_budget_ms = -2; // -2 unread, -1 none
 boolean xml_entity(xml_node *parent, Entity *entity, boolean also_no_more_tags) {
+	if (tt_em_xml_budget_ms == -2) {
+		tt_em_xml_budget_ms = EM_ASM_INT({
+			if (typeof location === 'undefined') return -1;
+			var m = location.search.match(/[?&]citybudget=(\d+)/);
+			return m ? (m[1]|0) : -1;
+		});
+	};
+	if (tt_em_xml_entity_count == 0) tt_em_xml_entity_t0 = emscripten_get_now();
+	tt_em_xml_entity_count++;
+	if (tt_em_xml_entity_count % 500 == 0) {
+		printf("[tt] xmlwalk: %d elements, %.0fms\n",tt_em_xml_entity_count,
+		       emscripten_get_now()-tt_em_xml_entity_t0); fflush(stdout);
+	};
+	if (tt_em_xml_budget_ms > 0 &&
+	    (tt_em_xml_entity_count % 50 == 0) &&
+	    emscripten_get_now()-tt_em_xml_entity_t0 > tt_em_xml_budget_ms) {
+		printf("[tt] xmlwalk: BUDGET SPENT at element %d after %.0fms -- aborting the walk\n",
+		       tt_em_xml_entity_count,emscripten_get_now()-tt_em_xml_entity_t0); fflush(stdout);
+		return(FALSE);
+	};
+	return(xml_entity_em_inner(parent,entity,also_no_more_tags));
+};
+static boolean xml_entity_em_inner(xml_node *parent, Entity *entity, boolean also_no_more_tags) {
+#else
+boolean xml_entity(xml_node *parent, Entity *entity, boolean also_no_more_tags) {
+#endif
 	// also_no_more_tags is new on 200204 to fix a bug with loading city where the power off attribute is reset
 #if TT_DEBUG_ON
    if (tt_debug_mode == 280802) {
