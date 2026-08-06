@@ -584,12 +584,26 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
      * loads, in which case the platform default is used rather than staying silent. */
     if (!globalThis.TT_martyVoice) {
       var vs = speechSynthesis.getVoices() || [];
-      var want = (typeof location !== 'undefined')
-                 ? (location.search.match(/[?&]ttsvoice=([^&]+)/) || [])[1] : null;
+      var q2 = (typeof location !== 'undefined') ? location.search : '';
+      var want = (q2.match(/[?&]ttsvoice=([^&]+)/) || [])[1];
       if (want) {
         want = decodeURIComponent(want).toLowerCase();
         for (var w = 0; w < vs.length; w++) {
           if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; }
+        }
+      }
+      /* Ken's idea, and a better one than pitch: a voice for ANOTHER language reading English
+       * applies that language's phonetics to it, so Marty sounds like he learned English
+       * somewhere else -- which is what a martian should sound like. Pitch is unreliable anyway;
+       * Chrome's Windows SAPI voices commonly ignore it outright while honouring rate.
+       * ?ttsaccent=fr|zh|de|ru|... picks the language, ?ttsaccent=off keeps the plain English
+       * male. Falls back to English whenever the chosen language is not installed. */
+      var accent = (q2.match(/[?&]ttsaccent=([A-Za-z-]+)/) || [])[1];
+      if (accent === undefined) accent = 'fr';
+      if (!globalThis.TT_martyVoice && accent && accent !== 'off') {
+        accent = accent.toLowerCase();
+        for (var a = 0; a < vs.length; a++) {
+          if ((vs[a].lang || '').toLowerCase().indexOf(accent) === 0) { globalThis.TT_martyVoice = vs[a]; break; }
         }
       }
       for (var i = 0; i < vs.length && !globalThis.TT_martyVoice; i++) {
@@ -614,8 +628,21 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
       globalThis.TT_ttsTune = { pitch: num(/[?&]ttspitch=([\d.]+)/, 1.8),
                                 rate:  num(/[?&]ttsrate=([\d.]+)/, 1.15) };
     }
-    u.pitch = globalThis.TT_ttsTune.pitch;
-    u.rate = globalThis.TT_ttsTune.rate;
+    /* pitch is defined as 0..2 and rate as 0.1..10; out-of-range values are rejected by some
+     * engines and silently ignored by others, so clamp rather than let a typo read as "no
+     * effect at all" (Ken tried ttspitch=3 and heard nothing change). */
+    var clamp = function (v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); };
+    u.pitch = clamp(globalThis.TT_ttsTune.pitch, 0, 2);
+    u.rate = clamp(globalThis.TT_ttsTune.rate, 0.1, 10);
+    /* Say once what was actually chosen. Whether a voice honours pitch is a property of the voice,
+     * so when a setting seems to do nothing this line is what distinguishes "not applied" from
+     * "applied and ignored". */
+    if (!globalThis.TT_ttsLogged) {
+      globalThis.TT_ttsLogged = 1;
+      console.log('[tt] tts: voice=' + (u.voice ? (u.voice.name + ' [' + u.voice.lang + ']') : '(browser default)') +
+                  ' pitch=' + u.pitch + ' rate=' + u.rate +
+                  ' (available=' + ((speechSynthesis.getVoices() || []).length) + ')');
+    }
     /* speechSynthesis has its own output path — it does not pass through the Web Audio graph, so
      * the page's master gain cannot reach it. Apply the same setting here or the volume control
      * would silence everything except Marty. */
