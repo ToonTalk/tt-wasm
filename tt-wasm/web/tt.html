@@ -179,13 +179,13 @@
       </button>
     </div>
     <div class="lrow">
-      <!-- The Playground notebook that shipped with the retail product (Users/PlaygroundBookX),
-           staged by link.sh and loaded via ?user=. Its sibling Playground2001X (the full 9MB
-           city) is deliberately NOT offered yet: its 159k-element load still stalls (task #47),
-           and a button that wedges the tab is worse than no button. Add it here when the walk
-           is fixed. -->
+      <!-- The Playground material that shipped with the retail product, staged by link.sh and
+           loaded via ?user=: PlaygroundBookX is the notebook, Playground2001X the full 9MB city.
+           The city used to wedge the tab (159k elements at ~6ms each); since the GetFocus fix it
+           walks in ~12s, so it is offered here too. -->
       <span id="lwait" style="color:#7b7b93;font-size:12px;align-self:center">loading ToonTalk…</span>
       <button type="button" id="lplayground">Playground Notebook</button>
+      <button type="button" id="lplaycity">Playground City</button>
       <button type="button" id="lopen">Open a .dmo…</button>
       <button type="button" id="labout">About ToonTalk</button>
     </div>
@@ -486,6 +486,9 @@
     document.getElementById('lback').addEventListener('click', function () { show('main'); });
     document.getElementById('lplayground').addEventListener('click', function () {
       location.search = '?user=PlaygroundBookX';
+    });
+    document.getElementById('lplaycity').addEventListener('click', function () {
+      location.search = '?user=Playground2001X';
     });
 
     // The mission game needs its puzzle files. Without p1.pzl the engine aborts before drawing

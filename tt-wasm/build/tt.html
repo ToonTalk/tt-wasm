@@ -179,13 +179,13 @@
       </button>
     </div>
     <div class="lrow">
-      <!-- The Playground notebook that shipped with the retail product (Users/PlaygroundBookX),
-           staged by link.sh and loaded via ?user=. Its sibling Playground2001X (the full 9MB
-           city) is deliberately NOT offered yet: its 159k-element load still stalls (task #47),
-           and a button that wedges the tab is worse than no button. Add it here when the walk
-           is fixed. -->
+      <!-- The Playground material that shipped with the retail product, staged by link.sh and
+           loaded via ?user=: PlaygroundBookX is the notebook, Playground2001X the full 9MB city.
+           The city used to wedge the tab (159k elements at ~6ms each); since the GetFocus fix it
+           walks in ~12s, so it is offered here too. -->
       <span id="lwait" style="color:#7b7b93;font-size:12px;align-self:center">loading ToonTalk…</span>
       <button type="button" id="lplayground">Playground Notebook</button>
+      <button type="button" id="lplaycity">Playground City</button>
       <button type="button" id="lopen">Open a .dmo…</button>
       <button type="button" id="labout">About ToonTalk</button>
     </div>
@@ -248,9 +248,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786026692 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786028025 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786026692'; },
+    locateFile: function (f) { return f + '?v=1786028025'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -487,6 +487,9 @@
     document.getElementById('lplayground').addEventListener('click', function () {
       location.search = '?user=PlaygroundBookX';
     });
+    document.getElementById('lplaycity').addEventListener('click', function () {
+      location.search = '?user=Playground2001X';
+    });
 
     // The mission game needs its puzzle files. Without p1.pzl the engine aborts before drawing
     // anything, so the card must not be offered — a dead black canvas is the worst possible answer
@@ -581,6 +584,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786026692"></script>
+<script src="tt.js?v=1786028025"></script>
 </body>
 </html>

@@ -2376,21 +2376,34 @@ int tt_em_idd_from[4] = {0, 0, 0, 0};
 void MainWindow::initialize_palette() {
 #ifdef __EMSCRIPTEN__
 	tt_em_palette_inits++;
-	/* The one repeat caller (initialize_direct_draw, re-entered by toggle_pause on every un-pause)
-	 * guards this with `direct_draw_palette == NULL`. On Windows that handle is created on the
-	 * first pass, so the palette is built once. The port has no DirectDraw object at all --
-	 * direct_draw and direct_draw_palette stay NULL forever -- so the guard never closes, and
-	 * since ask_response_to_load_interruption() un-pauses on every poll of a long load, a 9MB city
-	 * rebuilt the whole palette hundreds of times. That was ~36ms a rebuild and essentially the
-	 * entire load time. The palette is a pure function of the art's colour table, so cache that
-	 * table and skip the rebuild while it is unchanged (a different picture directory still
-	 * rebuilds, as does the first call). */
+	/* This is re-entered often enough to matter even after the GetFocus fix -- rebuilding every
+	 * time costs the Playground city 70s instead of 12s -- and the palette is a pure function of
+	 * the art's colour table, so cache that table and skip the rebuild while it is unchanged. A
+	 * different picture directory still rebuilds, as does the first call.
+	 *
+	 * The early return must NOT skip the tt_png_set_palette handoff at the bottom of this
+	 * function: that is how the PNG decoder learns the live tt_colors, and tt_colors is rewritten
+	 * from elsewhere (the .us1 art palette loads after this first runs). Skipping it left user
+	 * pictures quantised against a stale palette -- and since index 0 is the transparency key that
+	 * nearest_index never returns, a mis-mapped background stops being keyed out and shows as
+	 * solid colour instead. Redoing that handoff unconditionally costs 34s rather than 12s, so do
+	 * it only when tt_colors has actually moved -- which is the case it exists to catch. */
 	{
 		static RGBQUAD cached_colors[colors_count];
 		static boolean have_cached_colors = FALSE;
 		if (default_header != NULL) {
 			if (have_cached_colors && tt_colors_available > 0 &&
-				 memcmp(cached_colors,default_header->bmiColors,sizeof(cached_colors)) == 0) return;
+				 memcmp(cached_colors,default_header->bmiColors,sizeof(cached_colors)) == 0) {
+				static COLORREF cached_tt_colors[colors_count];
+				static int cached_tt_colors_available = -1;
+				if (cached_tt_colors_available != tt_colors_available ||
+					 memcmp(cached_tt_colors,tt_colors,tt_colors_available*sizeof(COLORREF)) != 0) {
+					memcpy(cached_tt_colors,tt_colors,tt_colors_available*sizeof(COLORREF));
+					cached_tt_colors_available = tt_colors_available;
+					tt_png_set_palette((const unsigned int *) tt_colors,tt_colors_available);
+				};
+				return;
+			};
 			memcpy(cached_colors,default_header->bmiColors,sizeof(cached_colors));
 			have_cached_colors = TRUE;
 		};
