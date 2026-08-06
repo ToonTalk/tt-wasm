@@ -4463,7 +4463,17 @@ void Notebook::load() { // ascii_string ignore_file_name, boolean add_prefix) { 
 #else
 				short int page = add_remotes(identifiers,0,count,tt_global_picture);
 #endif
+#ifdef __EMSCRIPTEN__
+				/* Ken: "Foreign bird sensor is also obsolete". A foreign bird delivers to a
+				 * receiver in a native DLL (winmain.cpp even has an AskBeforeForeignBirdsLoadDLL
+				 * switch); there is no such thing to load in a browser. Same treatment as the MCI
+				 * pair: the page says so, the bird stays where it is so page numbers do not move. */
+				add_page(page++,variable_width_text_pad(
+					"This bird is retired.\rIt carried things to programs\routside of ToonTalk.",
+					text_pad_see_all));
+#else
 				add_page(page++,variable_width_text_pad(S(IDS_PRIMITIVE_BIRD_LABEL),text_pad_see_all));
+#endif
 		      Bird *bird = new PrimitiveBird(receive_extension_name);
             // following is done by PrimitiveBird::PrimitiveBird as of 140802
 //				Picture *t_shirt = t_shirt_label(_T("?")); // is this really a good label?

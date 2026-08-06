@@ -623,12 +623,15 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
           if ((vs[a].lang || '').toLowerCase().indexOf(accent) === 0) { globalThis.TT_martyVoice = vs[a]; break; }
         }
       }
-      for (var i = 0; i < vs.length && !globalThis.TT_martyVoice; i++) {
-        var n = (vs[i].name || '').toLowerCase();
-        if ((vs[i].lang || '').indexOf('en') === 0 &&
-            (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 ||
-             n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; }
-      }
+      /* No default pick any more. Choosing "an English male voice" by name was making things
+       * worse than doing nothing: Ken heard the FIRST sentence come out fine and everything after
+       * it sound weird, on the text-to-speech sensor as well as from Marty. The first sentence is
+       * the one that goes out before getVoices() has loaded -- i.e. on the browser's own default
+       * -- so the good voice was the default and the weird one was this heuristic, which matches
+       * on any name containing "male" (including "female") and cannot judge quality at all.
+       * Leaving u.voice unset uses the browser default throughout, which also makes every
+       * sentence match the first. ?ttsvoice= and ?ttsaccent= above still override deliberately. */
+      if (!vs.length) { /* nothing to choose from yet; the voiceschanged hook will retry */ }
     }
     if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice;
     /* Marty is a martian. Pitch near the top of the allowed range (the spec caps it at 2) with a

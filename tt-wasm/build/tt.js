@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpx83vc9i2.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1pjdfamh.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpx83vc9i2.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpf2ievbfq.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1pjdfamh.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyllkxt1_.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpf2ievbfq.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpyllkxt1_.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1350,13 +1350,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmprjd36ro8.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj14rknta.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmprjd36ro8.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj14rknta.js
 
 
 var programArgs = [];
@@ -10506,25 +10506,25 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17073492: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17073592: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17073662: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17073760: () => { globalThis.TT_replayOver = true; },  
- 17073797: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17073893: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17073992: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17074091: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17074193: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17074336: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17074436: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17074577: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17074650: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17074744: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17074837: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17074897: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
- 17074959: () => { return globalThis.TT_presents|0; },  
- 17074996: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
- 17075076: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
+  17073556: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17073656: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17073726: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17073824: () => { globalThis.TT_replayOver = true; },  
+ 17073861: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17073957: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17074056: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17074155: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17074257: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17074400: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17074500: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17074641: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17074714: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17074808: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17074901: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17074961: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
+ 17075023: () => { return globalThis.TT_presents|0; },  
+ 17075060: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
+ 17075140: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -10538,7 +10538,7 @@ function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx:
 function tt_ds_free(id) { var DS = Module.TT_ds; if (!DS) return; if (DS.srcs[id]) { var sf = DS.srcs[id]; try { sf.onended = null; } catch (e) {} try { sf.stop(); } catch (e) {} try { sf.disconnect(); } catch (e) {} delete DS.srcs[id]; } if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; } delete DS.vols[id]; }
 function tt_text_hwidth(text,len,cell_h,cell_w,fixed) { try { if (len <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } var cx = g.cx, px = cell_h; var fam = fixed ? '"Courier New", "Consolas", monospace' : '"Arial", "Helvetica", "Liberation Sans", sans-serif'; cx.font = 'bold ' + px + 'px ' + fam; var natural = cx.measureText(s).width; var sx = 1; if (cell_w > 0) { var k = px + (fixed ? 'f' : 'p'); var a = g.avg[k]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[k] = a; } sx = cell_w / a; } return Math.ceil(natural * sx); } catch (e) { return len * (cell_w > 0 ? cell_w : cell_h); } }
 function tt_text_raster(text,len,cell_h,cell_w,out,out_w,out_h,fixed) { try { if (len <= 0 || out_w <= 0 || out_h <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } if (g.cv.width < out_w || g.cv.height < out_h) { g.cv.width = Math.max(g.cv.width, out_w); g.cv.height = Math.max(g.cv.height, out_h); } var cx = g.cx; var fam = fixed ? '"Courier New", "Consolas", monospace' : '"Arial", "Helvetica", "Liberation Sans", sans-serif'; var px = cell_h; cx.font = 'bold ' + px + 'px ' + fam; var m = cx.measureText(s); var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent; if (!(asc > 0)) asc = px * 0.75; if (!(desc >= 0)) desc = px * 0.25; if (asc + desc > cell_h && asc + desc > 0) { px = Math.max(1, Math.floor(px * cell_h / (asc + desc))); cx.font = 'bold ' + px + 'px ' + fam; m = cx.measureText(s); asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75; desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25; } if (!(m.width > 0)) return 0; var sx = 1; if (cell_w > 0) { var k2 = px + (fixed ? 'f' : 'p'); var a = g.avg[k2]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[k2] = a; } sx = cell_w / a; } var base = cell_h / 2 + (asc - desc) / 2; if (base - asc < 0) base = asc; if (base + desc > cell_h) base = cell_h - desc; var originX = 0; if (len === 1 && cell_w > 0) { var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight; if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = m.width; } originX = cell_w / (2 * sx) - (inkR - inkL) / 2; } cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, out_w, out_h); cx.fillStyle = '#fff'; cx.textBaseline = 'alphabetic'; cx.setTransform(sx, 0, 0, 1, 0, 0); cx.fillText(s, originX, base); cx.setTransform(1, 0, 0, 1, 0, 0); var img = cx.getImageData(0, 0, out_w, out_h).data; for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3]; return 1; } catch (e) { return 0; } }
-function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; if (!vs.length && !globalThis.TT_voicesHooked) { globalThis.TT_voicesHooked = 1; try { speechSynthesis.addEventListener('voiceschanged', function () { globalThis.TT_martyVoice = null; }); } catch (e) {} } var q2 = (typeof location !== 'undefined') ? location.search : ''; var want = (q2.match(/[?&]ttsvoice=([^&]+)/) || [])[1]; if (want) { want = decodeURIComponent(want).toLowerCase(); for (var w = 0; w < vs.length; w++) { if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; } } } var accent = (q2.match(/[?&]ttsaccent=([A-Za-z-]+)/) || [])[1]; if (accent === undefined) accent = 'off'; if (!globalThis.TT_martyVoice && accent && accent !== 'off') { accent = accent.toLowerCase(); for (var a = 0; a < vs.length; a++) { if ((vs[a].lang || '').toLowerCase().indexOf(accent) === 0) { globalThis.TT_martyVoice = vs[a]; break; } } } for (var i = 0; i < vs.length && !globalThis.TT_martyVoice; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; if (globalThis.TT_ttsTune === undefined) { var q = (typeof location !== 'undefined') ? location.search : ''; var num = function (re, dflt) { var m = q.match(re), v = m ? parseFloat(m[1]) : NaN; return isFinite(v) ? v : dflt; }; globalThis.TT_ttsTune = { pitch: num(/[?&]ttspitch=([d.]+)/, 1.8), rate: num(/[?&]ttsrate=([d.]+)/, 1.15) }; } var clamp = function (v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }; u.pitch = clamp(globalThis.TT_ttsTune.pitch, 0, 2); u.rate = clamp(globalThis.TT_ttsTune.rate, 0.1, 10); if (!globalThis.TT_ttsLogged) { globalThis.TT_ttsLogged = 1; console.log('[tt] tts: voice=' + (u.voice ? (u.voice.name + ' [' + u.voice.lang + ']') : '(browser default)') + ' pitch=' + u.pitch + ' rate=' + u.rate + ' (available=' + ((speechSynthesis.getVoices() || []).length) + ')'); } u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
+function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; if (!vs.length && !globalThis.TT_voicesHooked) { globalThis.TT_voicesHooked = 1; try { speechSynthesis.addEventListener('voiceschanged', function () { globalThis.TT_martyVoice = null; }); } catch (e) {} } var q2 = (typeof location !== 'undefined') ? location.search : ''; var want = (q2.match(/[?&]ttsvoice=([^&]+)/) || [])[1]; if (want) { want = decodeURIComponent(want).toLowerCase(); for (var w = 0; w < vs.length; w++) { if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; } } } var accent = (q2.match(/[?&]ttsaccent=([A-Za-z-]+)/) || [])[1]; if (accent === undefined) accent = 'off'; if (!globalThis.TT_martyVoice && accent && accent !== 'off') { accent = accent.toLowerCase(); for (var a = 0; a < vs.length; a++) { if ((vs[a].lang || '').toLowerCase().indexOf(accent) === 0) { globalThis.TT_martyVoice = vs[a]; break; } } } if (!vs.length) { } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; if (globalThis.TT_ttsTune === undefined) { var q = (typeof location !== 'undefined') ? location.search : ''; var num = function (re, dflt) { var m = q.match(re), v = m ? parseFloat(m[1]) : NaN; return isFinite(v) ? v : dflt; }; globalThis.TT_ttsTune = { pitch: num(/[?&]ttspitch=([d.]+)/, 1.8), rate: num(/[?&]ttsrate=([d.]+)/, 1.15) }; } var clamp = function (v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }; u.pitch = clamp(globalThis.TT_ttsTune.pitch, 0, 2); u.rate = clamp(globalThis.TT_ttsTune.rate, 0.1, 10); if (!globalThis.TT_ttsLogged) { globalThis.TT_ttsLogged = 1; console.log('[tt] tts: voice=' + (u.voice ? (u.voice.name + ' [' + u.voice.lang + ']') : '(browser default)') + ' pitch=' + u.pitch + ' rate=' + u.rate + ' (available=' + ((speechSynthesis.getVoices() || []).length) + ')'); } u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
 
 // Imports from the Wasm binary.
 var _fflush = makeInvalidEarlyAccess('_fflush');
