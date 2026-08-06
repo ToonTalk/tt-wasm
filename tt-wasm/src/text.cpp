@@ -1534,6 +1534,26 @@ void Text::good_size(city_coordinate &good_width, city_coordinate &good_height, 
 	} else {
 		adjust_size_for_source(good_width,good_height,source);
 	};
+#ifdef __EMSCRIPTEN__
+	/* Ken's screenshot: the Hand Visible? and control-button sensors draw as a pink bar running
+	 * off the right of the screen once the hand is hidden with F9. Whatever produces that width,
+	 * it ends here -- so report any pad that asks for more than half the screen, with the inputs
+	 * that decided it. (The max_long/2 overflow branch in Screen::get_extent_size has its own
+	 * probe and does NOT fire in ordinary play, so the cause is likely upstream of it.) */
+	if (good_width > ideal_screen_width/2) {
+		static int gw = 0;
+		if (gw < 12) { gw++;
+			char sample[24]; int si = 0;
+			for (; si < 20 && si < text_length && wide_text && wide_text[si]; si++)
+				sample[si] = (wide_text[si] < 32 || wide_text[si] > 126) ? '.' : (char) wide_text[si];
+			sample[si] = 0;
+			printf("[tt] padbig: w=%ld h=%ld len=%ld lines=%ld blank=%d text='%s'\n",
+			       (long) good_width, (long) good_height, (long) text_length,
+			       (long) number_of_lines, (int) is_blank(), sample);
+			fflush(stdout);
+		};
+	};
+#endif
 //	if (display_just_nice_text() || tt_new_pad_look) { // new on 180699
 //		good_width = default_talk_balloon_character_width()*longest_line;
 //		good_height = default_talk_balloon_character_height()*number_of_lines;

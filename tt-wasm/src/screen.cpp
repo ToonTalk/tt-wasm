@@ -2384,6 +2384,21 @@ void Screen::get_extent_size(wide_string text, int length, int number_of_lines,
 			// above rewritten on 131004 since the above seems to become negative and then we get a zero scale
 			// may be it became negative since edge size and the like is sometimes added to the extent so half max should be pretty safe
 			new_width = max_long/2; // new on 091104 since the above does badly on million digit numbers and text pads
+#ifdef __EMSCRIPTEN__
+			/* max_long/2 is "this text is too wide to measure honestly", and a pad that lands here
+			 * is drawn as a bar running off the screen -- Ken's screenshot of the Hand Visible?
+			 * and control-button sensors once the hand is hidden with F9. Report what tripped it;
+			 * the two branches mean different things (a genuine overflow of the pixels->city
+			 * conversion, versus longest_line disagreeing with the converted width). */
+			{ static int ew = 0; if (ew < 12) { ew++;
+			  char sample[24]; int si = 0;
+			  for (; si < 20 && si < length && text[si]; si++) sample[si] = (text[si] < 32 || text[si] > 126) ? '.' : (char) text[si];
+			  sample[si] = 0;
+			  printf("[tt] padwide: len=%d lines=%d longest=%d wpix=%.1f onepix=%.3f fontw=%ld text='%s'\n",
+			         length, number_of_lines, longest_line, new_width_in_pixels,
+			         one_x_pixel, (long) font_width, sample);
+			  fflush(stdout); } }
+#endif
 		};
 	};
 	if (old_height_in_pixels == new_height_in_pixels) {
