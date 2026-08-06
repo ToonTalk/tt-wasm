@@ -584,6 +584,20 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
      * loads, in which case the platform default is used rather than staying silent. */
     if (!globalThis.TT_martyVoice) {
       var vs = speechSynthesis.getVoices() || [];
+      /* getVoices() is empty until the browser has loaded the list, and Marty's first line can
+       * easily beat it -- which is why Ken heard the first sentence in one voice and the rest in
+       * another. Selection re-runs on every utterance anyway (this block is skipped once a voice
+       * is chosen), so all that is missing is a nudge to choose the moment the list arrives
+       * instead of at the next sentence. Speech is never delayed waiting for it: a late voice is
+       * a smaller problem than a silent martian. */
+      if (!vs.length && !globalThis.TT_voicesHooked) {
+        globalThis.TT_voicesHooked = 1;
+        try {
+          speechSynthesis.addEventListener('voiceschanged', function () {
+            globalThis.TT_martyVoice = null;      /* let the next utterance re-pick from the full list */
+          });
+        } catch (e) {}
+      }
       var q2 = (typeof location !== 'undefined') ? location.search : '';
       var want = (q2.match(/[?&]ttsvoice=([^&]+)/) || [])[1];
       if (want) {
@@ -599,7 +613,10 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
        * ?ttsaccent=fr|zh|de|ru|... picks the language, ?ttsaccent=off keeps the plain English
        * male. Falls back to English whenever the chosen language is not installed. */
       var accent = (q2.match(/[?&]ttsaccent=([A-Za-z-]+)/) || [])[1];
-      if (accent === undefined) accent = 'fr';
+      /* Tried as the default and rejected: Ken heard "a quiet very hard to understand voice".
+       * A French voice reading English mangles it rather than accenting it, and Marty has to be
+       * understood by a child. Off by default; the flag stays for further experiments. */
+      if (accent === undefined) accent = 'off';
       if (!globalThis.TT_martyVoice && accent && accent !== 'off') {
         accent = accent.toLowerCase();
         for (var a = 0; a < vs.length; a++) {
