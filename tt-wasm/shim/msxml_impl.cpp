@@ -91,6 +91,7 @@ struct DomNode : public IXMLDOMElement {
     virtual ~DomNode() {}
 
     int index_in_parent();
+    int idx_hint = 0;   /* parent-side cursor for index_in_parent -- see its comment */
     void gather_text(wstring &out);
     void serialize(wstring &out);
     DomNode *find_attr(const wstring &nm);
@@ -328,7 +329,22 @@ struct DomDocument : public IXMLDOMDocument {
 /* --------------------------------------------------------------- DomNode bodies needing DomDocument */
 int DomNode::index_in_parent() {
     if (!parent) return -1;
-    for (size_t i = 0; i < parent->kids.size(); i++) if (parent->kids[i] == this) return (int)i;
+    /* get_nextSibling calls this for EVERY step, and xml_entity iterates children exactly that
+     * way -- so a linear rescan here made traversing a K-child parent O(K^2). Real MSXML keeps
+     * sibling pointers and is O(1). That is what wedged the Playground city: its data.xml is
+     * 159,546 elements (measured: ~14ms per element and RISING; the original loads the file in
+     * ~5s). Cache the last found index as a hint, verified before trust, so the sequential
+     * pattern is O(1) while arbitrary mutation stays correct: the hint is just a guess that is
+     * checked (idx_hint and idx_hint+1 first -- self, then the common "previous sibling asked"
+     * case), and a failed guess falls back to the scan and refreshes the hint. */
+    size_t n = parent->kids.size();
+    int h = parent->idx_hint;   /* the hint lives on the PARENT: each child is asked once, the
+                                 * parent sees the whole sequence, so hint/hint+1 is the O(1) hit */
+    if ((size_t)h < n && parent->kids[h] == this) return h;
+    if ((size_t)(h + 1) < n && parent->kids[h + 1] == this) { parent->idx_hint = h + 1; return h + 1; }
+    for (size_t i = 0; i < n; i++) {
+        if (parent->kids[i] == this) { parent->idx_hint = (int)i; return (int)i; }
+    }
     return -1;
 }
 void DomNode::gather_text(wstring &out) {
