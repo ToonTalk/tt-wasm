@@ -184,6 +184,7 @@
            city) is deliberately NOT offered yet: its 159k-element load still stalls (task #47),
            and a button that wedges the tab is worse than no button. Add it here when the walk
            is fixed. -->
+      <span id="lwait" style="color:#7b7b93;font-size:12px;align-self:center">loading ToonTalk…</span>
       <button type="button" id="lplayground">Playground Notebook</button>
       <button type="button" id="lopen">Open a .dmo…</button>
       <button type="button" id="labout">About ToonTalk</button>
@@ -247,9 +248,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786014629 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786015259 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786014629'; },
+    locateFile: function (f) { return f + '?v=1786015259'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -408,7 +409,21 @@
   // fetching a .dmo and staging it into the filesystem already hangs off that parameter — and
   // because the engine does not ask a name when replaying (utils.cpp:10707,
   // "name isn't asked if double click on demo").
+  // The opening screen is plain HTML and can paint at once, but it used to be revealed only when
+  // pre.js called this from Module.preRun -- i.e. after tt.wasm (2.9MB) AND tt.data (48.5MB) had
+  // downloaded and mounted, leaving the user staring at a black canvas for ~10s (Ken). The
+  // original's Starttt.exe appeared immediately. So build the screen NOW and let the engine load
+  // behind it: TT_showLauncher merely delivers the callback when the runtime is finally ready,
+  // and a choice made before then is held and applied the moment it arrives.
+  var ttPendingDone = null, ttPendingCmd = null, ttRuntimeReady = false;
   window.TT_showLauncher = function (done) {
+    ttPendingDone = done;
+    ttRuntimeReady = true;
+    var wait = document.getElementById('lwait');
+    if (wait) wait.hidden = true;
+    if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
+  };
+  (function buildLauncher() {
     var box = document.getElementById('launcher');
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     var stage = document.getElementById('stage');
@@ -431,7 +446,9 @@
       box.hidden = true;
       stage.style.display = '';
       ttNote('launcher: ' + cmd);
-      done(cmd);
+      // If the engine is still loading, hold the choice rather than dropping it -- the click must
+      // not be silently ignored just because it landed early.
+      if (ttPendingDone) { ttPendingDone(cmd); } else { ttPendingCmd = cmd; }
     };
 
     // Free play / missions: ask the name and head first, like the original.
@@ -536,7 +553,7 @@
       });
     });
     show('main');
-  };
+  })();
 
   // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
   // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
@@ -555,6 +572,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786014629"></script>
+<script src="tt.js?v=1786015259"></script>
 </body>
 </html>

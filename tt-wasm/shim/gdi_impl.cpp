@@ -626,10 +626,16 @@ BOOL RoundRect(HDC hdc, int l, int t, int r, int b, int ew, int eh) {
     if (ew > w) ew = w; if (eh > h) eh = h;
     if (ew < 2 || eh < 2) return Rectangle(hdc, l, t, r, b);   /* corners too small to round */
     int rx = ew / 2, ry = eh / 2;
-    /* body: the cross of two rectangles, then the four corner quadrants from the ellipse fill */
-    fill_rect(dc, l + rx, t, r - rx, b);
-    fill_rect(dc, l, t + ry, r, b - ry);
-    for (int y = 0; y < ry; y++) {
+    /* body: the cross of two rectangles, then the four corner quadrants from the ellipse fill.
+     * NULL_BRUSH must skip all of it -- fill_rect already returns early for a hollow brush, and
+     * the corner loop below has to do the same or it paints index 0 into each corner, which is
+     * exactly the "extra black areas" Ken saw on the rounded-rectangle page. */
+    bool hollow = (br && br->hollow);
+    if (!hollow) {
+        fill_rect(dc, l + rx, t, r - rx, b);
+        fill_rect(dc, l, t + ry, r, b - ry);
+    }
+    for (int y = 0; !hollow && y < ry; y++) {
         double dy = (ry - y - 0.5) / (double)ry;
         double s = 1.0 - dy * dy;
         if (s <= 0.0) continue;
