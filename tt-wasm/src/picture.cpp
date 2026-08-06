@@ -10045,6 +10045,27 @@ void associate_image_and_file_name(UserImage *image, string file_name) { // abst
 extern "C" int tt_png_to_bmp(const char *png_path, const char *bmp_path); /* shim/png_impl.cpp */
 
 UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name,
+										 boolean &ok, boolean warn, int pixel_width, int pixel_height);
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Dev hook: load a user-media image exactly as a saved picture does -- the private <hash>.png
+ * path, no OriginalFile -- and report whether it produced a real image. The notebook's picture
+ * pads are not instantiated until their page is turned to, so this is the only way to exercise
+ * the path without driving the UI. Console: Module._tt_dev_load_media(ptr to path). */
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_dev_load_media(const char *path) {
+	boolean ok = FALSE;
+	UserImage *image = find_image_for_file((ascii_string) path,NULL,ok,FALSE,-1,-1);
+	printf("[tt] devmedia: '%s' ok=%d image=%s w=%d h=%d\n",path,(int) ok,
+	       image != NULL ? "YES" : "NULL",
+	       image != NULL ? image->width_without_scaling() : -1,
+	       image != NULL ? image->height_without_scaling() : -1);
+	fflush(stdout);
+	return(ok ? 1 : 0);
+};
+#endif
+
+UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_string original_file_name,
 										 boolean &ok, boolean warn, int pixel_width, int pixel_height) {
 	// removed , boolean share_images_with_same_file_name on 280403
 #ifdef __EMSCRIPTEN__
@@ -10068,30 +10089,44 @@ UserImage *find_image_for_file(ascii_string private_media_file_name, ascii_strin
 			original_file_name = gif_as_bmp;
 		};
 	};
-	/* Same trick for user media, which is PNG. Unlike the GIFs above -- retail art, converted once
-	 * at stage time -- these are extracted from notebook/city/demo archives while running, so they
-	 * have to be converted on demand. Decode beside the original the first time and reuse it after;
-	 * a refusal (unsupported PNG variant) leaves original_file_name alone, so the picture is merely
-	 * blank as before rather than breaking the load. Ken: the Playground notebook's images were all
-	 * missing, with all 505 PNGs present on disk. */
-	if (gif_as_bmp == NULL && original_file_name != NULL) {
-		int n = strlen(original_file_name);
-		if (n > 4 && stricmp(original_file_name+n-4,".png") == 0) {
-			ascii_string png_as_bmp = copy_string(original_file_name);
-			strcpy(png_as_bmp+n-4,".bmp");
-			FILE *have = fopen(png_as_bmp,"rb");
+	/* Same trick for user media, which is PNG -- but it arrives as the PRIVATE name, not the
+	 * original one. A saved picture is written as <media dir>/<hash>.png and read back through
+	 * xml.cpp:1756's USER_PICTURE_TAG, which hands that path in as private_media_file_name;
+	 * OriginalFile (original_file_name) is whatever the player imported, often absent. Redirecting
+	 * only original_file_name therefore changed nothing, which is why the Playground notebook's
+	 * pictures stayed blank even with every .bmp twin sitting beside its .png. Both names are
+	 * redirected here; the twin is made on demand if extraction has not already done it. */
+	ascii_string png_as_bmp_private = NULL;
+	{
+		ascii_string *names[2] = { &private_media_file_name, &original_file_name };
+		ascii_string *slots[2] = { &png_as_bmp_private, &gif_as_bmp };
+		for (int i = 0; i < 2; i++) {
+			if (*slots[i] != NULL || *names[i] == NULL) continue;
+			int n = strlen(*names[i]);
+			if (n <= 4 || stricmp(*names[i]+n-4,".png") != 0) continue;
+			ascii_string as_bmp = copy_string(*names[i]);
+			strcpy(as_bmp+n-4,".bmp");
+			FILE *have = fopen(as_bmp,"rb");
+			boolean usable = FALSE;
 			if (have != NULL) {
 				fclose(have);
-				gif_as_bmp = png_as_bmp;
-				original_file_name = gif_as_bmp;
-			} else if (tt_png_to_bmp(original_file_name,png_as_bmp)) {
-				gif_as_bmp = png_as_bmp;
-				original_file_name = gif_as_bmp;
+				usable = TRUE;
 			} else {
-				delete [] png_as_bmp;
+				usable = tt_png_to_bmp(*names[i],as_bmp);
+			};
+			if (usable) {
+				*slots[i] = as_bmp;
+				*names[i] = as_bmp;
+			} else {
+				delete [] as_bmp;   // unsupported variant: leave it be, picture stays blank as before
 			};
 		};
-	};
+	}
+	struct FreePrivateName {
+		ascii_string p;
+		FreePrivateName(ascii_string s) : p(s) {}
+		~FreePrivateName() { if (p != NULL) delete [] p; }
+	} free_private_name(png_as_bmp_private);
 	struct FreeGifName { // so every return path below releases it
 		ascii_string p;
 		FreeGifName(ascii_string s) : p(s) {}
