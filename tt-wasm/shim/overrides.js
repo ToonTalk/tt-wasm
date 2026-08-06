@@ -231,6 +231,71 @@ addToLibrary({
   // back to centre via SetCursorPos so the next delta is measured fresh. In the browser we emulate
   // that warp: reset the virtual cursor to (x,y). Under Pointer Lock, pre.js accumulates movementX/Y
   // from this reset point, so the per-frame delta is exactly the mouse movement — the hand tracks.
+  // While RECORDING, the time-travel state display shows the real date the log was made
+  // (log.cpp:4387 onwards) rather than the relative "#N = HH:MM:SS" shown on replay. It builds
+  // that through these four, all of which were zero-stubs -- so nothing was written into the
+  // caller's buffer after "#N = ", and strlen then measured uninitialised stack, which is the
+  // garbled label Ken reported ("#7 = " followed by ink soup). Only reachable since free-play
+  // time travel became the default (61ff593), which is why it looked like a new fault.
+  // FILETIME is 100ns ticks since 1601; SYSTEMTIME is 8 consecutive WORDs.
+  FileTimeToSystemTime: function(ftPtr, stPtr) {
+    if (!ftPtr || !stPtr) return 0;
+    var lo = HEAPU32[ftPtr >> 2], hi = HEAPU32[(ftPtr >> 2) + 1];
+    var d = new Date((hi * 4294967296 + lo) / 10000 - 11644473600000);
+    if (isNaN(d.getTime())) return 0;
+    var w = stPtr >> 1;
+    HEAPU16[w] = d.getUTCFullYear();   HEAPU16[w + 1] = d.getUTCMonth() + 1;
+    HEAPU16[w + 2] = d.getUTCDay();    HEAPU16[w + 3] = d.getUTCDate();
+    HEAPU16[w + 4] = d.getUTCHours();  HEAPU16[w + 5] = d.getUTCMinutes();
+    HEAPU16[w + 6] = d.getUTCSeconds();HEAPU16[w + 7] = d.getUTCMilliseconds();
+    return 1;
+  },
+  // The engine passes a TIME_ZONE_INFORMATION it got from GetTimeZoneInformation (left a stub, so
+  // zeroed); ignore it and use the browser's own local offset, which is what the user expects.
+  SystemTimeToTzSpecificLocalTime: function(tzPtr, utcPtr, localPtr) {
+    if (!utcPtr || !localPtr) return 0;
+    var u = utcPtr >> 1;
+    var d = new Date(Date.UTC(HEAPU16[u], HEAPU16[u + 1] - 1, HEAPU16[u + 3],
+                              HEAPU16[u + 4], HEAPU16[u + 5], HEAPU16[u + 6], HEAPU16[u + 7]));
+    if (isNaN(d.getTime())) return 0;
+    var w = localPtr >> 1;
+    HEAPU16[w] = d.getFullYear();      HEAPU16[w + 1] = d.getMonth() + 1;
+    HEAPU16[w + 2] = d.getDay();       HEAPU16[w + 3] = d.getDate();
+    HEAPU16[w + 4] = d.getHours();     HEAPU16[w + 5] = d.getMinutes();
+    HEAPU16[w + 6] = d.getSeconds();   HEAPU16[w + 7] = d.getMilliseconds();
+    return 1;
+  },
+  // Both return the character count INCLUDING the terminator, which is what the caller's
+  // "i += date_length-1" arithmetic depends on. A zero cch means "just measure".
+  GetDateFormatA: function(locale, flags, stPtr, fmtPtr, outPtr, cch) {
+    if (!stPtr) return 0;
+    var w = stPtr >> 1;
+    var d = new Date(HEAPU16[w], HEAPU16[w + 1] - 1, HEAPU16[w + 3]);
+    var DATE_LONGDATE = 0x2;
+    var s;
+    try {
+      s = (flags & DATE_LONGDATE)
+        ? d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : d.toLocaleDateString();
+    } catch (e) { s = d.toDateString(); }
+    var n = lengthBytesUTF8(s) + 1;
+    if (!outPtr || cch === 0) return n;
+    if (cch < n) return 0;
+    stringToUTF8(s, outPtr, cch);
+    return n;
+  },
+  GetTimeFormatA: function(locale, flags, stPtr, fmtPtr, outPtr, cch) {
+    if (!stPtr) return 0;
+    var w = stPtr >> 1;
+    var d = new Date(2000, 0, 1, HEAPU16[w + 4], HEAPU16[w + 5], HEAPU16[w + 6]);
+    var s;
+    try { s = d.toLocaleTimeString(); } catch (e) { s = d.toTimeString(); }
+    var n = lengthBytesUTF8(s) + 1;
+    if (!outPtr || cch === 0) return n;
+    if (cch < n) return 0;
+    stringToUTF8(s, outPtr, cch);
+    return n;
+  },
   SetCursorPos: function(x, y) { globalThis.TT_mouse_x = x; globalThis.TT_mouse_y = y; return 1; },
   // Our window IS the canvas (origin 0,0), so screen<->client is identity (leave POINT unchanged).
   ScreenToClient: function(hwnd, ptr) { return 1; },

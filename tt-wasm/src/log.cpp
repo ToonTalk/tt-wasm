@@ -4750,6 +4750,18 @@ void display_time_travel_buttons() {
 		char date_and_time[date_and_time_length];
 		day_and_time_string(date_and_time,date_and_time_length);
 		int length = strlen(date_and_time);
+#ifdef __EMSCRIPTEN__
+		// Ken: the time-travel state display is garbled ("#7 = <accented capitals>"), where it
+		// used to read "#48 = 00:04:14". Print the string and its bytes: that separates a bad
+		// string (day_and_time_string) from bad rendering (text_out's fit-guarantee path).
+		{ static int dt_prints = 0;
+		  if (dt_prints < 8) { dt_prints++;
+			printf("[tt] timelabel: len=%d buflen=%d text='%s' bytes=",length,(int) date_and_time_length,date_and_time);
+			for (int i = 0; i < length && i < 24; i++) printf("%02x ",(unsigned char) date_and_time[i]);
+			printf("\n"); fflush(stdout);
+		  };
+		}
+#endif
 		city_coordinate llx = time_label->current_llx();
 		city_coordinate lly = time_label->current_lly();
 		city_coordinate width = time_label->current_width();
@@ -5086,6 +5098,20 @@ void release_time_travel_buttons() {
  * (0 = to oldest, 1 = previous, 2 = play, 3 = next, 4 = newest).  Ken: going back in time sticks
  * on "Loading, please wait.", i.e. done_waiting_for_load() is never reached. */
 void time_travel_react(TimeTravelButton button);
+/* Dev hook: what does the time-travel state display actually say? Recording takes the real-date
+ * branch (log.cpp:4387), which needs FileTimeToSystemTime / SystemTimeToTzSpecificLocalTime /
+ * GetDateFormatA / GetTimeFormatA -- all zero-stubs until now, leaving uninitialised stack in the
+ * buffer. Console: Module._tt_dev_time_label(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_label() {
+	const int n = 64;
+	char buf[n];
+	memset(buf,'?',n); buf[n-1] = '\0';   // so leftover garbage is visibly distinct from written text
+	day_and_time_string(buf,n);
+	printf("[tt] timelabeldev: archive=%s len=%d text='%s'\n",
+	       (tt_log_out_archive == NULL) ? "NULL(replay)" : "open(recording)",(int) strlen(buf),buf);
+	fflush(stdout);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_travel_button(int n) {
 	printf("[tt] ttdev: button %d -- current=%d oldest=%d youngest=%d buttons=%p hidden=%d\n",n,
 	       (int) tt_current_log_segment,(int) tt_oldest_log_segment,(int) tt_youngest_log_segment,

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnhp7q_xh.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7dnlbctg.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnhp7q_xh.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpimpxfhlm.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7dnlbctg.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp5g4mcia.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpimpxfhlm.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp5g4mcia.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1270,13 +1270,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp11eemnvl.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp6l_mnjal.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp11eemnvl.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp6l_mnjal.js
 
 
 var programArgs = [];
@@ -5294,7 +5294,18 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _EndPaint(){ return 0; }
 
-  function _FileTimeToSystemTime(){ return 0; }
+  function _FileTimeToSystemTime(ftPtr, stPtr) {
+      if (!ftPtr || !stPtr) return 0;
+      var lo = HEAPU32[ftPtr >> 2], hi = HEAPU32[(ftPtr >> 2) + 1];
+      var d = new Date((hi * 4294967296 + lo) / 10000 - 11644473600000);
+      if (isNaN(d.getTime())) return 0;
+      var w = stPtr >> 1;
+      HEAPU16[w] = d.getUTCFullYear();   HEAPU16[w + 1] = d.getUTCMonth() + 1;
+      HEAPU16[w + 2] = d.getUTCDay();    HEAPU16[w + 3] = d.getUTCDate();
+      HEAPU16[w + 4] = d.getUTCHours();  HEAPU16[w + 5] = d.getUTCMinutes();
+      HEAPU16[w + 6] = d.getUTCSeconds();HEAPU16[w + 7] = d.getUTCMilliseconds();
+      return 1;
+    }
 
   function _FindClose(){ return 0; }
 
@@ -5334,7 +5345,23 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _GetDIBits(){ return 0; }
 
-  function _GetDateFormatA(){ return 0; }
+  function _GetDateFormatA(locale, flags, stPtr, fmtPtr, outPtr, cch) {
+      if (!stPtr) return 0;
+      var w = stPtr >> 1;
+      var d = new Date(HEAPU16[w], HEAPU16[w + 1] - 1, HEAPU16[w + 3]);
+      var DATE_LONGDATE = 0x2;
+      var s;
+      try {
+        s = (flags & DATE_LONGDATE)
+          ? d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+          : d.toLocaleDateString();
+      } catch (e) { s = d.toDateString(); }
+      var n = lengthBytesUTF8(s) + 1;
+      if (!outPtr || cch === 0) return n;
+      if (cch < n) return 0;
+      stringToUTF8(s, outPtr, cch);
+      return n;
+    }
 
   function _GetDeviceCaps(hdc, index) {
       switch (index) { case 12: return 8; case 38: return 0x100; case 104: return 256;
@@ -5476,7 +5503,18 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _GetTempPathA(len, buf) { var s = '/tmp/', i = 0; for (; i < s.length && i < len - 1; i++) HEAPU8[buf + i] = s.charCodeAt(i); HEAPU8[buf + i] = 0; return i; }
 
-  function _GetTimeFormatA(){ return 0; }
+  function _GetTimeFormatA(locale, flags, stPtr, fmtPtr, outPtr, cch) {
+      if (!stPtr) return 0;
+      var w = stPtr >> 1;
+      var d = new Date(2000, 0, 1, HEAPU16[w + 4], HEAPU16[w + 5], HEAPU16[w + 6]);
+      var s;
+      try { s = d.toLocaleTimeString(); } catch (e) { s = d.toTimeString(); }
+      var n = lengthBytesUTF8(s) + 1;
+      if (!outPtr || cch === 0) return n;
+      if (cch < n) return 0;
+      stringToUTF8(s, outPtr, cch);
+      return n;
+    }
 
   function _GetTimeZoneInformation(){ return 0; }
 
@@ -8419,7 +8457,19 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function _SystemTimeToFileTime(){ return 0; }
 
-  function _SystemTimeToTzSpecificLocalTime(){ return 0; }
+  function _SystemTimeToTzSpecificLocalTime(tzPtr, utcPtr, localPtr) {
+      if (!utcPtr || !localPtr) return 0;
+      var u = utcPtr >> 1;
+      var d = new Date(Date.UTC(HEAPU16[u], HEAPU16[u + 1] - 1, HEAPU16[u + 3],
+                                HEAPU16[u + 4], HEAPU16[u + 5], HEAPU16[u + 6], HEAPU16[u + 7]));
+      if (isNaN(d.getTime())) return 0;
+      var w = localPtr >> 1;
+      HEAPU16[w] = d.getFullYear();      HEAPU16[w + 1] = d.getMonth() + 1;
+      HEAPU16[w + 2] = d.getDay();       HEAPU16[w + 3] = d.getDate();
+      HEAPU16[w + 4] = d.getHours();     HEAPU16[w + 5] = d.getMinutes();
+      HEAPU16[w + 6] = d.getSeconds();   HEAPU16[w + 7] = d.getMilliseconds();
+      return 1;
+    }
 
   function _TranslateMessage(msgPtr) { return 0; }
 
@@ -10330,22 +10380,22 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17072588: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17072688: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17072758: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17072856: () => { globalThis.TT_replayOver = true; },  
- 17072893: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17072989: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17073088: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17073187: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17073289: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17073432: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17073532: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17073673: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17073746: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17073840: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17073933: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17073993: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
+  17072716: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17072816: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17072886: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17072984: () => { globalThis.TT_replayOver = true; },  
+ 17073021: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17073117: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17073216: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17073315: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17073417: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17073560: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17073660: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17073801: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17073874: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17073968: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17074061: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17074121: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -10368,6 +10418,7 @@ var _malloc = makeInvalidEarlyAccess('_malloc');
 var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
 var _realloc = makeInvalidEarlyAccess('_realloc');
 var _tt_dev_open_rocket_door = Module['_tt_dev_open_rocket_door'] = makeInvalidEarlyAccess('_tt_dev_open_rocket_door');
+var _tt_dev_time_label = Module['_tt_dev_time_label'] = makeInvalidEarlyAccess('_tt_dev_time_label');
 var _tt_dev_time_travel_button = Module['_tt_dev_time_travel_button'] = makeInvalidEarlyAccess('_tt_dev_time_travel_button');
 var _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = makeInvalidEarlyAccess('_tt_finish_time_travel_archive');
 var _em_set_mouse_mode = Module['_em_set_mouse_mode'] = makeInvalidEarlyAccess('_em_set_mouse_mode');
@@ -10406,6 +10457,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['main'] != 'undefined', 'missing Wasm export: main');
   assert(typeof wasmExports['realloc'] != 'undefined', 'missing Wasm export: realloc');
   assert(typeof wasmExports['tt_dev_open_rocket_door'] != 'undefined', 'missing Wasm export: tt_dev_open_rocket_door');
+  assert(typeof wasmExports['tt_dev_time_label'] != 'undefined', 'missing Wasm export: tt_dev_time_label');
   assert(typeof wasmExports['tt_dev_time_travel_button'] != 'undefined', 'missing Wasm export: tt_dev_time_travel_button');
   assert(typeof wasmExports['tt_finish_time_travel_archive'] != 'undefined', 'missing Wasm export: tt_finish_time_travel_archive');
   assert(typeof wasmExports['em_set_mouse_mode'] != 'undefined', 'missing Wasm export: em_set_mouse_mode');
@@ -10440,6 +10492,7 @@ function assignWasmExports(wasmExports) {
   _main = Module['_main'] = createExportWrapper('main', 2);
   _realloc = createExportWrapper('realloc', 2);
   _tt_dev_open_rocket_door = Module['_tt_dev_open_rocket_door'] = createExportWrapper('tt_dev_open_rocket_door', 0);
+  _tt_dev_time_label = Module['_tt_dev_time_label'] = createExportWrapper('tt_dev_time_label', 0);
   _tt_dev_time_travel_button = Module['_tt_dev_time_travel_button'] = createExportWrapper('tt_dev_time_travel_button', 1);
   _tt_finish_time_travel_archive = Module['_tt_finish_time_travel_archive'] = createExportWrapper('tt_finish_time_travel_archive', 0);
   _em_set_mouse_mode = Module['_em_set_mouse_mode'] = createExportWrapper('em_set_mouse_mode', 1);
