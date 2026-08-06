@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
+#include <cmath>   /* sqrt, for the ellipse/rounded-rect rasterisers */
 #include "gdi_font.h"   /* fallback bitmap font for TextOut (tools/make_font.py) */
 #include <emscripten.h>
 
@@ -565,10 +566,94 @@ BOOL Rectangle(HDC hdc, int l, int t, int r, int b) {
     draw_line(dc, l, t, l, b - 1); draw_line(dc, r - 1, t, r - 1, b - 1);
     return 1;
 }
-BOOL Ellipse(HDC hdc, int l, int t, int r, int b) {  /* approx: filled bounding box (good enough for boot visuals) */
-    return Rectangle(hdc, l, t, r, b);
+/* Real ellipses and rounded rectangles. These were both "filled bounding box (good enough for boot
+ * visuals)" -- fine while nothing but the boot screen used them, but the Pictures notebook's first
+ * page is SYNTHETIC SHAPES, drawn with exactly these calls, so every circle and rounded rectangle
+ * came out a hard black box (Ken). Scanline fill from the ellipse equation, then an outline pass
+ * so the pen still shows, matching Rectangle's fill-then-outline order above. */
+static void ellipse_spans(GdiDC *dc, int l, int t, int r, int b, bool outline_only) {
+    GdiObj *br = dc->brush, *pn = dc->pen;
+    if (!outline_only && br && br->hollow) return;
+    if (outline_only && pn && pn->pen_null) return;
+    unsigned char fill_c = br ? br->fill : 0;
+    unsigned char pen_c = pn ? pn->pen_index : 0;
+    int w = r - l, h = b - t;
+    if (w <= 0 || h <= 0) return;
+    double cx = l + w / 2.0, cy = t + h / 2.0;
+    double rx = w / 2.0, ry = h / 2.0;
+    if (rx < 0.5 || ry < 0.5) return;
+    int prev_x0 = -1, prev_x1 = -1;
+    for (int y = t; y < b; y++) {
+        double dy = (y + 0.5 - cy) / ry;
+        double s = 1.0 - dy * dy;
+        if (s <= 0.0) continue;
+        double dx = rx * sqrt(s);
+        int x0 = (int)(cx - dx + 0.5), x1 = (int)(cx + dx + 0.5);
+        if (x1 <= x0) x1 = x0 + 1;
+        if (!outline_only) {
+            for (int x = x0; x < x1; x++) put(dc, x, y, fill_c);
+        } else {
+            /* edge pixels of this row, plus the horizontal run needed to close the gap against
+             * the previous row so steep top/bottom arcs do not come out dotted */
+            put(dc, x0, y, pen_c);
+            put(dc, x1 - 1, y, pen_c);
+            if (prev_x0 >= 0) {
+                for (int x = (x0 < prev_x0 ? x0 : prev_x0); x < (x0 > prev_x0 ? x0 : prev_x0); x++)
+                    put(dc, x, y, pen_c);
+                for (int x = (x1 < prev_x1 ? x1 : prev_x1); x < (x1 > prev_x1 ? x1 : prev_x1); x++)
+                    put(dc, x - 1, y, pen_c);
+            }
+        }
+        prev_x0 = x0; prev_x1 = x1;
+    }
 }
-BOOL RoundRect(HDC hdc, int l, int t, int r, int b, int, int) { return Rectangle(hdc, l, t, r, b); }
+
+BOOL Ellipse(HDC hdc, int l, int t, int r, int b) {
+    GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0;
+    ellipse_spans(dc, l, t, r, b, false);
+    ellipse_spans(dc, l, t, r, b, true);
+    return 1;
+}
+
+BOOL RoundRect(HDC hdc, int l, int t, int r, int b, int ew, int eh) {
+    GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0;
+    GdiObj *br = dc->brush, *pn = dc->pen;
+    unsigned char fill_c = br ? br->fill : 0;
+    unsigned char pen_c = pn ? pn->pen_index : 0;
+    int w = r - l, h = b - t;
+    if (w <= 0 || h <= 0) return 1;
+    if (ew < 0) ew = 0; if (eh < 0) eh = 0;
+    if (ew > w) ew = w; if (eh > h) eh = h;
+    if (ew < 2 || eh < 2) return Rectangle(hdc, l, t, r, b);   /* corners too small to round */
+    int rx = ew / 2, ry = eh / 2;
+    /* body: the cross of two rectangles, then the four corner quadrants from the ellipse fill */
+    fill_rect(dc, l + rx, t, r - rx, b);
+    fill_rect(dc, l, t + ry, r, b - ry);
+    for (int y = 0; y < ry; y++) {
+        double dy = (ry - y - 0.5) / (double)ry;
+        double s = 1.0 - dy * dy;
+        if (s <= 0.0) continue;
+        int dx = (int)(rx * sqrt(s) + 0.5);
+        for (int x = l + rx - dx; x < l + rx; x++) { put(dc, x, t + y, fill_c); put(dc, x, b - 1 - y, fill_c); }
+        for (int x = r - rx; x < r - rx + dx; x++) { put(dc, x, t + y, fill_c); put(dc, x, b - 1 - y, fill_c); }
+    }
+    /* outline: straight runs plus the corner arcs */
+    draw_line(dc, l + rx, t, r - rx - 1, t);
+    draw_line(dc, l + rx, b - 1, r - rx - 1, b - 1);
+    draw_line(dc, l, t + ry, l, b - ry - 1);
+    draw_line(dc, r - 1, t + ry, r - 1, b - ry - 1);
+    for (int y = 0; y < ry; y++) {
+        double dy = (ry - y - 0.5) / (double)ry;
+        double s = 1.0 - dy * dy;
+        if (s <= 0.0) continue;
+        int dx = (int)(rx * sqrt(s) + 0.5);
+        put(dc, l + rx - dx, t + y, pen_c);
+        put(dc, r - rx + dx - 1, t + y, pen_c);
+        put(dc, l + rx - dx, b - 1 - y, pen_c);
+        put(dc, r - rx + dx - 1, b - 1 - y, pen_c);
+    }
+    return 1;
+}
 BOOL MoveToEx(HDC hdc, int x, int y, LPPOINT pt) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; if (pt) { pt->x = dc->cur_x; pt->y = dc->cur_y; } dc->cur_x = x; dc->cur_y = y; return 1; }
 BOOL LineTo(HDC hdc, int x, int y) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; draw_line(dc, dc->cur_x, dc->cur_y, x, y); dc->cur_x = x; dc->cur_y = y; return 1; }
 
