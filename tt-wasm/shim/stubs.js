@@ -33,7 +33,6 @@ addToLibrary({
   GetCurrentThreadId: function(){ return 0; },
   GetDIBits: function(){ return 0; },
   GetDlgItemTextA: function(){ return 0; },
-  GetFocus: function(){ return 0; },
   GetLastError: function(){ return 0; },
   GetLocalTime: function(){ return 0; },
   GetNearestPaletteIndex: function(){ return 0; },

@@ -389,6 +389,15 @@ addToLibrary({
   RegisterClassExA: function() { return 1; },
   CreateWindowExA: function() { return 1; },
   CreateWindowA: function() { return 1; },
+  // The window handle is 1, so a GetFocus that returns 0 reads as "some other window has the
+  // keyboard" -- and winmain.cpp:14481 takes `tt_exclusive_screen && GetFocus() != window_handle`
+  // to mean the user alt-tabbed away, which during a load makes xml_load_sprite offer the
+  // load-interruption dialog. As a zero-stub that fired on 840 of 848 sprites at ~31ms each: 26 of
+  // the 36 seconds a Playground city segment took. There is only one window here and the canvas is
+  // the app, so it always has the focus the engine is asking about. Deliberately NOT
+  // document.hasFocus(): a browser tab in the background is not a full-screen app that lost its
+  // display, and it still has to finish loading.
+  GetFocus: function() { return 1; },
   GetDC: function() { return 1; },
   GetWindowDC: function() { return 1; },
   GetDesktopWindow: function() { return 1; },

@@ -95,6 +95,11 @@ class Picture; // experiment on 231102
 
 #include <wchar.h> // for wmemcpy
 
+#ifdef __EMSCRIPTEN__
+double tt_em_interrupt_ms = 0;   /* time inside xml_load_sprite's interrupt/progress block */
+int tt_em_sprite_count = 0;      /* how many of the walked elements are sprites */
+#endif
+
 #ifdef _DEBUG // new on 160103 to debug leaks
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -302,6 +307,8 @@ Tag tag_token(xml_node *element) {
 	{
 		static int tt_em_tag_count = 0;
 		static double tt_em_tag_t0 = 0;
+		extern double tt_em_interrupt_ms;
+		extern int tt_em_sprite_count;
 		if (tt_em_tag_count == 0) tt_em_tag_t0 = emscripten_get_now();
 		tt_em_tag_count++;
 		if (tt_em_tag_count % 2048 == 0) {
@@ -309,11 +316,10 @@ Tag tag_token(xml_node *element) {
 			/* presents and palette rebuilds per element: the walk is linear but ~6ms/element, so
 			 * the cost is something being re-run per element, not the tree size itself */
 			extern int tt_em_palette_inits;
-			extern int tt_em_idd_from[4];
 			int presents = EM_ASM_INT({ return globalThis.TT_presents|0; });
-			printf("[tt] tagwalk: %d tags, %.0fms, presents=%d, palinits=%d, idd=%d/%d/%d/%d\n",
+			printf("[tt] tagwalk: %d tags, %.0fms, presents=%d, palinits=%d, sprites=%d, interrupt=%.0fms\n",
 				    tt_em_tag_count,ms,presents,tt_em_palette_inits,
-				    tt_em_idd_from[0],tt_em_idd_from[1],tt_em_idd_from[2],tt_em_idd_from[3]); fflush(stdout);
+				    tt_em_sprite_count,tt_em_interrupt_ms); fflush(stdout);
 			EM_ASM({
 				try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {}
 			},tt_em_tag_count,ms);
@@ -1438,10 +1444,17 @@ Sprite *xml_load_sprite(xml_node *node, Tag tag, Sprite *sprite, SpriteType type
    };
 #if TT_LOADING_AND_SAVING_INTERRUPTABLE
 	// new on 140105
-	boolean only_allow_quiting 
+#ifdef __EMSCRIPTEN__
+	/* the interrupt/progress block below was 73% of a city load until GetFocus stopped reporting
+	 * that the app had lost focus (shim/overrides.js); the tagwalk line reports what it costs now */
+	extern double tt_em_interrupt_ms; extern int tt_em_sprite_count;
+	tt_em_sprite_count++;
+	double tt_em_interrupt_t0 = emscripten_get_now();
+#endif
+	boolean only_allow_quiting
 		= (time_travel_enabled() || tt_loading_to_undo_bammer || !tt_loading_is_ok_to_abort || replaying());
 	// on 160105 added condition so don't interrupt when replaying a demo
-	if (user_wants_to_interrupt_also_process_messages_now(only_allow_quiting)) { 
+	if (user_wants_to_interrupt_also_process_messages_now(only_allow_quiting)) {
 		// too hard to make this work sensibly if time travel is involved
 		// and letting unbamming be interrupted seems dangerous
 		ask_response_to_load_interruption();
@@ -1457,6 +1470,9 @@ Sprite *xml_load_sprite(xml_node *node, Tag tag, Sprite *sprite, SpriteType type
 		};
 		tt_sprites_loaded_count++; // made conditional on 190105 so don't get 3 objects loaded messages
 	};
+#ifdef __EMSCRIPTEN__
+	tt_em_interrupt_ms += emscripten_get_now()-tt_em_interrupt_t0;
+#endif
 #endif
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 170802) {
