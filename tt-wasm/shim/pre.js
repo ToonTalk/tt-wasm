@@ -904,6 +904,12 @@ Module['preRun'].push(function () {
     // The flag is read inverted -- "if (is_on() && !tt_vacuum_used_once_per_click)" at
     // tools.cpp:1939 -- so the port's vacuum STAYS ON where the original's is once per click.
     'DustyUsedOncePerClick=1',
+    // Sizing: tt_good_sizes_adjust_to_screen_size defaults to FALSE (globals.cpp:566) and the read
+    // is INVERTED -- utils.cpp:12097 does "= !ini_int(...)" -- so the original's own value of 0
+    // sets it TRUE while the port, setting nothing, left it FALSE. Candidate for Ken's stretched
+    // synthetic shapes ("the circle and square are not stretched" in the original), since
+    // draw_synthetic_shape just fills whatever box the sizing path hands it.
+    'GoodSizesAreAFixedPercentageOfScreen=0',
     // tt_exit_at_end_of_log defaults to TRUE (globals.cpp:604) and nothing was overriding it, so
     // reaching the end of a demo QUIT instead of handing over the time-travel controls: one_tt_cycle
     // returns FALSE the moment replaying() goes false (Main.cpp:1293), and stop_replay takes its
