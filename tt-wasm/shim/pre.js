@@ -241,6 +241,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     return lockAllowed && !document.fullscreenElement &&
            document.pointerLockElement !== c && !demoReplay();
   };
+  var mouseHeld = {};                 // button -> true, so a hidden tab can release what is down
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
     if (wantLock() && c.requestPointerLock) {
@@ -250,13 +251,28 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     }
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
+    mouseHeld[e.button] = true;
     post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
   });
   c.addEventListener('mouseup', function (e) {
     e.preventDefault();
+    delete mouseHeld[e.button];
     if (firstClickSwallowed === 'down') { firstClickSwallowed = true; return; } // matching up
     post(e.button === 2 ? 0x0205 : 0x0202, 0, 0);
   });
+  // Ken: "If the tab isn't visible then don't move the avatar or its hand." Leaving a tab or
+  // window delivers no keyup and no mouseup, so whatever was held stays held: TT_keys keeps
+  // reporting the key to the engine's polled input (read_arrow_keys walks, 'd' descends) and the
+  // engine never sees the button release, so the avatar carries on in the background and the
+  // player returns to find it somewhere else. Release everything the moment the page goes away.
+  // Mouse position needs no handling -- no events arrive, so it simply stops where it was.
+  var releaseHeldInput = function () {
+    Object.keys(mouseHeld).forEach(function (b) { post(b === '2' ? 0x0205 : 0x0202, 0, 0); });
+    mouseHeld = {};
+    globalThis.TT_keys = {};
+  };
+  document.addEventListener('visibilitychange', function () { if (document.hidden) releaseHeldInput(); });
+  globalThis.addEventListener('blur', releaseHeldInput);   // another window took focus
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
   // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmppelkxc0_.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmphb0goyen.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmppelkxc0_.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5qge7z4h.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmphb0goyen.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgudvxh3v.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5qge7z4h.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgudvxh3v.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -456,6 +456,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     return lockAllowed && !document.fullscreenElement &&
            document.pointerLockElement !== c && !demoReplay();
   };
+  var mouseHeld = {};                 // button -> true, so a hidden tab can release what is down
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
     if (wantLock() && c.requestPointerLock) {
@@ -465,13 +466,28 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     }
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
+    mouseHeld[e.button] = true;
     post(e.button === 2 ? 0x0204 : 0x0201, 0, 0);
   });
   c.addEventListener('mouseup', function (e) {
     e.preventDefault();
+    delete mouseHeld[e.button];
     if (firstClickSwallowed === 'down') { firstClickSwallowed = true; return; } // matching up
     post(e.button === 2 ? 0x0205 : 0x0202, 0, 0);
   });
+  // Ken: "If the tab isn't visible then don't move the avatar or its hand." Leaving a tab or
+  // window delivers no keyup and no mouseup, so whatever was held stays held: TT_keys keeps
+  // reporting the key to the engine's polled input (read_arrow_keys walks, 'd' descends) and the
+  // engine never sees the button release, so the avatar carries on in the background and the
+  // player returns to find it somewhere else. Release everything the moment the page goes away.
+  // Mouse position needs no handling -- no events arrive, so it simply stops where it was.
+  var releaseHeldInput = function () {
+    Object.keys(mouseHeld).forEach(function (b) { post(b === '2' ? 0x0205 : 0x0202, 0, 0); });
+    mouseHeld = {};
+    globalThis.TT_keys = {};
+  };
+  document.addEventListener('visibilitychange', function () { if (document.hidden) releaseHeldInput(); });
+  globalThis.addEventListener('blur', releaseHeldInput);   // another window took focus
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
   // Keys -> WM_KEYDOWN (virtual key) + WM_CHAR (character) so both engine paths see input.
   // Held keys autorepeat in the browser, which is exactly what continuous descent ('d') needs.
@@ -1334,13 +1350,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpejmzh986.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmphdiilie4.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpejmzh986.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmphdiilie4.js
 
 
 var programArgs = [];
@@ -10458,7 +10474,7 @@ function tt_ds_volume(id,gain) { var DS = Module.TT_ds || (Module.TT_ds = { ctx:
 function tt_ds_free(id) { var DS = Module.TT_ds; if (!DS) return; if (DS.srcs[id]) { var sf = DS.srcs[id]; try { sf.onended = null; } catch (e) {} try { sf.stop(); } catch (e) {} try { sf.disconnect(); } catch (e) {} delete DS.srcs[id]; } if (DS.gains[id]) { try { DS.gains[id].disconnect(); } catch (e) {} delete DS.gains[id]; } delete DS.vols[id]; }
 function tt_text_hwidth(text,len,cell_h,cell_w,fixed) { try { if (len <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } var cx = g.cx, px = cell_h; var fam = fixed ? '"Courier New", "Consolas", monospace' : '"Arial", "Helvetica", "Liberation Sans", sans-serif'; cx.font = 'bold ' + px + 'px ' + fam; var natural = cx.measureText(s).width; var sx = 1; if (cell_w > 0) { var k = px + (fixed ? 'f' : 'p'); var a = g.avg[k]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[k] = a; } sx = cell_w / a; } return Math.ceil(natural * sx); } catch (e) { return len * (cell_w > 0 ? cell_w : cell_h); } }
 function tt_text_raster(text,len,cell_h,cell_w,out,out_w,out_h,fixed) { try { if (len <= 0 || out_w <= 0 || out_h <= 0) return 0; var s = ''; for (var i = 0; i < len; i++) s += String.fromCharCode(HEAPU16[(text >> 1) + i]); var g = Module.TT_txt; if (!g) { g = Module.TT_txt = {}; g.cv = document.createElement('canvas'); g.cx = g.cv.getContext('2d', { willReadFrequently: true }); g.avg = {}; } if (g.cv.width < out_w || g.cv.height < out_h) { g.cv.width = Math.max(g.cv.width, out_w); g.cv.height = Math.max(g.cv.height, out_h); } var cx = g.cx; var fam = fixed ? '"Courier New", "Consolas", monospace' : '"Arial", "Helvetica", "Liberation Sans", sans-serif'; var px = cell_h; cx.font = 'bold ' + px + 'px ' + fam; var m = cx.measureText(s); var asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent; if (!(asc > 0)) asc = px * 0.75; if (!(desc >= 0)) desc = px * 0.25; if (asc + desc > cell_h && asc + desc > 0) { px = Math.max(1, Math.floor(px * cell_h / (asc + desc))); cx.font = 'bold ' + px + 'px ' + fam; m = cx.measureText(s); asc = m.actualBoundingBoxAscent; if (!(asc > 0)) asc = px * 0.75; desc = m.actualBoundingBoxDescent; if (!(desc >= 0)) desc = px * 0.25; } if (!(m.width > 0)) return 0; var sx = 1; if (cell_w > 0) { var k2 = px + (fixed ? 'f' : 'p'); var a = g.avg[k2]; if (!a) { a = cx.measureText('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').width / 52; if (!(a > 0)) a = px * 0.55; g.avg[k2] = a; } sx = cell_w / a; } var base = cell_h / 2 + (asc - desc) / 2; if (base - asc < 0) base = asc; if (base + desc > cell_h) base = cell_h - desc; var originX = 0; if (len === 1 && cell_w > 0) { var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight; if (!isFinite(inkL) || !isFinite(inkR)) { inkL = 0; inkR = m.width; } originX = cell_w / (2 * sx) - (inkR - inkL) / 2; } cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, out_w, out_h); cx.fillStyle = '#fff'; cx.textBaseline = 'alphabetic'; cx.setTransform(sx, 0, 0, 1, 0, 0); cx.fillText(s, originX, base); cx.setTransform(1, 0, 0, 1, 0, 0); var img = cx.getImageData(0, 0, out_w, out_h).data; for (var k = 0, n = out_w * out_h; k < n; k++) HEAPU8[out + k] = img[k * 4 + 3]; return 1; } catch (e) { return 0; } }
-function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; for (var i = 0; i < vs.length; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; u.pitch = 1.3; u.rate = 1.0; u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
+function tt_tts_speak(utf8,id,replaying_now) { try { if (typeof speechSynthesis === 'undefined') return 0; if (globalThis.TT_ttsOff === undefined) { globalThis.TT_ttsOff = (typeof location !== 'undefined' && /[?&]tts=0/.test(location.search)) ? 1 : 0; } if (globalThis.TT_ttsOff) return 0; var s = UTF8ToString(utf8); if (!s || !s.length) return 0; var u = new SpeechSynthesisUtterance(s); if (!globalThis.TT_martyVoice) { var vs = speechSynthesis.getVoices() || []; var want = (typeof location !== 'undefined') ? (location.search.match(/[?&]ttsvoice=([^&]+)/) || [])[1] : null; if (want) { want = decodeURIComponent(want).toLowerCase(); for (var w = 0; w < vs.length; w++) { if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; } } } for (var i = 0; i < vs.length && !globalThis.TT_martyVoice; i++) { var n = (vs[i].name || '').toLowerCase(); if ((vs[i].lang || '').indexOf('en') === 0 && (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 || n.indexOf('george') >= 0 || n.indexOf('daniel') >= 0)) { globalThis.TT_martyVoice = vs[i]; break; } } } if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice; if (globalThis.TT_ttsTune === undefined) { var q = (typeof location !== 'undefined') ? location.search : ''; var num = function (re, dflt) { var m = q.match(re), v = m ? parseFloat(m[1]) : NaN; return isFinite(v) ? v : dflt; }; globalThis.TT_ttsTune = { pitch: num(/[?&]ttspitch=([d.]+)/, 1.8), rate: num(/[?&]ttsrate=([d.]+)/, 1.15) }; } u.pitch = globalThis.TT_ttsTune.pitch; u.rate = globalThis.TT_ttsTune.rate; u.volume = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; if (!replaying_now) { u.onend = function () { if (Module['_tt_tts_finished']) Module['_tt_tts_finished'](id); }; } speechSynthesis.speak(u); return 1; } catch (e) { return 0; } }
 
 // Imports from the Wasm binary.
 var _fflush = makeInvalidEarlyAccess('_fflush');

@@ -39,6 +39,11 @@
   #controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
   #vol { display: flex; align-items: center; gap: 6px; color: #a9a9bd; font-size: 13px; }
   #volslider { width: 90px; accent-color: #AB0519; }
+  #lfslabel, #lvolrow {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: #9d9db4; font-size: 13px; cursor: pointer;
+  }
+  #lvol { width: 110px; accent-color: #AB0519; }
   #fsbtn, #savebtn, #openbtn {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
     border-radius: 6px; padding: 4px 14px; cursor: pointer;
@@ -215,6 +220,15 @@
       undo mistakes or replay what I just did. (Sometimes ToonTalk runs slowly when this is
       checked.)</span>
     </label>
+    <!-- Full screen and volume are also on the toolbar under the canvas, but once play starts in
+         full screen that toolbar is off-screen, so the choice has to be available here -- before
+         the session begins. The head click that starts play is the user gesture the fullscreen
+         request needs, so the checkbox is read there rather than acted on now. -->
+    <label id="lfslabel"><input type="checkbox" id="lfs"> Start in full screen</label>
+    <label id="lvolrow" title="Volume">
+      <input type="checkbox" id="lmute"> Mute
+      <input id="lvol" type="range" min="0" max="100" value="100" aria-label="Volume">
+    </label>
     <div class="lrow"><button type="button" id="lback">BACK</button></div>
   </div>
 </div>
@@ -225,12 +239,11 @@
        demo-pause chooser invisible in fullscreen (Ken: Esc twice showed only a black screen and
        take-control was unreachable). Fullscreen goes on this wrapper; overlays append into it. -->
   <div id="fsbox"><canvas id="ttcanvas" width="800" height="600"></canvas></div>
+  <!-- The controls used to be summarised here. Ken would rather point at the real documentation
+       than maintain a second, shorter description of the same thing. -->
   <div id="help">
-    <b>Welcome to ToonTalk.</b> <b>Click where you want to fly</b> — the helicopter glides there.
-    <b>Hold the left mouse button</b> (or <kbd>D</kbd>) to fly down — keep holding to touch down
-    and step out. Right button (or <kbd>U</kbd>) climbs. On the ground, <b>click where you want
-    to walk</b>, and <b>click</b> things to pick them up. In your house, <b>right-click</b> (or
-    any key) to sit down at your desk. <kbd>Space</kbd> runs the tool you're holding.
+    <b>Welcome to ToonTalk.</b>
+    <a href="https://toontalk.com/English/doc.htm" target="_blank" rel="noopener">How to play →</a>
   </div>
   <div id="status">loading engine…</div>
   <div id="controls">
@@ -248,9 +261,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786028775 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786029493 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786028775'; },
+    locateFile: function (f) { return f + '?v=1786029493'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -303,18 +316,39 @@
   }
   // Volume. Sits outside fullscreen deliberately: in fullscreen the canvas fills the screen and
   // the mouse belongs to the game (pointer lock), so there is nowhere to put a slider.
+  // There are two sets of these controls -- the toolbar under the canvas, and the copy on the
+  // name dialog (the toolbar is off-screen once play starts in full screen). They are two views
+  // of one setting, so both drive the same applier and both are refreshed from it. Mute is kept
+  // separate from the level so unmuting returns to where the slider was, rather than to full.
   (function () {
-    var slider = document.getElementById('volslider');
-    var saved = null;
-    try { saved = localStorage.getItem('TT_volume'); } catch (e) {}
-    if (saved !== null) slider.value = String(Math.round(Number(saved) * 100));
+    var sliders = [document.getElementById('volslider'), document.getElementById('lvol')];
+    var mutes = [document.getElementById('lmute')];
+    var level = 1, muted = false;
+    try {
+      var saved = localStorage.getItem('TT_volume');
+      if (saved !== null) level = Number(saved);
+      muted = localStorage.getItem('TT_muted') === '1';
+    } catch (e) {}
+    if (!isFinite(level) || level < 0) level = 1;
     var apply = function () {
-      var v = Number(slider.value) / 100;
+      var v = muted ? 0 : level;
       if (window.TT_setVolume) window.TT_setVolume(v);
       else window.TT_volume = v;                 // before the module is up
-      try { localStorage.setItem('TT_volume', String(v)); } catch (e) {}
+      try {
+        localStorage.setItem('TT_volume', String(level));
+        localStorage.setItem('TT_muted', muted ? '1' : '0');
+      } catch (e) {}
+      sliders.forEach(function (s) { if (s) { s.value = String(Math.round(level * 100)); s.disabled = muted; } });
+      mutes.forEach(function (m) { if (m) m.checked = muted; });
     };
-    slider.addEventListener('input', apply);
+    sliders.forEach(function (s) {
+      if (!s) return;
+      s.addEventListener('input', function () { level = Number(s.value) / 100; muted = false; apply(); });
+    });
+    mutes.forEach(function (m) {
+      if (!m) return;
+      m.addEventListener('change', function () { muted = m.checked; apply(); });
+    });
     apply();
   })();
 
@@ -531,6 +565,17 @@
       b.addEventListener('click', function () {
         var who = (user.value || '').trim() || 'No Name';
         try { localStorage.setItem('TT_userName', who); } catch (e) {}
+        // This click is the user gesture a fullscreen request needs; asking any later would be
+        // refused. requestFullscreen returns a promise that rejects if the browser says no --
+        // swallow it, since failing to go fullscreen must not stop the session from starting.
+        var fs = document.getElementById('lfs');
+        if (fs && fs.checked) {
+          var target = document.getElementById('fsbox');
+          if (target && target.requestFullscreen) {
+            try { var p = target.requestFullscreen(); if (p && p.catch) p.catch(function () {}); }
+            catch (e) {}
+          }
+        }
         // askname.htm's own return value, in its own order: "order matters if old user name
         // and changing head appearance".
         var cmd = '-n ' + who + ' -h ' + b.getAttribute('data-head') +
@@ -584,6 +629,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786028775"></script>
+<script src="tt.js?v=1786029493"></script>
 </body>
 </html>

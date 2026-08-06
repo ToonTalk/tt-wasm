@@ -584,7 +584,15 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
      * loads, in which case the platform default is used rather than staying silent. */
     if (!globalThis.TT_martyVoice) {
       var vs = speechSynthesis.getVoices() || [];
-      for (var i = 0; i < vs.length; i++) {
+      var want = (typeof location !== 'undefined')
+                 ? (location.search.match(/[?&]ttsvoice=([^&]+)/) || [])[1] : null;
+      if (want) {
+        want = decodeURIComponent(want).toLowerCase();
+        for (var w = 0; w < vs.length; w++) {
+          if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; }
+        }
+      }
+      for (var i = 0; i < vs.length && !globalThis.TT_martyVoice; i++) {
         var n = (vs[i].name || '').toLowerCase();
         if ((vs[i].lang || '').indexOf('en') === 0 &&
             (n.indexOf('male') >= 0 || n.indexOf('david') >= 0 || n.indexOf('mark') >= 0 ||
@@ -592,8 +600,22 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
       }
     }
     if (globalThis.TT_martyVoice) u.voice = globalThis.TT_martyVoice;
-    u.pitch = 1.3;   /* Marty is a small martian, not a newsreader */
-    u.rate = 1.0;
+    /* Marty is a martian. Pitch near the top of the allowed range (the spec caps it at 2) with a
+     * slightly hurried rate reads as small-and-alien rather than as a newsreader. Taste is the
+     * whole point here, so both are overridable from the URL -- ?ttspitch=1.9&ttsrate=1.25 --
+     * which beats a rebuild per experiment. ?ttsvoice=<substring> picks a particular installed
+     * voice by name; some systems carry deliberately synthetic ones that suit him better. */
+    if (globalThis.TT_ttsTune === undefined) {
+      var q = (typeof location !== 'undefined') ? location.search : '';
+      var num = function (re, dflt) {
+        var m = q.match(re), v = m ? parseFloat(m[1]) : NaN;
+        return isFinite(v) ? v : dflt;
+      };
+      globalThis.TT_ttsTune = { pitch: num(/[?&]ttspitch=([\d.]+)/, 1.8),
+                                rate:  num(/[?&]ttsrate=([\d.]+)/, 1.15) };
+    }
+    u.pitch = globalThis.TT_ttsTune.pitch;
+    u.rate = globalThis.TT_ttsTune.rate;
     /* speechSynthesis has its own output path — it does not pass through the Web Audio graph, so
      * the page's master gain cannot reach it. Apply the same setting here or the volume control
      * would silence everything except Marty. */
