@@ -396,6 +396,10 @@
     var c = document.getElementById('ttcanvas');
     var box = document.getElementById('fsbox');
     if (!box || !box.requestFullscreen || document.fullscreenElement) return;
+    // Remember that full screen was ASKED for. Escape can drop out of it as a side effect of
+    // pausing, and the pause chooser needs to tell "the user left full screen on purpose" from
+    // "the browser took it away", so that Back to ToonTalk returns them to what they chose.
+    window.TT_fullScreenIntent = true;
     box.requestFullscreen().then(function () {
       // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
       // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
@@ -411,7 +415,11 @@
   document.getElementById('fsbtn').addEventListener('click', function () {
     var c = document.getElementById('ttcanvas');
     var box = document.getElementById('fsbox');   // fullscreen the WRAPPER: overlays must render
-    if (document.fullscreenElement) { ttNote('fsbtn: exiting'); document.exitFullscreen(); }
+    if (document.fullscreenElement) {
+      ttNote('fsbtn: exiting');
+      window.TT_fullScreenIntent = false;   // left on purpose: do not put them back
+      document.exitFullscreen();
+    }
     else if (box.requestFullscreen) {
       // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
       // (relative mode via pointer lock), no point and click. Keyboard Lock makes the

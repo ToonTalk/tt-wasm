@@ -268,9 +268,29 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
     if (wantLock() && c.requestPointerLock) {
-      // Chrome rejects a lock requested too soon after the user escaped the last one; that is
-      // fine, the next click gets it.
-      try { var p = c.requestPointerLock(); if (p && p.catch) p.catch(function () {}); } catch (err) {}
+      // Chrome refuses a lock requested too soon after the user escaped the last one, and the
+      // refusal used to be swallowed silently -- so when tracking did not come back after
+      // standing up (Ken) there was nothing to look at. Say why, and try once more after the
+      // cooldown rather than waiting for another click that may never be a fresh gesture.
+      try {
+        var p = c.requestPointerLock();
+        if (p && p.then) {
+          p.then(function () { globalThis.TT_note && globalThis.TT_note('pointer lock OK (windowed)'); },
+                 function (err) {
+            console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
+            setTimeout(function () {
+              if (wantLock() && c.requestPointerLock) {
+                try {
+                  var p2 = c.requestPointerLock();
+                  if (p2 && p2['catch']) p2['catch'](function (e2) {
+                    console.log('[tt] lock: windowed retry rejected: ' + (e2 && e2.name));
+                  });
+                } catch (e3) {}
+              }
+            }, 1600);
+          });
+        }
+      } catch (err) { console.log('[tt] lock: windowed request threw: ' + err); }
     }
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
@@ -382,10 +402,24 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // playing (1 = Back to Demo / Resume, 5 = Take Control). Leaving the demo wants an ordinary
     // cursor. This runs inside the button's click handler, which is the user gesture the browser
     // requires before granting the lock again.
-    if (document.fullscreenElement && (n === 1 || n === 5)) {
+    if (n === 1 || n === 5) {
       var c = document.getElementById('ttcanvas');
-      if (c && c.requestPointerLock && document.pointerLockElement !== c) {
-        try { var p = c.requestPointerLock(); if (p && p['catch']) p['catch'](function () {}); }
+      if (document.fullscreenElement) {
+        if (c && c.requestPointerLock && document.pointerLockElement !== c) {
+          try { var p = c.requestPointerLock(); if (p && p['catch']) p['catch'](function () {}); }
+          catch (e) {}
+        }
+      } else if (globalThis.TT_fullScreenIntent && globalThis.TT_enterFullScreen) {
+        // Escape can drop full screen as well as pausing, and this used to check ONLY for still
+        // being in full screen -- so "Back to ToonTalk" came back windowed with no lock and no
+        // tracking (Ken). The user asked for full screen and never asked to leave it, so put them
+        // back; TT_enterFullScreen takes the pointer and keyboard locks with it. This runs inside
+        // the button's click, which is the gesture both requests need.
+        try { globalThis.TT_enterFullScreen(); } catch (e) {}
+      } else if (c && c.requestPointerLock && document.pointerLockElement !== c) {
+        // Plain windowed play: the chooser released the capture, so take it back or the mouse
+        // comes back as point-and-click instead of tracking.
+        try { var p2 = c.requestPointerLock(); if (p2 && p2['catch']) p2['catch'](function () {}); }
         catch (e) {}
       }
     }
