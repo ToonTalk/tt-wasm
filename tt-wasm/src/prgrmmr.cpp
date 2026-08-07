@@ -1695,8 +1695,15 @@ boolean Programmer::react(Screen *screen) {
 			};
         };
 			break;
-		case TELEPORT_MARTIAN_IN: 
-         if (tt_system_mode != PUZZLE && tt_martian != NULL) { 
+		case TELEPORT_MARTIAN_IN:
+#ifdef __EMSCRIPTEN__
+         /* The gate that schedules this passes (martyin above shows entering=1 auto=1 mode=0
+          * callfor=0), yet Marty stays inactive -- so the question is whether the scheduled
+          * status is ever reached, and then whether the do_after timer fires. */
+         printf("[tt] martyin: TELEPORT_MARTIAN_IN reached, mode=%d martian=%p\n",
+                (int) tt_system_mode,(void *) tt_martian); fflush(stdout);
+#endif
+         if (tt_system_mode != PUZZLE && tt_martian != NULL) {
 				// shouldn't really have gotten here if doing puzzles -- second condition added 201003 for robustness
             tt_martian->teleport_in_after(400);
          };

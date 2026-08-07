@@ -212,10 +212,17 @@ void Martian::teleport_in_after(millisecond delay) {
 		background->add_item(this,FALSE);
 		tt_screen->remove(this);
 	};
+#ifdef __EMSCRIPTEN__
+	printf("[tt] martyin: teleport_in_after(%ld) scheduling callback\n",(long) delay); fflush(stdout);
+#endif
 	do_after(delay,this,TELEPORT_IN_CALLBACK);
 };
 
 void Martian::teleport_in(TeleportInReason reason) {
+#ifdef __EMSCRIPTEN__
+	printf("[tt] martyin: teleport_in reason=%d still_talking=%d only_if_called=%d\n",
+	       (int) reason,(int) still_talking(),(int) tt_marty_appears_only_if_called); fflush(stdout);
+#endif
 	if (still_talking() && reason != MARTY_CALLED_BY_LOADER) { // second condition added 060805
 #if TT_DEBUG_ON
 		log("Marty beaming in while still talking??");
