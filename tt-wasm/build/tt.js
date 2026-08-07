@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj96nrza5.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpo84zvcjw.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj96nrza5.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjukxq322.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpo84zvcjw.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8pz2lul_.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjukxq322.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8pz2lul_.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -458,18 +458,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
            && !globalThis.TT_replayOver;
   };
   var firstClickSwallowed = false;
-  // WINDOWED TRACKING. The engine's absolute mode places the hand at the cursor, which is only as
-  // fine as the canvas is big: in a panel 800x600 renders at ~360px, so one mouse pixel becomes
-  // 2.2 hand pixels and the hand lurches (Ken: full screen "reacts well to mouse movements but it
-  // doesn't work in a panel"). Full screen feels right because it is near 1:1 AND accumulates raw
-  // movement through pointer lock -- which is also what the original did windowed, re-centring the
-  // cursor every frame (winmain.cpp SetCursorPos(client_center)). The web can only close that loop
-  // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
-  // pause, and capturing the mouse would be wrong.
-  // ?pointerlock=0 turns the windowed capture off and goes back to plain absolute tracking.
-  // Ken reports the mouse going unresponsive after training a robot or standing up, which this
-  // capture is the prime suspect for — an escape hatch while that is investigated.
-  var lockAllowed = !(typeof location !== 'undefined' && /[?&]pointerlock=0/.test(location.search));
+  // WINDOWED TRACKING is now plain absolute point-and-click: NO pointer lock outside full screen.
+  //
+  // The capture was added to make windowed tracking finer -- in a panel, 800x600 renders at ~360px
+  // so one mouse pixel becomes 2.2 hand pixels and the hand lurches -- by accumulating raw
+  // movement the way the original did, re-centring the cursor every frame. It cost more than it
+  // bought. Ken: "in non-full screen mode you need to press [Esc] twice", because the FIRST Esc is
+  // eaten by the browser releasing the lock and only the second reaches the engine; and standing
+  // up left the mouse unable to leave the room, because Escape drops the lock, Chrome then refuses
+  // to re-grant it for a while, and the two ends disagree about the mode in between. A capture the
+  // page cannot reliably hold is worse than a coarser hand.
+  //
+  // So: full screen keeps pointer lock and relative tracking (the original's full-screen scheme,
+  // requested by TT_enterFullScreen, with Escape delivered via Keyboard Lock so ONE press reaches
+  // the engine). Windowed is absolute, one Esc, and the OS cursor stays visible and usable.
+  // ?pointerlock=1 restores the old windowed capture for comparison.
+  var lockAllowed = (typeof location !== 'undefined' && /[?&]pointerlock=1/.test(location.search));
   var wantLock = function () {
     // demoReplay() and not the raw command line: after "Take Control" the command line still
     // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
@@ -1379,13 +1383,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvddk5qfe.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb4ga9n0_.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvddk5qfe.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb4ga9n0_.js
 
 
 var programArgs = [];

@@ -243,18 +243,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
            && !globalThis.TT_replayOver;
   };
   var firstClickSwallowed = false;
-  // WINDOWED TRACKING. The engine's absolute mode places the hand at the cursor, which is only as
-  // fine as the canvas is big: in a panel 800x600 renders at ~360px, so one mouse pixel becomes
-  // 2.2 hand pixels and the hand lurches (Ken: full screen "reacts well to mouse movements but it
-  // doesn't work in a panel"). Full screen feels right because it is near 1:1 AND accumulates raw
-  // movement through pointer lock -- which is also what the original did windowed, re-centring the
-  // cursor every frame (winmain.cpp SetCursorPos(client_center)). The web can only close that loop
-  // with Pointer Lock, so ask for it on the first click. Not during a demo: there a click means
-  // pause, and capturing the mouse would be wrong.
-  // ?pointerlock=0 turns the windowed capture off and goes back to plain absolute tracking.
-  // Ken reports the mouse going unresponsive after training a robot or standing up, which this
-  // capture is the prime suspect for — an escape hatch while that is investigated.
-  var lockAllowed = !(typeof location !== 'undefined' && /[?&]pointerlock=0/.test(location.search));
+  // WINDOWED TRACKING is now plain absolute point-and-click: NO pointer lock outside full screen.
+  //
+  // The capture was added to make windowed tracking finer -- in a panel, 800x600 renders at ~360px
+  // so one mouse pixel becomes 2.2 hand pixels and the hand lurches -- by accumulating raw
+  // movement the way the original did, re-centring the cursor every frame. It cost more than it
+  // bought. Ken: "in non-full screen mode you need to press [Esc] twice", because the FIRST Esc is
+  // eaten by the browser releasing the lock and only the second reaches the engine; and standing
+  // up left the mouse unable to leave the room, because Escape drops the lock, Chrome then refuses
+  // to re-grant it for a while, and the two ends disagree about the mode in between. A capture the
+  // page cannot reliably hold is worse than a coarser hand.
+  //
+  // So: full screen keeps pointer lock and relative tracking (the original's full-screen scheme,
+  // requested by TT_enterFullScreen, with Escape delivered via Keyboard Lock so ONE press reaches
+  // the engine). Windowed is absolute, one Esc, and the OS cursor stays visible and usable.
+  // ?pointerlock=1 restores the old windowed capture for comparison.
+  var lockAllowed = (typeof location !== 'undefined' && /[?&]pointerlock=1/.test(location.search));
   var wantLock = function () {
     // demoReplay() and not the raw command line: after "Take Control" the command line still
     // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
