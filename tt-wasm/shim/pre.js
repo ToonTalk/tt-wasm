@@ -272,22 +272,16 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       // refusal used to be swallowed silently -- so when tracking did not come back after
       // standing up (Ken) there was nothing to look at. Say why, and try once more after the
       // cooldown rather than waiting for another click that may never be a fresh gesture.
+      // Ask with OPTIONS. requestPointerLock() with no argument returns undefined in Chrome and
+      // reports failure only through the document's pointerlockerror event -- so a version of this
+      // that hung its logging and its retry off the return value did neither, silently, which is
+      // why "Back to ToonTalk" (tt.html's ttRequestLock, which passes options and so gets a real
+      // promise) could take the lock back and clicking in the room never did.
       try {
-        var p = c.requestPointerLock();
+        var p = c.requestPointerLock({ unadjustedMovement: false });
         if (p && p.then) {
-          p.then(function () { globalThis.TT_note && globalThis.TT_note('pointer lock OK (windowed)'); },
-                 function (err) {
+          p.then(function () {}, function (err) {
             console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
-            setTimeout(function () {
-              if (wantLock() && c.requestPointerLock) {
-                try {
-                  var p2 = c.requestPointerLock();
-                  if (p2 && p2['catch']) p2['catch'](function (e2) {
-                    console.log('[tt] lock: windowed retry rejected: ' + (e2 && e2.name));
-                  });
-                } catch (e3) {}
-              }
-            }, 1600);
           });
         }
       } catch (err) { console.log('[tt] lock: windowed request threw: ' + err); }
@@ -323,6 +317,19 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // the browser ate: the user pressed Escape once and meant it once.
   // Only when the lock is lost WINDOWED. Leaving full screen also drops the lock, and there the
   // key was already delivered -- forwarding again would act on one press twice.
+  // The other half of the same lesson: failures arrive HERE, as an event, not as a rejected
+  // promise. Say so, and try once more after Chrome's post-Escape cooldown -- the retry that used
+  // to hang off a return value that was never a promise, so it never ran.
+  document.addEventListener('pointerlockerror', function () {
+    console.log('[tt] lock: pointerlockerror (windowed=' + (!document.fullscreenElement) + ')');
+    if (!document.fullscreenElement) {
+      setTimeout(function () {
+        if (wantLock() && c.requestPointerLock) {
+          try { c.requestPointerLock({ unadjustedMovement: false }); } catch (e) {}
+        }
+      }, 1600);
+    }
+  });
   var hadLock = false;
   document.addEventListener('pointerlockchange', function () {
     var locked = (document.pointerLockElement === c);
