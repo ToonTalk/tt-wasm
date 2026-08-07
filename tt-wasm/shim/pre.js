@@ -322,13 +322,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // to hang off a return value that was never a promise, so it never ran.
   document.addEventListener('pointerlockerror', function () {
     console.log('[tt] lock: pointerlockerror (windowed=' + (!document.fullscreenElement) + ')');
-    if (!document.fullscreenElement) {
-      setTimeout(function () {
-        if (wantLock() && c.requestPointerLock) {
-          try { c.requestPointerLock({ unadjustedMovement: false }); } catch (e) {}
-        }
-      }, 1600);
-    }
+    // NO automatic retry. Chrome requires a user gesture to re-lock after an Escape exit, and a
+    // setTimeout has none -- so a timed retry cannot succeed, and each failed attempt renews the
+    // penalty period rather than waiting it out. That is why adding one made this worse instead
+    // of better: Ken saw the error and the tracking never came back. Every mousedown asks anyway,
+    // so the next real click is the retry, and it carries the activation this one lacked.
   });
   var hadLock = false;
   document.addEventListener('pointerlockchange', function () {

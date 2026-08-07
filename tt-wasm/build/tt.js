@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt5xw9yvg.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjlga2_0e.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt5xw9yvg.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp_q2qog1e.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjlga2_0e.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp49sj9zbi.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp_q2qog1e.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp49sj9zbi.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -537,13 +537,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // to hang off a return value that was never a promise, so it never ran.
   document.addEventListener('pointerlockerror', function () {
     console.log('[tt] lock: pointerlockerror (windowed=' + (!document.fullscreenElement) + ')');
-    if (!document.fullscreenElement) {
-      setTimeout(function () {
-        if (wantLock() && c.requestPointerLock) {
-          try { c.requestPointerLock({ unadjustedMovement: false }); } catch (e) {}
-        }
-      }, 1600);
-    }
+    // NO automatic retry. Chrome requires a user gesture to re-lock after an Escape exit, and a
+    // setTimeout has none -- so a timed retry cannot succeed, and each failed attempt renews the
+    // penalty period rather than waiting it out. That is why adding one made this worse instead
+    // of better: Ken saw the error and the tracking never came back. Every mousedown asks anyway,
+    // so the next real click is the retry, and it carries the activation this one lacked.
   });
   var hadLock = false;
   document.addEventListener('pointerlockchange', function () {
@@ -1439,13 +1437,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb5s6ad62.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp21cgil9s.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb5s6ad62.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp21cgil9s.js
 
 
 var programArgs = [];
