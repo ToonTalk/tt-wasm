@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp1zg4rpb.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj96nrza5.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp1zg4rpb.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi2bquf24.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj96nrza5.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjukxq322.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi2bquf24.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjukxq322.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -395,7 +395,27 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // No Pointer Lock — relative mode's per-frame re-centring can't be done honestly on the web.
   // The mapping accounts for letterboxing (fullscreen uses object-fit: contain, so the element
   // box can be wider/taller than the 4:3 content): scale by the CONTENT rect, not the element.
+  // Keep the engine's idea of the mouse mode equal to the REAL pointer-lock state, checked on
+  // every move rather than only at startup and on pointerlockchange. Ken: after standing up, in a
+  // window, the room could only be left with the arrow keys -- the mouse did nothing -- while
+  // full screen was fine. That is the signature of the engine sitting in RELATIVE mode with no
+  // lock to feed it: it reads each absolute position as a delta from the client centre, gets the
+  // same non-zero delta forever, and the hand jams against an edge. Whatever loses the sync (Esc
+  // to stand up drops the lock, and Chrome refuses to re-grant it for a while afterwards), this
+  // closes the whole class: two integers compared per move, and _em_set_mouse_mode called only
+  // when the answer actually changes.
+  var lastMouseMode = -1;
+  var syncMouseMode = function () {
+    var mode = (document.pointerLockElement === c) ? 0 : 1;
+    if (mode === lastMouseMode) return;
+    lastMouseMode = mode;
+    if (Module['_em_set_mouse_mode']) Module['_em_set_mouse_mode'](mode);
+    // Entering relative mode with a stale absolute position would hand the engine one large
+    // bogus delta; start from the centre, which is what the original re-centred to each frame.
+    if (mode === 0) { globalThis.TT_mouse_x = (c.width / 2) | 0; globalThis.TT_mouse_y = (c.height / 2) | 0; }
+  };
   c.addEventListener('mousemove', function (e) {
+    syncMouseMode();
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
@@ -1359,13 +1379,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxkm6zfzn.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvddk5qfe.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxkm6zfzn.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvddk5qfe.js
 
 
 var programArgs = [];
