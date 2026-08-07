@@ -1280,7 +1280,13 @@ void stop_replay() {
 	// Tell the page the demo is over. pre.js swallows the first canvas click during a replay so
 	// that unlocking audio does not also pause the demo; once the engine hands over the
 	// time-travel controls that swallow would silently eat the user's first press on a button.
-	EM_ASM({ globalThis.TT_replayOver = true; });
+	// Also hand the mouse back in ABSOLUTE mode. The replay itself runs in the original's RELATIVE
+	// mode (that is what the recorded cursor stream and its clicks mean), but the browser is an
+	// absolute pointing device -- leaving it relative is what sent the avatar's hand drifting to the
+	// corner once the log ran out (Ken #43). Deferred a tick by the helper, since em_set_mouse_mode
+	// ignores calls made while replaying() is still true.
+	EM_ASM({ globalThis.TT_replayOver = true;
+	         if (globalThis.TT_setMouseModeForUser) globalThis.TT_setMouseModeForUser(); });
 #endif
 	set_replay(NO_REPLAY);
 	if (!tt_subtitles_and_narration_even_without_demo) { // tt_debug_mode != 1785) {
@@ -2249,6 +2255,20 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 						tt_frame_number = frame_number;
 						set_random_number_seed(seed);
 					};
+#ifdef __EMSCRIPTEN__
+					// Ken (#55): pong act 2 replays out of step -- at the recorded 10s the original
+					// has begun to sit while the port is still walking. Time is resynced here every
+					// segment but tt_frame_number deliberately is not (see 160904 comment above), so
+					// this prints how far the port's live clock/frame counter have drifted from what
+					// the recording says they should be at this segment boundary.
+					{ static int seg_prints = 0;
+					  if (seg_prints < 16) { seg_prints++;
+						printf("[tt] segsync: seg=%d rec_time=%ld live_time=%ld dtime=%ld  rec_frame=%ld live_frame=%ld dframe=%ld succ=%d\n",
+						       (int) tt_current_log_segment,(long) current_time,(long) tt_current_time,
+						       (long) (tt_current_time-current_time),(long) frame_number,(long) tt_frame_number,
+						       (long) (tt_frame_number-frame_number),(int) running_successive_demo());
+						fflush(stdout); } };
+#endif
 					tt_current_time = current_time; // from 160904 to 290904 this was in the conditional above
 					boolean programmer_invisible;
 					log_in->read((string) &programmer_invisible,sizeof(programmer_invisible)); // new on 150100
@@ -5109,6 +5129,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_label() {
 	day_and_time_string(buf,n);
 	printf("[tt] timelabeldev: archive=%s len=%d text='%s'\n",
 	       (tt_log_out_archive == NULL) ? "NULL(replay)" : "open(recording)",(int) strlen(buf),buf);
+	fflush(stdout);
+};
+
+/* Dev hook (#55): Ken sees two time-travel checkpoints both reading 00:00:10, and at the 10s
+ * checkpoint the original has begun to sit while the port is still standing. Segment boundaries
+ * measure clean (dtime=0/dframe=0), so print what the LABEL is built from -- tt_current_log_segment
+ * and tt_current_time -- alongside the programmer's actual posture, which is a subclass identity
+ * (PROGRAMMER_AT_FLOOR=6 is sitting, ROOM_WALKING=5 is standing). Console: Module._tt_dev_where(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_where() {
+	printf("[tt] where: seg=%d cur_time=%ld label_s=%ld kind=%d replaying=%d mode=%d floor=%d notfloor=%d drag=%d\n",
+	       (int) tt_current_log_segment,(long) tt_current_time,
+	       (long) ((tt_current_time-tt_current_time_at_beginning_of_first_segment)/1000),
+	       (tt_programmer == NULL) ? -1 : (int) tt_programmer->kind_of(),
+	       (int) replaying(),(int) tt_mouse_mode,(int) tt_mouse_mode_on_floor,
+	       (int) tt_mouse_mode_not_on_floor,(int) tt_dragging_permitted);
 	fflush(stdout);
 };
 

@@ -140,9 +140,30 @@ globalThis.TT_mouse_x = 400; globalThis.TT_mouse_y = 300;
 // demo replay deliberately never takes the lock (wantLock() excludes it), so no event ever fires;
 // during the demo the replay overwrites the hand from the log and hides it, and the moment the log
 // runs out the drift is exposed.
+// Hand the mouse back to the user in the browser-friendly ABSOLUTE mode. Called from postRun for a
+// normal launch, and from log.cpp when a .dmo replay finishes (em_set_mouse_mode ignores calls made
+// while replaying() is true, so the end-of-replay call is deferred a tick to land after the engine
+// has left the replay state).
+globalThis.TT_setMouseModeForUser = function () {
+  setTimeout(function () {
+    try {
+      if (Module['_em_set_mouse_mode']) {
+        Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
+      }
+    } catch (e) {}
+  }, 0);
+};
 Module['postRun'] = Module['postRun'] || [];
 Module['postRun'].push(function () {
-  if (Module['_em_set_mouse_mode']) {
+  // ...but NOT while a .dmo is about to replay. postRun runs before the replay is under way, and
+  // demo replay never takes the lock (above), so this passed 1 = ABSOLUTE and latched it for the
+  // whole demo -- em_set_mouse_mode then refuses to correct it because replaying() is true. In
+  // absolute mode a recorded click means "walk to where I am pointing" instead of "sit down", so
+  // pong act 2 walked past the chair and sat 9s late (Ken #55: "5 seconds of useless walking when
+  // the player should be sitting"). The INI already sets AbsoluteMouseMode=0 for a -I launch; leave
+  // that alone and let TT_setMouseModeForUser() below switch to absolute when the replay ends.
+  if (Module['_em_set_mouse_mode'] &&
+      !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0)) {
     Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
   }
   // Take the "what to run" parameters back out of the address bar once startup has read them.
