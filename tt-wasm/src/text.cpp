@@ -1879,7 +1879,7 @@ void Text::display(SelectionFeedback selection_feedback, boolean followers_too, 
 #endif
 #ifdef __EMSCRIPTEN__
 	{ static int tdisp0_log = 0;
-	  if (tdisp0_log < 300) { tdisp0_log++;
+	  if (tdisp0_log < 12) { tdisp0_log++;   /* was 300: it fired every frame and drowned the log */
 	    printf("[tt] textdisp0: this=%p len=%d vis=%d stacktop=%d w=%ld\n",
 	           (void*)this,(int)text_length,(int)visible(),(int)(pointer_to_top_of_stack()!=NULL),(long)width); fflush(stdout); } }
 #endif
@@ -1914,7 +1914,7 @@ void Text::display(SelectionFeedback selection_feedback, boolean followers_too, 
 		city_coordinate one_x_pixel = tt_screen->one_pixel_in_x_city_units();
 #ifdef __EMSCRIPTEN__
 	{ static int tdisp_log = 0;
-	  if (tdisp_log < 80 && text_length > 2) { tdisp_log++;
+	  if (tdisp_log < 12 && text_length > 2) { tdisp_log++;
 	    printf("[tt] textdisp: len=%d w=%ld h=%ld idealpx=%ld region=%d off=%d blank=%d showall=%d\n",
 	           (int)text_length,(long)width,(long)height,(long)tt_ideal_units_per_horizontal_pixel,
 	           (int)(region!=NULL),

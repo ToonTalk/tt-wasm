@@ -396,7 +396,7 @@ void Number::display(SelectionFeedback selection_feedback, boolean followers_too
 //   };
 #ifdef __EMSCRIPTEN__
 	{ static int numdisp_log = 0;
-	  if (numdisp_log < 80) { numdisp_log++;
+	  if (numdisp_log < 12) { numdisp_log++;   /* was 80: one per number per frame */
 	    printf("[tt] numdisp: len=%d cw=%ld chh=%ld w=%ld h=%ld showall=%d blank=%d region=%d\n",
 	           (int)text_length,(long)character_width,(long)character_height,(long)width,(long)height,
 	           (int)show_all(),(int)is_blank(),(int)(region!=NULL)); fflush(stdout); } }
@@ -1027,7 +1027,7 @@ END_GDI
 				} else {
 #ifdef __EMSCRIPTEN__
 					{ static int numtext_log = 0;
-					  if (numtext_log < 40) { numtext_log++;
+					  if (numtext_log < 12) { numtext_log++;
 					    printf("[tt] numtext: len=%d at(%ld,%ld) charWH=(%ld,%ld)\n",(int)wide_text_length,
 					           (long)start_x,(long)(adjusted_lly+adjusted_height-edge_size),
 					           (long)adjusted_character_width,(long)adjusted_character_height); fflush(stdout); } }
