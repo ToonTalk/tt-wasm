@@ -265,27 +265,33 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
            document.pointerLockElement !== c && !demoReplay();
   };
   var mouseHeld = {};                 // button -> true, so a hidden tab can release what is down
+  // Take the capture back on ANY user gesture -- keys included, not just clicks.
+  //
+  // Ken, on why clicking could never be the answer: "After standing up a mouse click will cause
+  // sitting down so no way to do this." Every click in the room means something to the game, so
+  // there is no spare one to spend on re-locking; the two cases where clicking did work (inside
+  // the rocket, and getting into the helicopter) are the ones where a click is harmless -- and he
+  // had to reach them with the ARROW KEYS first. Keydown is a user gesture too, and Chrome will
+  // grant a lock from one, so the keys he is already pressing can take it back with no click and
+  // nothing spent in the game.
+  //
+  // Ask with OPTIONS: requestPointerLock() with no argument returns undefined in Chrome and
+  // reports failure only through the document's pointerlockerror event, so a version that hung
+  // its logging off the return value reported nothing at all.
+  var takeLock = function () {
+    if (!wantLock() || !c.requestPointerLock) return;
+    try {
+      var p = c.requestPointerLock({ unadjustedMovement: false });
+      if (p && p.then) {
+        p.then(function () {}, function (err) {
+          console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
+        });
+      }
+    } catch (err) { console.log('[tt] lock: windowed request threw: ' + err); }
+  };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
-    if (wantLock() && c.requestPointerLock) {
-      // Chrome refuses a lock requested too soon after the user escaped the last one, and the
-      // refusal used to be swallowed silently -- so when tracking did not come back after
-      // standing up (Ken) there was nothing to look at. Say why, and try once more after the
-      // cooldown rather than waiting for another click that may never be a fresh gesture.
-      // Ask with OPTIONS. requestPointerLock() with no argument returns undefined in Chrome and
-      // reports failure only through the document's pointerlockerror event -- so a version of this
-      // that hung its logging and its retry off the return value did neither, silently, which is
-      // why "Back to ToonTalk" (tt.html's ttRequestLock, which passes options and so gets a real
-      // promise) could take the lock back and clicking in the room never did.
-      try {
-        var p = c.requestPointerLock({ unadjustedMovement: false });
-        if (p && p.then) {
-          p.then(function () {}, function (err) {
-            console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
-          });
-        }
-      } catch (err) { console.log('[tt] lock: windowed request threw: ' + err); }
-    }
+    takeLock();
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
     mouseHeld[e.button] = true;
@@ -360,6 +366,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   window.addEventListener('keydown', function (e) {
     if (editableTarget(e)) return;
     resumeAudio();
+    // A key is a user gesture, so it can take the capture back where a click cannot -- after
+    // standing up, every click means something to the game (it sits you down again), and the
+    // arrow keys are what you reach for anyway. Not on Escape: that is the key that just gave
+    // the lock away, and asking inside Chrome's post-Escape penalty only renews it.
+    if (e.keyCode !== 27) takeLock();
     globalThis.TT_keys[e.keyCode] = 1;
     if (!e.repeat) post(0x0100, e.keyCode, 0);
     else post(0x0100, e.keyCode, 0x40000000);   // bit 30: previous key state (autorepeat)
