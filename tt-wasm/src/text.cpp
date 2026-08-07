@@ -2491,6 +2491,21 @@ boolean Text::size_and_location_of_characters(wide_character character,
    box_width = tt_screen->get_extent(wide_text+line_start_index+start_position,1+end_position-start_position, 
                                      adjusted_character_width,adjusted_character_height,TRUE,FALSE); // FALSE was TRUE prior to 180699
 	box_width += tt_screen->one_pixel_in_x_city_units(); // new on 010704 since can be off by a pixel
+#ifdef __EMSCRIPTEN__
+	/* Ken: the puzzle goal should COVER the #s on the wall sign and does not. puzzle.cpp asks this
+	 * function where the '#' characters are and drops the goal there, so a goal in the wrong place
+	 * means this box is in the wrong place. Report the pad's own geometry beside the box it
+	 * returned, plus the pieces the box is built from -- which line the #s were found on, and the
+	 * extent measured for the text before them. */
+	printf("[tt] goalbox: pad=(%ld,%ld) %ldx%ld adj=%ldx%ld | box=(%ld,%ld) %ldx%ld | "
+	       "start=%d end=%d lines=%ld ydelta=%ld charWH=(%ld,%ld)\n",
+	       (long) llx,(long) lly,(long) width,(long) height,
+	       (long) adjusted_width,(long) adjusted_height,
+	       (long) box_llx,(long) box_lly,(long) box_width,(long) box_height,
+	       start_position,end_position,(long) number_of_lines,(long) y_delta,
+	       (long) adjusted_character_width,(long) adjusted_character_height);
+	fflush(stdout);
+#endif
    return(TRUE);
 };
 
