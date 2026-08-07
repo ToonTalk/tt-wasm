@@ -2469,8 +2469,8 @@ boolean Text::size_and_location_of_characters(wide_character character,
 	 * are shorter and the two calculations happen to land closer together.
 	 * The comment on the original call says it was updated "to more accurately reflect how
 	 * ::display_text works"; using display_text's own call is the same intent carried through. */
-	city_coordinate ignore_edge_size,ignore_text_width,ignore_text_height;
-	update_size_internal(NULL,adjusted_width,adjusted_height,ignore_edge_size,
+	city_coordinate draw_edge_size,ignore_text_width,ignore_text_height;
+	update_size_internal(NULL,adjusted_width,adjusted_height,draw_edge_size,
 	                     ignore_text_width,ignore_text_height,
 	                     adjusted_character_width,adjusted_character_height,FALSE);
 #else
@@ -2512,7 +2512,16 @@ boolean Text::size_and_location_of_characters(wide_character character,
 //   box_llx = llx+start_position*character_width;
    box_llx = llx+tt_screen->get_extent(wide_text+line_start_index,start_position, 
                                        adjusted_character_width,adjusted_character_height,TRUE,FALSE); // FALSE was TRUE prior to 180699
+#ifdef __EMSCRIPTEN__
+	/* The FULL edge, not half of it. display_text starts the text at adjusted_llx + edge_size
+	 * (text.cpp:2017), so a box inset by only half an edge sits half an edge to the left of the
+	 * characters -- the remainder Ken saw once the character size was corrected ("needs to move to
+	 * the right slightly"). Use the edge update_size_internal just returned, which is the very one
+	 * the drawing will inset by. */
+	box_llx += draw_edge_size-tt_screen->one_pixel_in_x_city_units();
+#else
 	box_llx += compute_edge_size(adjusted_width,adjusted_height)/2-tt_screen->one_pixel_in_x_city_units();
+#endif
 	// new on 010704 for more accuracy -- why was following commented out??
 //   box_llx += compute_edge_size(adjusted_width,adjusted_height)/2; // new on 230902 for more accuracy
 	box_height = y_delta; // vertical_extent; //character_height;
