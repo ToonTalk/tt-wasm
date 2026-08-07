@@ -190,22 +190,13 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // closes the whole class: two integers compared per move, and _em_set_mouse_mode called only
   // when the answer actually changes.
   var lastMouseMode = -1;
-  var prevClientX = null, prevClientY = null;   // reference point for un-captured deltas
   var syncMouseMode = function () {
     // Not before the runtime is up: calling an exported function early ABORTS the module
     // ("native function called before runtime initialization"), and a mouse moved across the
     // canvas while the engine is still loading is an ordinary thing to do. calledRun is
     // Emscripten's own "run() has finished" flag.
     if (!Module['calledRun'] || !Module['_em_set_mouse_mode']) return;
-    // RELATIVE always, lock or no lock. The engine's cursor loop is entirely virtual here --
-    // GetCursorPos reads TT_mouse, and the re-centring SetCursorPos writes it back -- so the only
-    // thing pointer lock was supplying was a stream of DELTAS, and an ordinary mousemove can be
-    // differenced for those just as well. Absolute mode is not a coarser kind of tracking, it is
-    // a different interaction (point-and-click; the engine even reads the buttons differently,
-    // prgrmmr.cpp:4456), which is why removing the capture stopped the avatar following the mouse
-    // at all. Staying relative means the window behaves like the original everywhere, and losing
-    // the lock to Escape costs nothing.
-    var mode = 0;
+    var mode = (document.pointerLockElement === c) ? 0 : 1;
     if (mode === lastMouseMode) return;
     lastMouseMode = mode;
     try { Module['_em_set_mouse_mode'](mode); } catch (e) { return; }
@@ -226,23 +217,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, globalThis.TT_mouse_y + e.movementY / scale));
       return;
     }
-    // No lock: difference successive positions to get the same deltas pointer lock would have
-    // given, and feed the identical accumulate-and-be-re-centred loop. The one thing a capture
-    // still buys is infinite room -- an uncaptured cursor eventually reaches the edge of the
-    // screen and stops producing movement in that direction, where a captured one never does.
-    if (prevClientX !== null) {
-      globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1,
-        globalThis.TT_mouse_x + (e.clientX - prevClientX) / scale));
-      globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1,
-        globalThis.TT_mouse_y + (e.clientY - prevClientY) / scale));
-    }
-    prevClientX = e.clientX; prevClientY = e.clientY;
+    var ox = r.left + (r.width - c.width * scale) / 2;
+    var oy = r.top + (r.height - c.height * scale) / 2;
+    globalThis.TT_mouse_x = Math.max(0, Math.min(c.width - 1, Math.round((e.clientX - ox) / scale)));
+    globalThis.TT_mouse_y = Math.max(0, Math.min(c.height - 1, Math.round((e.clientY - oy) / scale)));
   });
-  // Forget the reference point whenever the pointer leaves or the capture changes, so the next
-  // move starts a fresh difference instead of jumping by however far the cursor travelled away.
-  c.addEventListener('mouseleave', function () { prevClientX = prevClientY = null; });
-  c.addEventListener('mouseenter', function () { prevClientX = prevClientY = null; });
-  document.addEventListener('pointerlockchange', function () { prevClientX = prevClientY = null; });
   // A user gesture is required before Web Audio may start: resume the shim's AudioContext
   // (created by dsound_impl on the first Play) on any click/key/touch anywhere on the page.
   // Looping sounds (helicopter) re-Play each engine cycle, so once resumed they are heard.
@@ -283,11 +262,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // the engine when a windowed lock is lost -- restoring the original's single press rather than
   // giving up the tracking to get it.
   // ?pointerlock=0 turns the windowed capture off and goes back to plain absolute tracking.
-  // Windowed capture is OFF by default now that relative tracking works without it (see the
-  // mousemove handler): nothing to lose to Escape, so no double press, no dead mouse after
-  // standing up, and no hint to explain any of it. ?pointerlock=1 asks for it back, which is
-  // worth having if the cursor running out of screen ever proves worse than the alternative.
-  var lockAllowed = (typeof location !== 'undefined' && /[?&]pointerlock=1/.test(location.search));
+  var lockAllowed = !(typeof location !== 'undefined' && /[?&]pointerlock=0/.test(location.search));
   var wantLock = function () {
     // demoReplay() and not the raw command line: after "Take Control" the command line still
     // says -I <demo>, but the demo is over and the user is playing — they need the mouse.
