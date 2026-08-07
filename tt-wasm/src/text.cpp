@@ -1989,6 +1989,19 @@ void Text::display(SelectionFeedback selection_feedback, boolean followers_too, 
          city_coordinate adjusted_character_width,adjusted_character_height;
          update_size_internal(region,adjusted_width,adjusted_height,edge_size,
                               adjusted_text_width,adjusted_text_height,adjusted_character_width,adjusted_character_height,FALSE);
+#ifdef __EMSCRIPTEN__
+			/* The character size the text is DRAWN at. size_and_location_of_characters computes the
+			 * goal box from a different one (tt_screen->correct_font_size), so if these two disagree
+			 * the box cannot line up with the glyphs -- print it beside the goalbox line to compare.
+			 * Ken: puzzle 1 (3 lines) is misplaced, puzzles 2 and 3 (fewer lines) are fine, which is
+			 * what a size-dependent disagreement would look like. */
+			{ static int td = 0; if (td < 8) { td++;
+			  printf("[tt] drawchar: len=%ld lines=%ld adj=%ldx%ld edge=%ld text=%ldx%ld charWH=(%ld,%ld)\n",
+			         (long) text_length,(long) number_of_lines,(long) adjusted_width,(long) adjusted_height,
+			         (long) edge_size,(long) adjusted_text_width,(long) adjusted_text_height,
+			         (long) adjusted_character_width,(long) adjusted_character_height);
+			  fflush(stdout); } }
+#endif
 			// following commented out since display_text will get a 0 sized adjusted_character_width and return then
 //			if (character_width < one_x_pixel*2 || character_height < one_x_pixel*2) return; // should really compare with one_y_pixel
 			if (show_all()) { // new on 040102 - moved here on 220102

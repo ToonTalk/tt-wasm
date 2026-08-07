@@ -273,7 +273,22 @@ EM_JS(int, tt_text_hwidth, (const unsigned short *text, int len, int cell_h, int
     var fam = fixed ? '"Courier New", "Consolas", monospace'
                     : '"Arial", "Helvetica", "Liberation Sans", sans-serif';
     cx.font = 'bold ' + px + 'px ' + fam;
-    var natural = cx.measureText(s).width;
+    var mm = cx.measureText(s);
+    /* Shrink to avoid clipping EXACTLY as tt_text_raster does. It reduces px when the real
+     * ascent+descent overflows the cell, then draws at the smaller size -- and this function used
+     * to measure at the unreduced size, so whenever that shrink fired the text was DRAWN narrower
+     * than it was MEASURED. Anything positioned from the measurement then sat too far right: Ken's
+     * puzzle 1 goal, which should cover "#######", started a character late. Puzzles 2 and 3 were
+     * fine because their cells are shallower relative to the glyphs and the shrink never fired. */
+    var asc0 = mm.actualBoundingBoxAscent, desc0 = mm.actualBoundingBoxDescent;
+    if (!(asc0 > 0)) asc0 = px * 0.75;
+    if (!(desc0 >= 0)) desc0 = px * 0.25;
+    if (asc0 + desc0 > cell_h && asc0 + desc0 > 0) {
+      px = Math.max(1, Math.floor(px * cell_h / (asc0 + desc0)));
+      cx.font = 'bold ' + px + 'px ' + fam;
+      mm = cx.measureText(s);
+    }
+    var natural = mm.width;
     var sx = 1;
     if (cell_w > 0) {
       var k = px + (fixed ? 'f' : 'p');
