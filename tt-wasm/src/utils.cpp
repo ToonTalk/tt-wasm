@@ -6077,6 +6077,36 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_indirect_text() {
 	Picture *p = make_indirect_picture(t,FALSE);   /* FALSE: no floor juggling, just the wrapper */
 	printf("[tt] indtext: picture=%p\n",(void *) p); fflush(stdout);
 };
+
+/* Ken: taking the room sensor out of the box gives a pad narrower than tall; the original (and
+ * this port a few versions back) is WIDER than tall. A sensor showing text takes its size from
+ * that text (Remote_Picture::set_text_appearance_size -> set_size(text->current_width(), ...)),
+ * so the question is what good size the port computes for a short string. Print it across
+ * lengths: if width barely grows with characters, the measurement is the bug rather than the
+ * seed. Console: Module._tt_dev_text_sizes(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_text_sizes() {
+	char *samples[] = { (char *) "n", (char *) "no", (char *) "yes", (char *) "ball",
+	                    (char *) "balloon", (char *) "a much longer sentence" };
+	for (int i = 0; i < 6; i++) {
+		Text *t = variable_width_text_pad(samples[i],TRUE);
+		if (t == NULL) continue;
+		t->set_to_good_size(NULL);
+		city_coordinate wn = t->current_width(), hn = t->current_height();
+		/* set_text_appearance_size passes tt_toolbox as the source for log version >= 64, not
+		 * NULL -- and the source is what adjust_good_size scales against, so measure both. */
+		Text *t2 = variable_width_text_pad(samples[i],TRUE);
+		if (t2 != NULL) t2->set_to_good_size(tt_toolbox);
+		printf("[tt] textsize: '%s' NULL-> %ldx%ld %s | toolbox-> %ldx%ld %s\n",samples[i],
+		       (long) wn,(long) hn,(wn > hn) ? "(wider)" : "(TALLER)",
+		       (long) (t2 ? t2->current_width() : -1),(long) (t2 ? t2->current_height() : -1),
+		       (t2 && t2->current_width() > t2->current_height()) ? "(wider)" : "(TALLER)");
+		fflush(stdout);
+	};
+	printf("[tt] textsize: charw=%ld charh=%ld tile=%ldx%ld\n",
+	       (long) default_talk_balloon_character_width(),(long) default_talk_balloon_character_height(),
+	       (long) tile_width,(long) tile_height);
+	fflush(stdout);
+};
 #endif
 
 Picture *make_indirect_picture(Sprite *item, boolean add_too) {

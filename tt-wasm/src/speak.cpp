@@ -606,23 +606,13 @@ EM_JS(int, tt_tts_speak, (const char *utf8, long id, int replaying_now), {
           if ((vs[w].name || '').toLowerCase().indexOf(want) >= 0) { globalThis.TT_martyVoice = vs[w]; break; }
         }
       }
-      /* Ken's idea, and a better one than pitch: a voice for ANOTHER language reading English
-       * applies that language's phonetics to it, so Marty sounds like he learned English
-       * somewhere else -- which is what a martian should sound like. Pitch is unreliable anyway;
-       * Chrome's Windows SAPI voices commonly ignore it outright while honouring rate.
-       * ?ttsaccent=fr|zh|de|ru|... picks the language, ?ttsaccent=off keeps the plain English
-       * male. Falls back to English whenever the chosen language is not installed. */
-      var accent = (q2.match(/[?&]ttsaccent=([A-Za-z-]+)/) || [])[1];
-      /* Tried as the default and rejected: Ken heard "a quiet very hard to understand voice".
-       * A French voice reading English mangles it rather than accenting it, and Marty has to be
-       * understood by a child. Off by default; the flag stays for further experiments. */
-      if (accent === undefined) accent = 'off';
-      if (!globalThis.TT_martyVoice && accent && accent !== 'off') {
-        accent = accent.toLowerCase();
-        for (var a = 0; a < vs.length; a++) {
-          if ((vs[a].lang || '').toLowerCase().indexOf(accent) === 0) { globalThis.TT_martyVoice = vs[a]; break; }
-        }
-      }
+      /* ?ttsaccent is GONE. The idea -- a voice for another language reading English, so Marty
+       * sounds like he learned it somewhere else -- was worth trying and did not survive contact:
+       * a French voice mangles English rather than accenting it, and Marty has to be understood
+       * by a child. Worse, the flag survives reloads (pre.js only strips demo/puzzle/user & co),
+       * so an abandoned experiment stayed live in the URL and cost Ken two rounds of "the voice
+       * is garbled after the first sentence" that were the flag, not a bug. ?ttsvoice= remains
+       * for deliberate one-off tests. */
       /* No default pick any more. Choosing "an English male voice" by name was making things
        * worse than doing nothing: Ken heard the FIRST sentence come out fine and everything after
        * it sound weird, on the text-to-speech sensor as well as from Marty. The first sentence is
