@@ -2485,7 +2485,15 @@ void Screen::switch_to(Background *new_background,
 							  boolean keep_animating, boolean old_background_ok,
 							  boolean new_background_finish_instantly) {
 #ifdef __EMSCRIPTEN__
-  { static int n = 0; if (n < 10) { n++; printf("[tt] Screen::switch_to background=%p (frame=%ld)\n", (void*)new_background, (long)tt_frame_number); fflush(stdout); } }
+  /* WHICH background, not just which pointer. Pong act 2 ends up drawing a CITY view ten times
+   * the size of the screen while the narration talks about the ball on a floor, so the question is
+   * whether a segment restore is switching to the wrong KIND of background -- and a bare pointer
+   * cannot answer that. kind_of() distinguishes city / room / floor / titles. Raised to 40 because
+   * the interesting switches happen deep into the replay, past segment 10. */
+  { static int n = 0; if (n < 40) { n++;
+      printf("[tt] Screen::switch_to background=%p outside=%d (frame=%ld)\n",
+             (void*)new_background, (int)(new_background ? new_background->outside() : -1),
+             (long)tt_frame_number); fflush(stdout); } }
 #endif
 	if (old_background_ok) {
 		if (keep_animating) {
