@@ -2459,10 +2459,26 @@ boolean Text::size_and_location_of_characters(wide_character character,
 //	int length = strlen(narrow_text);
 	if (!compute_display_text_character_size(adjusted_width,adjusted_height)) return(FALSE); // too small
 	city_coordinate adjusted_character_width,adjusted_character_height;
-	tt_screen->correct_font_size(wide_text,text_length,number_of_lines, 
+#ifdef __EMSCRIPTEN__
+	/* Ask the way display_text asks. This used to size the characters with correct_font_size while
+	 * the text is DRAWN at the size update_size_internal returns, and the two do not agree here:
+	 * for Ken's puzzle 1 sign (3 lines) correct_font_size says 800x2640 and the drawing uses
+	 * 680x2120. The goal is placed by measuring the characters BEFORE the '#'s at that size, so
+	 * 8 characters x 120 too wide put the goal ~960 city units -- about one character -- to the
+	 * right of the #s it is supposed to cover. Puzzles 2 and 3 look right because their labels
+	 * are shorter and the two calculations happen to land closer together.
+	 * The comment on the original call says it was updated "to more accurately reflect how
+	 * ::display_text works"; using display_text's own call is the same intent carried through. */
+	city_coordinate ignore_edge_size,ignore_text_width,ignore_text_height;
+	update_size_internal(NULL,adjusted_width,adjusted_height,ignore_edge_size,
+	                     ignore_text_width,ignore_text_height,
+	                     adjusted_character_width,adjusted_character_height,FALSE);
+#else
+	tt_screen->correct_font_size(wide_text,text_length,number_of_lines,
 		// updated the following 2 args on 180799 to more accurately reflect how ::display_text works
 										  adjusted_width,adjusted_height,TRUE,!use_variable_width_font(),TRUE, // /longest_line /number_of_lines
 										  adjusted_character_width,adjusted_character_height);
+#endif
 	city_coordinate y_delta = adjusted_height/number_of_lines-tt_screen->one_pixel_in_y_city_units();
    int i;
    for (i = 0; i < text_length; i++) {
