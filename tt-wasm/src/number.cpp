@@ -10331,6 +10331,17 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_sensor_text(int identifier_number) {
 	printf("[tt] sensortext: id=%d lang=%d tt_language=%d -> '%s'\n",
 	       identifier_number,(int) lang,(int) tt_language,s ? s : "(NULL)");
 	fflush(stdout);
+	/* Ken: taking the room sensor out of the box gives a pad narrower than tall; the original is
+	 * wider than tall. The text itself measures correctly (3600x2400 for "no"), so report what
+	 * the SENSOR asks for -- good_size is what a take-out-of-the-box uses, and Picture::good_size
+	 * returns the SAVED size instead of computing one whenever saved_width > 0. */
+	city_coordinate gw = 0,gh = 0;
+	r->good_size(gw,gh);
+	printf("[tt] sensorsize: id=%d good=%ldx%ld cur=%ldx%ld %s\n",
+	       identifier_number,(long) gw,(long) gh,
+	       (long) r->current_width(),(long) r->current_height(),
+	       (gw > gh) ? "(wider)" : "(TALLER)");
+	fflush(stdout);
 };
 #endif
 

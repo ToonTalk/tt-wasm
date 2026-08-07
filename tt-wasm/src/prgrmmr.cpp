@@ -1653,7 +1653,26 @@ boolean Programmer::react(Screen *screen) {
 //					tt_martian->speech_has_finished(tt_martian->current_say_id());
 				};
             tt_martian->teleport_in_done(); // except it didn't take any time
-         } else if (entering && tt_martian_automatically_appears && tt_system_mode != PUZZLE
+         } else
+#ifdef __EMSCRIPTEN__
+         /* Ken: "Marty still doesn't appear when first sitting down." This is the room transition
+          * that schedules TELEPORT_MARTIAN_IN, and it is gated on several things at once, so
+          * report all of them rather than guessing which one is false. */
+         { static int mp = 0; if (mp < 6) { mp++;
+           printf("[tt] martyin: entering=%d auto=%d mode=%d martian=%p active=%d callfor=%d\n",
+                  (int) entering,(int) tt_martian_automatically_appears,(int) tt_system_mode,
+                  (void *) tt_martian,(int) martian_active(),
+#if TT_CALL_FOR_MARTY
+                  (int) (tt_call_for_marty != NULL)
+#else
+                  -1
+#endif
+                  );
+           fflush(stdout); } }
+         if (entering && tt_martian_automatically_appears && tt_system_mode != PUZZLE
+#else
+         if (entering && tt_martian_automatically_appears && tt_system_mode != PUZZLE
+#endif
 #if TT_CALL_FOR_MARTY
 							&& tt_call_for_marty == NULL // new on 040805 so don't teleport in if already waiting for F1
 #endif
