@@ -1053,6 +1053,27 @@ Module['preRun'] = Module['preRun'] || [];
 Module['preRun'].push(function () {
   var ini = [
     '[Switches]',
+    // The rest of the original's [Switches], carried across with ITS values. The retail ini has 41
+    // keys and the port was synthesising 13; the same comparison already turned up three real
+    // divergences (Pumpy, Dusty, GoodSizes below) and the missing-language bug, because a key the
+    // port omits falls back to whatever globals.cpp happens to default to, which is not always
+    // what the shipped product runs with. Omitted deliberately: the joystick, DispDIB, shell,
+    // crash-directory, applet and installer keys, which have no meaning in a browser.
+    'ClipboardTextMayBeUnicode=0',       // CF_TEXT vs CF_UNICODETEXT in the clipboard sensor
+    'ShowMouseCursor=0',
+    'ExclusiveMouseOK=0',
+    'DontScrollOnFloor=0',
+    'SensorsChangeAtDropNotWhenBammed=0',
+    'SpeakToolButtons=1',
+    'SubtitlesSpeed=100',
+    'DisplayAvailableSubtitlesInDemos=1',
+    'ColorSelectionFeedback=1',
+    'MovementSelectionFeedback=2',
+    'MaximumItemsInDusty=100',
+    'KeepAllTimeTravelSegments=0',
+    'MaximumNumberOfTimeLines=10',
+    'IncludeMediaInTimeTravelArchives=0',
+    'SaveInXML=1',
     'InstallCompleted=1',
     'GenerateLogs=0',
     'GenerateRobotNames=1',

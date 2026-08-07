@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpijugdf8x.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpk5xueihp.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpijugdf8x.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm9y6_6pr.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpk5xueihp.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpopknzp2g.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpm9y6_6pr.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpopknzp2g.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1268,6 +1268,27 @@ Module['preRun'] = Module['preRun'] || [];
 Module['preRun'].push(function () {
   var ini = [
     '[Switches]',
+    // The rest of the original's [Switches], carried across with ITS values. The retail ini has 41
+    // keys and the port was synthesising 13; the same comparison already turned up three real
+    // divergences (Pumpy, Dusty, GoodSizes below) and the missing-language bug, because a key the
+    // port omits falls back to whatever globals.cpp happens to default to, which is not always
+    // what the shipped product runs with. Omitted deliberately: the joystick, DispDIB, shell,
+    // crash-directory, applet and installer keys, which have no meaning in a browser.
+    'ClipboardTextMayBeUnicode=0',       // CF_TEXT vs CF_UNICODETEXT in the clipboard sensor
+    'ShowMouseCursor=0',
+    'ExclusiveMouseOK=0',
+    'DontScrollOnFloor=0',
+    'SensorsChangeAtDropNotWhenBammed=0',
+    'SpeakToolButtons=1',
+    'SubtitlesSpeed=100',
+    'DisplayAvailableSubtitlesInDemos=1',
+    'ColorSelectionFeedback=1',
+    'MovementSelectionFeedback=2',
+    'MaximumItemsInDusty=100',
+    'KeepAllTimeTravelSegments=0',
+    'MaximumNumberOfTimeLines=10',
+    'IncludeMediaInTimeTravelArchives=0',
+    'SaveInXML=1',
     'InstallCompleted=1',
     'GenerateLogs=0',
     'GenerateRobotNames=1',
@@ -1479,13 +1500,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuwau1qr1.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpinpdseko.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuwau1qr1.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpinpdseko.js
 
 
 var programArgs = [];
