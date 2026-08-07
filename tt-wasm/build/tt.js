@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpg8lmqzpj.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgn_xa206.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpg8lmqzpj.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0jjfv_xr.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgn_xa206.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmppdq4cg44.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0jjfv_xr.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmppdq4cg44.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -564,7 +564,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   var showLockHint = function (show) {
     if (show && !lockHint) {
       lockHint = document.createElement('div');
-      lockHint.textContent = 'Press any key to steer with the mouse again — not needed in full screen';
+      // An ARROW key specifically. Any key does take the capture back, but on the floor almost
+      // any key also SITS YOU DOWN (the help text says as much: "right-click, or any key, to sit
+      // down at your desk"), so "press any key" sent Ken straight back into the chair he had just
+      // got out of. Arrow keys walk, which costs nothing, and they are what you reach for anyway.
+      lockHint.textContent = 'Press an arrow key to steer with the mouse again — not needed in full screen';
       lockHint.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:14px;' +
         'background:rgba(20,20,32,.92);color:#e8e8f2;font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;' +
         'padding:7px 14px;border:1px solid #44445a;border-radius:6px;z-index:9999;pointer-events:none';
@@ -1475,13 +1479,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpixprt8os.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpez_44e1p.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpixprt8os.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpez_44e1p.js
 
 
 var programArgs = [];

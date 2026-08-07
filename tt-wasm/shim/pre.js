@@ -349,7 +349,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   var showLockHint = function (show) {
     if (show && !lockHint) {
       lockHint = document.createElement('div');
-      lockHint.textContent = 'Press any key to steer with the mouse again — not needed in full screen';
+      // An ARROW key specifically. Any key does take the capture back, but on the floor almost
+      // any key also SITS YOU DOWN (the help text says as much: "right-click, or any key, to sit
+      // down at your desk"), so "press any key" sent Ken straight back into the chair he had just
+      // got out of. Arrow keys walk, which costs nothing, and they are what you reach for anyway.
+      lockHint.textContent = 'Press an arrow key to steer with the mouse again — not needed in full screen';
       lockHint.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:14px;' +
         'background:rgba(20,20,32,.92);color:#e8e8f2;font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;' +
         'padding:7px 14px;border:1px solid #44445a;border-radius:6px;z-index:9999;pointer-events:none';
