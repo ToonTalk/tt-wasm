@@ -271,9 +271,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786080660 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786081057 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786080660'; },
+    locateFile: function (f) { return f + '?v=1786081057'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -575,17 +575,17 @@
       b.addEventListener('click', function () {
         var who = (user.value || '').trim() || 'No Name';
         try { localStorage.setItem('TT_userName', who); } catch (e) {}
-        // This click is the user gesture a fullscreen request needs; asking any later would be
-        // refused. requestFullscreen returns a promise that rejects if the browser says no --
-        // swallow it, since failing to go fullscreen must not stop the session from starting.
-        var fs = document.getElementById('lfs');
-        if (fs && fs.checked) {
-          var target = document.getElementById('fsbox');
-          if (target && target.requestFullscreen) {
-            try { var p = target.requestFullscreen(); if (p && p.catch) p.catch(function () {}); }
-            catch (e) {}
-          }
-        }
+        // Full screen is requested further down, AFTER finish() reveals #stage -- not here. Asking
+        // while #stage is still display:none fullscreens an #fsbox that has no layout, so the
+        // canvas comes up with a zero-size bounding rect and the mousemove handler bails on
+        // `if (!r.width || !r.height) return` -- Ken: "if I select to start in full screen mode
+        // the mouse movement isn't tracked", cured by Esc and re-entering, which is simply the
+        // same request made once the stage has a size. It still rides this click, so it is still
+        // inside the user gesture the browser requires.
+        var wantFullScreen = (function () {
+          var fs = document.getElementById('lfs');
+          return !!(fs && fs.checked);
+        })();
         // askname.htm's own return value, in its own order: "order matters if old user name
         // and changing head appearance".
         var cmd = '-n ' + who + ' -h ' + b.getAttribute('data-head') +
@@ -603,7 +603,16 @@
             });
           }
         }
-        finish(cmd);
+        finish(cmd);                                   // reveals #stage, so #fsbox now has layout
+        if (wantFullScreen) {
+          var target = document.getElementById('fsbox');
+          if (target && target.requestFullscreen) {
+            // Rejects if the browser declines; swallow it, since failing to go full screen must
+            // not stop the session from starting.
+            try { var p = target.requestFullscreen(); if (p && p['catch']) p['catch'](function () {}); }
+            catch (e) {}
+          }
+        }
       });
     });
     user.addEventListener('keydown', function (e) {    // Enter = keep the head you had last time
@@ -664,6 +673,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786080660"></script>
+<script src="tt.js?v=1786081057"></script>
 </body>
 </html>
