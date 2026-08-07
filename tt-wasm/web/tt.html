@@ -386,6 +386,28 @@
                                 : 'Nothing recorded yet — play for a few seconds first';
     });
   }
+  // Going full screen is more than requesting full screen, and there are two ways in -- this
+  // button and the name dialog's "Start in full screen" -- so they share one path. The checkbox
+  // used to call requestFullscreen on its own and got neither of the two things below: no pointer
+  // lock, so the game stayed in ABSOLUTE mode and you moved a cursor to point at where to go
+  // instead of the helicopter tracking the mouse (Ken), and no keyboard lock, so Escape dropped
+  // straight out of full screen instead of reaching the engine.
+  window.TT_enterFullScreen = function () {
+    var c = document.getElementById('ttcanvas');
+    var box = document.getElementById('fsbox');
+    if (!box || !box.requestFullscreen || document.fullscreenElement) return;
+    box.requestFullscreen().then(function () {
+      // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
+      // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
+      // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
+      // (press-AND-HOLD Esc remains the browser's own exit).
+      ttRequestLock(c, false);
+      if (navigator.keyboard && navigator.keyboard.lock) {
+        navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
+                                           .catch(function (e) { ttNote('keyboard lock FAILED: ' + e.name); });
+      }
+    }).catch(function (e) { ttNote('requestFullscreen FAILED: ' + e.name); });
+  };
   document.getElementById('fsbtn').addEventListener('click', function () {
     var c = document.getElementById('ttcanvas');
     var box = document.getElementById('fsbox');   // fullscreen the WRAPPER: overlays must render
@@ -396,13 +418,7 @@
       // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
       // (press-AND-HOLD Esc remains the browser's own exit).
       ttNote('fsbtn: entering');
-      box.requestFullscreen().then(function () {
-        ttRequestLock(c, false);
-        if (navigator.keyboard && navigator.keyboard.lock) {
-          navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
-                                             .catch(function (e) { ttNote('keyboard lock FAILED: ' + e.name); });
-        }
-      }).catch(function (e) { ttNote('requestFullscreen FAILED: ' + e.name); });
+      window.TT_enterFullScreen();
     }
     c.focus();   // keys keep flowing to the game either way
   });
@@ -604,14 +620,10 @@
           }
         }
         finish(cmd);                                   // reveals #stage, so #fsbox now has layout
-        if (wantFullScreen) {
-          var target = document.getElementById('fsbox');
-          if (target && target.requestFullscreen) {
-            // Rejects if the browser declines; swallow it, since failing to go full screen must
-            // not stop the session from starting.
-            try { var p = target.requestFullscreen(); if (p && p['catch']) p['catch'](function () {}); }
-            catch (e) {}
-          }
+        // Same path the Full screen button takes -- pointer lock and keyboard lock included, not
+        // just the full-screen request. Still inside this click, which is the gesture both need.
+        if (wantFullScreen && window.TT_enterFullScreen) {
+          try { window.TT_enterFullScreen(); } catch (e) {}
         }
       });
     });
