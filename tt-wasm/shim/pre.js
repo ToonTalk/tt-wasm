@@ -191,10 +191,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // when the answer actually changes.
   var lastMouseMode = -1;
   var syncMouseMode = function () {
+    // Not before the runtime is up: calling an exported function early ABORTS the module
+    // ("native function called before runtime initialization"), and a mouse moved across the
+    // canvas while the engine is still loading is an ordinary thing to do. calledRun is
+    // Emscripten's own "run() has finished" flag.
+    if (!Module['calledRun'] || !Module['_em_set_mouse_mode']) return;
     var mode = (document.pointerLockElement === c) ? 0 : 1;
     if (mode === lastMouseMode) return;
     lastMouseMode = mode;
-    if (Module['_em_set_mouse_mode']) Module['_em_set_mouse_mode'](mode);
+    try { Module['_em_set_mouse_mode'](mode); } catch (e) { return; }
     // Entering relative mode with a stale absolute position would hand the engine one large
     // bogus delta; start from the centre, which is what the original re-centred to each frame.
     if (mode === 0) { globalThis.TT_mouse_x = (c.width / 2) | 0; globalThis.TT_mouse_y = (c.height / 2) | 0; }
@@ -334,13 +339,35 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // of better: Ken saw the error and the tracking never came back. Every mousedown asks anyway,
     // so the next real click is the retry, and it carries the activation this one lacked.
   });
+  // Say so when the mouse needs taking back. Escape releases the capture and the browser will
+  // only return it on a user gesture -- and in the room no CLICK is free, since every click there
+  // means something to the game (it sits you back down). A key works and costs nothing, but there
+  // is no way for a player to know that, so tell them, and stop telling them the moment it is
+  // true again. Windowed only: full screen holds Escape through Keyboard Lock and never loses the
+  // capture, which is worth saying in the same breath so it does not read as a fault.
+  var lockHint = null;
+  var showLockHint = function (show) {
+    if (show && !lockHint) {
+      lockHint = document.createElement('div');
+      lockHint.textContent = 'Press any key to steer with the mouse again — not needed in full screen';
+      lockHint.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:14px;' +
+        'background:rgba(20,20,32,.92);color:#e8e8f2;font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;' +
+        'padding:7px 14px;border:1px solid #44445a;border-radius:6px;z-index:9999;pointer-events:none';
+      (document.getElementById('fsbox') || document.body).appendChild(lockHint);
+    } else if (!show && lockHint) {
+      if (lockHint.parentNode) lockHint.parentNode.removeChild(lockHint);
+      lockHint = null;
+    }
+  };
   var hadLock = false;
   document.addEventListener('pointerlockchange', function () {
     var locked = (document.pointerLockElement === c);
     if (hadLock && !locked && !document.fullscreenElement) {
       post(0x0100, 27, 0);        // WM_KEYDOWN VK_ESCAPE
       post(0x0102, 27, 0);        // WM_CHAR, for the engine paths that read characters
+      showLockHint(true);
     }
+    if (locked) showLockHint(false);
     hadLock = locked;
   });
   c.addEventListener('contextmenu', function (e) { e.preventDefault(); }); // let right-click be a game button
