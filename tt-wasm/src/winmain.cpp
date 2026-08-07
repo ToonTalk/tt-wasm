@@ -66,10 +66,12 @@
 #if !defined(__TT_COMMON_H)
 #include "common.h"
 #endif
-#if TT_DIRECT_INPUT
+/* Include this unconditionally: input.h guards its OWN body with TT_DIRECT_INPUT and, when the
+ * flag is off, supplies no-op acquire/unacquire_input_devices. winmain calls those on focus
+ * changes without guards of its own, so wrapping the include (as the original does) leaves them
+ * undeclared the moment DirectInput is compiled out. */
 #if !defined(__TT_INPUT_H)
 #include "input.h"
-#endif
 #endif
 
 #if TT_DIRECT_PLAY

@@ -95,5 +95,14 @@ boolean stop_touch_sensitive_mouse_effect();
 
 ascii_string return_background_force_feedback_effect();
 
+#else /* !TT_DIRECT_INPUT */
+/* DirectInput is compiled out for the port (flags.h): the joystick and force-feedback hardware
+ * has no browser equivalent. This whole header is inside the flag, but not every CALLER is --
+ * winmain.cpp re-acquires the input devices on focus changes without a guard of its own. Rather
+ * than thread #ifs through the engine for hardware that is simply absent, give those two the
+ * no-ops they would effectively have been anyway with no device attached. */
+inline void acquire_input_devices() {};
+inline void unacquire_input_devices() {};
+
 #endif
 #endif

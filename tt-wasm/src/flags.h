@@ -19,6 +19,31 @@
 #define TT_GDIPLUS 1 // new on 171001
 #endif
 
+#ifdef __EMSCRIPTEN__
+/* Ken: "Let's remove them all from the app" -- joystick, force feedback and the networking.
+ *
+ * DirectInput is the joystick and force-feedback hardware: 32 button sensors, 6 axis sensors and
+ * the three force-feedback ones. Nothing in a browser detects a joystick, so joystick_notebook()
+ * was never called and update_joystick_globals had nothing behind it -- the sensors existed but
+ * could only ever read zero. (Browsers do have a Gamepad API, so this is removable now and
+ * implementable later if it is ever wanted; that would be a new folder, not this one.)
+ *
+ * TT_LEGO is already 0, so the motors, sensors and counters are gone with it. Compiling them out
+ * rather than leaving them unreachable means the code says what the app can actually do.
+ *
+ * DirectPlay (nests over the network) is deliberately LEFT ON, because it cannot be compiled out
+ * without editing the engine: Nest's nest_guid and keep_around_for_time_travel are declared under
+ * #if TT_DIRECT_PLAY in bird.h but used unconditionally in bird.cpp, and winmain.h's guid helpers
+ * call UuidToString/RpcStringFree whose declarations come in with the DirectPlay headers. Turning
+ * it off breaks 38 translation units. The original was evidently never built this way, so doing
+ * it would mean adding guards through nest and time-travel code -- real risk to working features
+ * in exchange for removing something that is ALREADY inert: every DirectPlay entry point here is
+ * a zero-stub and a web page has no route to a peer. Not worth it; revisit only if the networking
+ * ever becomes reachable enough to confuse someone. */
+#undef TT_DIRECT_INPUT
+#define TT_DIRECT_INPUT 0
+#endif
+
 #define TT_MULTIPLE_PRECISION 1 // new on 280102
 
 #define TT_ABSOLUTE_MOUSE 1 // restored on 160402

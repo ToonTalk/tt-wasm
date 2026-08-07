@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcqcchccg.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp1zg4rpb.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcqcchccg.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpoklp8uhe.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpp1zg4rpb.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi2bquf24.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpoklp8uhe.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpi2bquf24.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1359,13 +1359,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpdszkhemt.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxkm6zfzn.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpdszkhemt.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxkm6zfzn.js
 
 
 var programArgs = [];
@@ -8726,30 +8726,6 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
   function __Z30host_a_new_direct_play_sessionP13IDirectPlay4AP5_GUIDP4NestPc(){ return 0; }
 
-  function __ZN11CImmProject12CreateEffectEPKcP9CImmMouse(){ return 0; }
-
-  function __ZN11CImmProject8OpenFileEPKcP9CImmMouse(){ return 0; }
-
-  function __ZN11CImmProjectC1Ev(){ return 0; }
-
-  function __ZN11CImmProjectD1Ev(){ return 0; }
-
-  function __ZN16CImmSimpleEffect11GetDurationERm(){ return 0; }
-
-  function __ZN16CImmSimpleEffect12GetDirectionERl(){ return 0; }
-
-  function __ZN16CImmSimpleEffect21ChangeBaseParamsPolarElmP12IMM_ENVELOPElmmmm(){ return 0; }
-
-  function __ZN16CImmSimpleEffect7GetGainERm(){ return 0; }
-
-  function __ZN18CImmCompoundEffect18GetContainedEffectEl(){ return 0; }
-
-  function __ZN18CImmCompoundEffect27GetNumberOfContainedEffectsEv(){ return 0; }
-
-  function __ZN18CImmCompoundEffect4StopEv(){ return 0; }
-
-  function __ZN18CImmCompoundEffect5StartEv(){ return 0; }
-
   function __ZN7Gdiplus14GdiplusStartupEPmPKNS_19GdiplusStartupInputEPNS_20GdiplusStartupOutputE(){ return 0; }
 
   function __ZN7Gdiplus15GdiplusShutdownEm(){ return 0; }
@@ -8783,12 +8759,6 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
   function __ZN7Gdiplus6BitmapC1EPKwi(){ return 0; }
 
   function __ZN7Gdiplus6BitmapC1Eiii(){ return 0; }
-
-  function __ZN9CImmMouse10InitializeEPvS0_(){ return 0; }
-
-  function __ZN9CImmMouse22UsesWin32MouseServicesEi(){ return 0; }
-
-  function __ZN9CImmMouseC1Ev(){ return 0; }
 
   function __ZNK7Gdiplus5Image13GetLastStatusEv(){ return 0; }
 
@@ -10515,25 +10485,25 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17074468: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17074568: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17074638: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17074736: () => { globalThis.TT_replayOver = true; },  
- 17074773: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17074869: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17074968: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17075067: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17075169: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17075312: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17075412: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17075553: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17075626: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17075720: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17075813: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17075873: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
- 17075935: () => { return globalThis.TT_presents|0; },  
- 17075972: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
- 17076052: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
+  17071860: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17071960: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17072030: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17072128: () => { globalThis.TT_replayOver = true; },  
+ 17072165: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17072261: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17072360: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17072459: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17072561: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17072704: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17072804: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17072945: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17073018: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17073112: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17073205: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17073265: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
+ 17073327: () => { return globalThis.TT_presents|0; },  
+ 17073364: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
+ 17073444: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -11068,30 +11038,6 @@ var wasmImports = {
   /** @export */
   _Z30host_a_new_direct_play_sessionP13IDirectPlay4AP5_GUIDP4NestPc: __Z30host_a_new_direct_play_sessionP13IDirectPlay4AP5_GUIDP4NestPc,
   /** @export */
-  _ZN11CImmProject12CreateEffectEPKcP9CImmMouse: __ZN11CImmProject12CreateEffectEPKcP9CImmMouse,
-  /** @export */
-  _ZN11CImmProject8OpenFileEPKcP9CImmMouse: __ZN11CImmProject8OpenFileEPKcP9CImmMouse,
-  /** @export */
-  _ZN11CImmProjectC1Ev: __ZN11CImmProjectC1Ev,
-  /** @export */
-  _ZN11CImmProjectD1Ev: __ZN11CImmProjectD1Ev,
-  /** @export */
-  _ZN16CImmSimpleEffect11GetDurationERm: __ZN16CImmSimpleEffect11GetDurationERm,
-  /** @export */
-  _ZN16CImmSimpleEffect12GetDirectionERl: __ZN16CImmSimpleEffect12GetDirectionERl,
-  /** @export */
-  _ZN16CImmSimpleEffect21ChangeBaseParamsPolarElmP12IMM_ENVELOPElmmmm: __ZN16CImmSimpleEffect21ChangeBaseParamsPolarElmP12IMM_ENVELOPElmmmm,
-  /** @export */
-  _ZN16CImmSimpleEffect7GetGainERm: __ZN16CImmSimpleEffect7GetGainERm,
-  /** @export */
-  _ZN18CImmCompoundEffect18GetContainedEffectEl: __ZN18CImmCompoundEffect18GetContainedEffectEl,
-  /** @export */
-  _ZN18CImmCompoundEffect27GetNumberOfContainedEffectsEv: __ZN18CImmCompoundEffect27GetNumberOfContainedEffectsEv,
-  /** @export */
-  _ZN18CImmCompoundEffect4StopEv: __ZN18CImmCompoundEffect4StopEv,
-  /** @export */
-  _ZN18CImmCompoundEffect5StartEv: __ZN18CImmCompoundEffect5StartEv,
-  /** @export */
   _ZN7Gdiplus14GdiplusStartupEPmPKNS_19GdiplusStartupInputEPNS_20GdiplusStartupOutputE: __ZN7Gdiplus14GdiplusStartupEPmPKNS_19GdiplusStartupInputEPNS_20GdiplusStartupOutputE,
   /** @export */
   _ZN7Gdiplus15GdiplusShutdownEm: __ZN7Gdiplus15GdiplusShutdownEm,
@@ -11125,12 +11071,6 @@ var wasmImports = {
   _ZN7Gdiplus6BitmapC1EPKwi: __ZN7Gdiplus6BitmapC1EPKwi,
   /** @export */
   _ZN7Gdiplus6BitmapC1Eiii: __ZN7Gdiplus6BitmapC1Eiii,
-  /** @export */
-  _ZN9CImmMouse10InitializeEPvS0_: __ZN9CImmMouse10InitializeEPvS0_,
-  /** @export */
-  _ZN9CImmMouse22UsesWin32MouseServicesEi: __ZN9CImmMouse22UsesWin32MouseServicesEi,
-  /** @export */
-  _ZN9CImmMouseC1Ev: __ZN9CImmMouseC1Ev,
   /** @export */
   _ZNK7Gdiplus5Image13GetLastStatusEv: __ZNK7Gdiplus5Image13GetLastStatusEv,
   /** @export */

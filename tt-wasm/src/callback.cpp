@@ -306,6 +306,13 @@ void restore_background_force_callback(Sprite *) {
    if (return_background_force_feedback_effect() != NULL) play_force_feedback_effect(return_background_force_feedback_effect());
 };
 
+#else
+/* Force feedback is compiled out, but this keeps its SLOT in the callback table below. Callbacks
+ * are recorded by INDEX in demos and time-travel logs, so dropping the entry would renumber every
+ * callback after it and mis-dispatch every recording ever made. A no-op costs nothing and keeps
+ * the numbering identical to the original's. */
+void restore_background_force_callback(Sprite *) {};
+
 #endif
 
 void teleport_in_done_callback(Sprite *m) {
