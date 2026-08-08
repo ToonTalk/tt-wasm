@@ -300,9 +300,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786207667 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786208497 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786207667'; },
+    locateFile: function (f) { return f + '?v=1786208497'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -821,6 +821,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786207667"></script>
+<script src="tt.js?v=1786208497"></script>
 </body>
 </html>

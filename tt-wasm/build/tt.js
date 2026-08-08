@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxftqmhhi.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpqw2cqvpg.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxftqmhhi.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp2bv639vk.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpqw2cqvpg.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8rerp65x.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp2bv639vk.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8rerp65x.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -1002,6 +1002,16 @@ globalThis.TT_hasFile = function (path) {
   // A .dmo IS a time-travel archive and the replay drives itself through tt_time_travel; turning
   // time travel off here left demogate reporting tt_enabled=0 and the segment jump never ran.
   if (typeof location !== 'undefined' && /[?&]demo=/.test(location.search)) return;
+  // ?floor=1 skips the launcher, so nothing supplies the "-time_travel_enabled 1" the launcher's
+  // (default-checked) box would -- it fell through to 0 here and time travel silently stopped
+  // replaying, jumping straight from one checkpoint to the next exactly as the comment above
+  // describes (Ken: "it jump from one checkpoint to the next - no replay"). It is a test harness
+  // for the real thing, so it gets the launcher's default rather than the memory-saving one.
+  if (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) {
+    globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
+                            '-time_travel_enabled 1';
+    return;
+  }
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
 })();
@@ -1530,13 +1540,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsp86184g.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmppd9exgbp.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpsp86184g.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmppd9exgbp.js
 
 
 var programArgs = [];

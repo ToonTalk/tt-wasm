@@ -787,6 +787,16 @@ globalThis.TT_hasFile = function (path) {
   // A .dmo IS a time-travel archive and the replay drives itself through tt_time_travel; turning
   // time travel off here left demogate reporting tt_enabled=0 and the segment jump never ran.
   if (typeof location !== 'undefined' && /[?&]demo=/.test(location.search)) return;
+  // ?floor=1 skips the launcher, so nothing supplies the "-time_travel_enabled 1" the launcher's
+  // (default-checked) box would -- it fell through to 0 here and time travel silently stopped
+  // replaying, jumping straight from one checkpoint to the next exactly as the comment above
+  // describes (Ken: "it jump from one checkpoint to the next - no replay"). It is a test harness
+  // for the real thing, so it gets the launcher's default rather than the memory-saving one.
+  if (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) {
+    globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
+                            '-time_travel_enabled 1';
+    return;
+  }
   globalThis.TT_cmdline = (globalThis.TT_cmdline ? globalThis.TT_cmdline + ' ' : '') +
                           '-time_travel_enabled 0';
 })();
