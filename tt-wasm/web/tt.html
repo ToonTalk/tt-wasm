@@ -118,6 +118,25 @@
   button.lcard:disabled { cursor: not-allowed; }
   button.lcard:disabled .lbig { filter: grayscale(1) brightness(.6); }
   .ldemo:hover { background: #2f2f44; border-color: #55556e; }
+  /* The original's own opening screen (pics/opening.bmp), shown while ToonTalk loads. The two
+     text blocks are the lines the engine draws over it -- resource strings 1653 + 929 at the top
+     and 5544 bottom-left -- positioned and sized as fractions of the 640x480 art so they stay put
+     when it scales. The engine draws this same screen once it is running, so the handover is
+     invisible rather than a cut. */
+  #lsplash { position: relative; width: min(640px, 92vw); margin: 0 auto; line-height: 1.2; }
+  #lsplash img {
+    display: block; width: 100%; height: auto; border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+  }
+  #lsplashtop {
+    position: absolute; left: 0; right: 0; top: 1.2%;
+    text-align: center; color: #000; font-weight: 700;
+    font-size: clamp(11px, 3.35vw, 22px);
+  }
+  #lsplashwait {
+    position: absolute; left: 1%; bottom: 1%;
+    color: #000; font-size: clamp(9px, 1.9vw, 13px);
+  }
   .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
   .lrow button, #lback {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
@@ -152,6 +171,16 @@
 <!-- Starttt.exe's opening screen. Structure and command strings from the original
      starttt.htm / pickdemo.htm / askname.htm; demo names are this build's own .dmo files. -->
 <div id="launcher" hidden>
+  <!-- Shown in place of the choices once a choice is made, so the opening screen stays up instead
+       of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
+       black and then the second opening screen shows after about 10s"). -->
+  <div class="lpanel" id="lloading" hidden>
+    <div id="lsplash">
+      <img src="launcher/opening.png" alt="ToonTalk — Marty's Animated Programming World">
+      <div id="lsplashtop">ToonTalk 3 (version 3.191)<br>(c) 1992-2007. Ken Kahn. All rights reserved.</div>
+      <div id="lsplashwait">Loading, please wait.</div>
+    </div>
+  </div>
   <div class="lpanel" id="lmain">
     <h1>What do you want to do with ToonTalk?</h1>
     <div class="lcols">
@@ -279,8 +308,13 @@
     print: function (t) {
       if (t && t.indexOf('[tt]') === 0) {
         var l = (window.TT_log = window.TT_log || []);
-        l.push(t);
-        if (l.length > 3000) l.splice(0, 500);
+        // Parallel ms timestamps (TT_logT[i] belongs to TT_log[i]). Startup finishes before any
+        // console can be attached, so timing it after the fact is impossible -- stamping as the
+        // lines arrive is what showed that 20 of the 21 seconds before the first frame were PNG
+        // decoding. ttNote below stamps too, so the two arrays stay index-aligned.
+        var ts = (window.TT_logT = window.TT_logT || []);
+        l.push(t); ts.push(Math.round(performance.now()));
+        if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
       }
       console.log(t);
     },
@@ -296,6 +330,8 @@
   // to be a black canvas with the status line still saying "engine running".
   window.TT_engineFailed = function (reason, reason2) {
     var msg = [reason, reason2].filter(Boolean).join(' ').trim() || 'ToonTalk stopped.';
+    // Otherwise the "Getting ToonTalk ready..." screen hides the reason it will never be ready.
+    if (window.TT_hideLoadingScreen) window.TT_hideLoadingScreen();
     statusEl.style.color = '#ff8a8a';
     statusEl.textContent = 'ToonTalk stopped: ' + msg;
     ttNote('engine failed: ' + msg);
@@ -304,8 +340,9 @@
   // "input dead after re-entering full screen" comes with the exact event trail.
   function ttNote(s) {
     var l = (window.TT_log = window.TT_log || []);
-    l.push('[tt] ui: ' + s);
-    if (l.length > 3000) l.splice(0, 500);
+    var ts = (window.TT_logT = window.TT_logT || []);   // keep the two arrays index-aligned
+    l.push('[tt] ui: ' + s); ts.push(Math.round(performance.now()));
+    if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
   }
   // Chrome refuses a pointer-lock request made too soon after the user ESCAPED the previous
   // lock (an anti-abuse latch, ~1.5s). The .catch below sees that rejection and retries once
@@ -491,6 +528,80 @@
     if (wait) wait.hidden = true;
     if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
   };
+  // When the page already knows what to run, buildLauncher below shows nothing -- which left the
+  // user staring at a black canvas for the whole load (Ken: "I still see a black screen while
+  // playground city is loading"; that city walks in ~12s since the GetFocus fix). Keep the opening
+  // screen up with a wait message instead of cutting to black.
+  //
+  // Taken down on the FIRST PRESENTED FRAME, not a timer: that is the exact moment there is real
+  // artwork to show, it self-corrects as loads get faster or slower, and it cannot leave the
+  // overlay stranded over a running engine -- which is precisely what went wrong before, when this
+  // screen sat there saying "loading ToonTalk..." forever on top of a fully loaded Playground.
+  // The 60s backstop covers the one case a frame never arrives at all (engine died before drawing);
+  // TT_engineFailed clears it immediately when the engine reports the failure itself.
+  // Name and picture the thing being loaded, so the wait screen shows what you just clicked
+  // (Ken: "the message can at least say loading Playground city or notebook as appropriate").
+  // The launcher's own buttons are already in the page, just hidden -- so the demo artwork and
+  // labels are read back off them rather than kept in a second table that could drift out of step.
+  function ttLoadingSubject() {
+    var q = location.search, m;
+    if ((m = /[?&]demo=([A-Za-z0-9_.-]+)/.exec(q))) {
+      var b = document.querySelector('.ldemo[data-demo="' + m[1] + '"]');
+      if (b) {
+        var lbl = (b.querySelector('span') || {}).textContent || '';
+        var grp = b.closest ? b.closest('.lgroup') : null;
+        // All three headings (Basics / Ping Pong Game / Computer Science Examples) live in ONE
+        // .lgroup, so querySelector('h2') would always answer "Basics" -- pongact2_v2 came out as
+        // "Basics — Part 2". Take the last heading that precedes this button instead.
+        var h2 = null;
+        if (grp) {
+          var hs = grp.querySelectorAll('h2');
+          for (var i = 0; i < hs.length; i++) {
+            if (hs[i].compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) h2 = hs[i];
+          }
+        }
+        // "Part 2" alone is meaningless once the list is gone, so it gets its heading: "Ping Pong
+        // Game -- Part 2". Names that already say what they are ("Exploding Houses") do not --
+        // "Basics -- Exploding Houses" is just longer.
+        if (h2 && /^part\b/i.test(lbl)) lbl = h2.textContent.trim() + ' — ' + lbl;
+        return {what: lbl || 'the demo'};
+      }
+      return {what: 'the demo'};
+    }
+    if ((m = /[?&]user=([^&]+)/.exec(q))) {
+      var u = decodeURIComponent(m[1]);
+      return {what: u === 'Playground2001X' ? 'the Playground city'
+                  : u === 'PlaygroundBookX' ? 'the Playground notebook'
+                  : u + '’s notebook'};
+    }
+    if (/[?&]puzzle=/.test(q)) return {what: 'the puzzle game'};
+    return {what: null};   // nothing specific to say -- the plain "Loading, please wait." stands
+  }
+  function ttShowLoadingScreen() {
+    var box = document.getElementById('launcher');
+    var panel = document.getElementById('lloading');
+    if (!box || !panel) return;
+    var main = document.getElementById('lmain'), name = document.getElementById('lname');
+    if (main) main.hidden = true;
+    if (name) name.hidden = true;
+    // Name what is loading inside the original's own wait line rather than adding a second
+    // message beside it: "Loading the Playground city, please wait."
+    var subj = ttLoadingSubject();
+    var wait = document.getElementById('lsplashwait');
+    if (wait && subj.what) wait.textContent = 'Loading ' + subj.what + ', please wait.';
+    panel.hidden = false;
+    box.hidden = false;
+    var before = globalThis.TT_presents || 0, waited = 0;
+    var timer = setInterval(function () {
+      waited += 100;
+      if ((globalThis.TT_presents || 0) > before || waited >= 60000) {
+        clearInterval(timer);
+        box.hidden = true;
+        if (waited >= 60000) ttNote('loading screen: no frame after 60s -- removed anyway');
+      }
+    }, 100);
+    window.TT_hideLoadingScreen = function () { clearInterval(timer); box.hidden = true; };
+  }
   (function buildLauncher() {
     // Only when the page does NOT already know what to run. pre.js's gateOnLauncher skips
     // ?demo=/?puzzle=/?user=/?launcher=0 and therefore never calls TT_showLauncher for them --
@@ -500,7 +611,7 @@
     // ?floor=1 which goes straight to the bootstrap floor.
     if (/[?&](demo|puzzle|user)=/.test(location.search) ||
         /[?&]launcher=0/.test(location.search) ||
-        /[?&]floor=1/.test(location.search)) return;
+        /[?&]floor=1/.test(location.search)) { ttShowLoadingScreen(); return; }
     var box = document.getElementById('launcher');
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     var stage = document.getElementById('stage');
@@ -520,8 +631,25 @@
       if (which === 'name') { user.focus(); user.select(); }
     };
     var finish = function (cmd) {
-      box.hidden = true;
+      // Keep the opening screen up -- swapped to the wait message -- rather than blanking to a
+      // black canvas for the ~10s the notebook takes to load. Dropped on the FIRST RENDERED FRAME
+      // rather than a timer, so it self-corrects however long the load takes. TT_presents is the
+      // signal deliberately: Module.calledRun is never set in this build, so gating on it would
+      // leave this covering a perfectly good engine -- the failure the buildLauncher comment above
+      // records. The timeout is only a backstop against that same outcome.
+      var wait = document.getElementById('lwait');
+      main.hidden = true; name.hidden = true;
+      if (wait) wait.hidden = false;
       stage.style.display = '';
+      var started = window.TT_presents || 0, waited = 0;
+      var poll = setInterval(function () {
+        waited += 100;
+        if ((window.TT_presents || 0) > started || waited >= 45000) {
+          clearInterval(poll);
+          box.hidden = true;
+          if (wait) wait.hidden = true;
+        }
+      }, 100);
       ttNote('launcher: ' + cmd);
       // If the engine is still loading, hold the choice rather than dropping it -- the click must
       // not be silently ignored just because it landed early.

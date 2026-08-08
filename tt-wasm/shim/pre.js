@@ -64,6 +64,10 @@ globalThis.TT_present_times = [];   // ring of recent present timestamps (for th
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
   globalThis.TT_presents = TT_presents;
+  // When the user first sees anything. The whole of #51 is the gap between page load and this.
+  if (TT_presents === 1 && typeof performance !== 'undefined') {
+    globalThis.TT_firstFrameMs = Math.round(performance.now());
+  }
   if (typeof performance !== 'undefined') {
     var pt = globalThis.TT_present_times;
     pt.push(performance.now());

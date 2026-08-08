@@ -300,16 +300,21 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786119780 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786168823 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786119780'; },
+    locateFile: function (f) { return f + '?v=1786168823'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
       if (t && t.indexOf('[tt]') === 0) {
         var l = (window.TT_log = window.TT_log || []);
-        l.push(t);
-        if (l.length > 3000) l.splice(0, 500);
+        // Parallel ms timestamps (TT_logT[i] belongs to TT_log[i]). Startup finishes before any
+        // console can be attached, so timing it after the fact is impossible -- stamping as the
+        // lines arrive is what showed that 20 of the 21 seconds before the first frame were PNG
+        // decoding. ttNote below stamps too, so the two arrays stay index-aligned.
+        var ts = (window.TT_logT = window.TT_logT || []);
+        l.push(t); ts.push(Math.round(performance.now()));
+        if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
       }
       console.log(t);
     },
@@ -335,8 +340,9 @@
   // "input dead after re-entering full screen" comes with the exact event trail.
   function ttNote(s) {
     var l = (window.TT_log = window.TT_log || []);
-    l.push('[tt] ui: ' + s);
-    if (l.length > 3000) l.splice(0, 500);
+    var ts = (window.TT_logT = window.TT_logT || []);   // keep the two arrays index-aligned
+    l.push('[tt] ui: ' + s); ts.push(Math.round(performance.now()));
+    if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
   }
   // Chrome refuses a pointer-lock request made too soon after the user ESCAPED the previous
   // lock (an anti-abuse latch, ~1.5s). The .catch below sees that rejection and retries once
@@ -815,6 +821,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786119780"></script>
+<script src="tt.js?v=1786168823"></script>
 </body>
 </html>

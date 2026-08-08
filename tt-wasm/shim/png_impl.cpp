@@ -137,13 +137,41 @@ void build_palette(unsigned char pal[256][3]) {
     }
 }
 
+/* Direct-mapped memo of colour -> palette index. The search below is a linear scan of 255 entries
+ * PER PIXEL, so an 800x600 picture costs ~122M distance computations -- about a second, measured,
+ * and the Playground notebook decodes 362 pictures before it can show anything (Ken: "why it takes
+ * 10 seconds... the notebook loads very fast in the original"). The original shipped its media as
+ * BMPs and never did this work at all.
+ *
+ * The key is the FULL 24-bit colour and every hit is verified against it, so results are identical
+ * to the scan -- this is purely a speed cache, not a quantisation. Artwork uses few distinct
+ * colours and repeats them in runs, so the hit rate is high. Reset whenever the palette changes,
+ * since the answers are only valid for the palette they were computed against. */
+#define NI_CACHE_BITS 13
+#define NI_CACHE_SIZE (1 << NI_CACHE_BITS)
+static unsigned      g_ni_key[NI_CACHE_SIZE];   /* 0xFF000000 marks empty (never a real 24-bit key) */
+static unsigned char g_ni_val[NI_CACHE_SIZE];
+static bool          g_ni_ready = false;
+
+void nearest_index_reset(void) {
+    for (int i = 0; i < NI_CACHE_SIZE; i++) g_ni_key[i] = 0xFF000000u;
+    g_ni_ready = true;
+}
+
 int nearest_index(const unsigned char pal[256][3], int r, int g, int b) {
+    if (!g_ni_ready) nearest_index_reset();
+    unsigned key = ((unsigned)r << 16) | ((unsigned)g << 8) | (unsigned)b;
+    /* Knuth multiplicative hash, then fold to the table size. */
+    unsigned slot = (key * 2654435761u) >> (32 - NI_CACHE_BITS);
+    if (g_ni_key[slot] == key) return g_ni_val[slot];
+
     int best = 1; long bestd = 0x7fffffffL;
     for (int i = 1; i < 256; i++) {          /* never index 0: that is the transparency key */
         long dr = r - pal[i][0], dg = g - pal[i][1], db = b - pal[i][2];
         long d = dr * dr + dg * dg + db * db;
         if (d < bestd) { bestd = d; best = i; if (d == 0) break; }
     }
+    g_ni_key[slot] = key; g_ni_val[slot] = (unsigned char)best;
     return best;
 }
 
@@ -253,6 +281,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_png_set_palette(const unsigned int *colo
     }
     for (int i = count; i < 256; i++) { g_engine_pal[i][0] = g_engine_pal[i][1] = g_engine_pal[i][2] = 0; }
     g_have_engine_pal = true;
+    nearest_index_reset();   /* memoised answers belong to the OLD palette */
     { static int ap = 0; if (ap < 3) { ap++;   /* the engine re-runs palette init; say so once */
       printf("[tt] png: engine palette adopted (%d entries)\n", count); fflush(stdout); } }
 }

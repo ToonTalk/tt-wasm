@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjh76gi9r.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuuefwti1.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjh76gi9r.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmplhikzvzw.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpuuefwti1.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpwmrpfb5r.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmplhikzvzw.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpwmrpfb5r.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -279,6 +279,10 @@ globalThis.TT_present_times = [];   // ring of recent present timestamps (for th
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
   globalThis.TT_presents = TT_presents;
+  // When the user first sees anything. The whole of #51 is the gap between page load and this.
+  if (TT_presents === 1 && typeof performance !== 'undefined') {
+    globalThis.TT_firstFrameMs = Math.round(performance.now());
+  }
   if (typeof performance !== 'undefined') {
     var pt = globalThis.TT_present_times;
     pt.push(performance.now());
@@ -1521,13 +1525,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpun82awur.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp84q6oery.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpun82awur.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp84q6oery.js
 
 
 var programArgs = [];
