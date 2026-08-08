@@ -5180,6 +5180,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_travel_button(int n) {
 			fflush(stdout);
 		};
 	};
+	if (buttons == NULL) {
+		// time_travel_react -> restore_time_travel_buttons walks buttons[], so calling it before
+		// the controls exist is a NULL walk: "memory access out of bounds". The controls are only
+		// built once time travel is entered, so this hook can only drive them after that.
+		printf("[tt] ttdev: buttons not built yet -- not calling time_travel_react\n");
+		fflush(stdout);
+		return;
+	};
 	time_travel_react((TimeTravelButton) n);
 	printf("[tt] ttdev: returned from button %d -- current=%d\n",n,(int) tt_current_log_segment);
 	fflush(stdout);
