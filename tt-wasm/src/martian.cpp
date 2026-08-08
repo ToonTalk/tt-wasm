@@ -2862,6 +2862,20 @@ void Talk_Balloon::display(SelectionFeedback selection_feedback,
    															  character_width*2, // if clipping leave character on each side
 																  BLACK,TRUE,
 																  max_characters); // new on 200999
+#ifdef __EMSCRIPTEN__
+		// Ken: the post-training tip is 193 characters but the balloon holds ~75 (fit=75), so the
+		// original paginates it -- text_offset_increment = characters_shown, then "place more text"
+		// for the rest. place_text is what decides how much fits. If it hands back the whole
+		// remaining string nothing paginates, all 193 land in one balloon, and that is the crowded
+		// overlapping text. Print what it was asked and what it answered.
+		{ static int pt = 0;
+		  if (pt < 14) { pt++;
+			printf("[tt] placetext: remaining=%d max_chars=%d -> shown=%d  box=%ldx%ld cell=%ldx%ld offset=%d\n",
+			       (int) (length-text_offset),(int) max_characters,(int) characters_shown,
+			       (long) text_width,(long) text_height,(long) character_width,(long) character_height,
+			       (int) text_offset);
+			fflush(stdout); } }
+#endif
 //      } else { // just a sentence at a time if no talk balloon
 //         characters_shown = length-text_offset; // default
 //         for (int i = 0; i < length-text_offset; i++) {
