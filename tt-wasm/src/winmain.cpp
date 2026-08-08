@@ -1734,6 +1734,23 @@ static boolean tt_message_loop_iteration() {
 	try {
 		return(Main::MessageLoopOnce());
 	} catch (CycleInterruptionReason reason) {
+#ifdef __EMSCRIPTEN__
+		// THE question for Ken's time travel: a named user's segment is whole on disk
+		// (openlog size=8283) yet replay ends after one frame, while ?floor=1 replays fine. The
+		// difference is that a named session records real input EVENTS. This is where a cycle
+		// gives up, and the reason code says which parse failed -- but it only ever went to
+		// tt_error_file, which never reaches the browser console. 0=END_OF_LOG_FILE,
+		// 1=EVENTS_COUNTER_TOO_LARGE, 2=EVENTS_COUNTER_MISSING, 3=LOG_FILE_MISSING,
+		// 4=UNRECOGNIZED_SPECIAL_EVENT_TOKEN, 5=LOG_FILE_CORRUPTED,
+		// 6=LOG_FILE_MISSING_CITY_FILE_NAME, 7=EVENTS_COUNTER_NON_ZERO_WITH_NO_EVENT_QUEUE,
+		// 8=UNABLE_TO_EXTRACT_CITY_FILE. Anything but 0 means the stream is being MIS-PARSED
+		// rather than genuinely exhausted.
+		{ static int ci = 0;
+		  if (ci < 10) { ci++;
+			printf("[tt] cyclestop: reason=%d segment=%d frame=%ld time=%ld\n",(int) reason,
+			       (int) tt_current_log_segment,(long) tt_frame_number,(long) tt_current_time);
+			fflush(stdout); } }
+#endif
 		switch (reason) {
 			case EVENTS_COUNTER_TOO_LARGE:
 			case EVENTS_COUNTER_MISSING:
