@@ -762,6 +762,11 @@ globalThis.TT_hasFile = function (path) {
   if (/[?&]launcher=0/.test(location.search)) return;
   if (/[?&]puzzle=/.test(location.search)) return;   // the page has already said what to run
   if (/[?&]user=/.test(location.search)) return;     // ?user= already supplies -n <name>
+  // ?floor=1 goes straight to the bootstrap floor and builds no launcher UI, so nothing would
+  // ever call TT_showLauncher to release the dependency below -- the runtime sat forever on
+  // "still waiting on run dependencies: tt-launcher" and the engine never started. This list has
+  // to match buildLauncher's early-return list in tt.html exactly; it did not.
+  if (/[?&]floor=1/.test(location.search)) return;
   Module['preRun'] = Module['preRun'] || [];
   Module['preRun'].push(function () {
     if (typeof globalThis.TT_showLauncher !== 'function') return;

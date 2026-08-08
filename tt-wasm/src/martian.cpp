@@ -2532,6 +2532,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_marty_say(int which) {
 #endif
 
 void Talk_Balloon::compute_size(int text_length, Martian *martian) {
+#ifdef __EMSCRIPTEN__
+	// Entry probe: distinguishes "compute_size never called" from "returned early at the TTS
+	// guard below" -- the balloonsize probe further down cannot tell those apart.
+	{ static int ce = 0;
+	  if (ce < 12) { ce++;
+		printf("[tt] balloonentry: len=%d marty_talk=%d prog_kind=%d\n",text_length,
+		       (int) tt_marty_talk,(tt_programmer == NULL) ? -1 : (int) tt_programmer->kind_of());
+		fflush(stdout); } }
+#endif
 	// doesn't quite work right if too close to the side since not all of
 	// balloon is available for text
 #if TT_TEXT_TO_SPEECH   
@@ -2544,6 +2553,17 @@ void Talk_Balloon::compute_size(int text_length, Martian *martian) {
 	} else {
 		new_percent = (text_length*100L)/characters_fitting_in_full_size;
 	};
+#ifdef __EMSCRIPTEN__
+	// Ken's overlapping balloon text: new_character_size never fires for the failing sentence, so
+	// the balloon is not being resized to fit it. Show what compute_size decides -- how many
+	// characters it thinks fit, the raw percent, and the percent it already has.
+	{ static int cs = 0;
+	  if (cs < 12) { cs++;
+		printf("[tt] balloonsize: len=%d fit=%ld raw_pct=%d full_pct=%d marty_talk=%d\n",
+		       text_length,(long) characters_fitting_in_full_size,new_percent,
+		       (int) full_size_percent,(int) tt_marty_talk);
+		fflush(stdout); } }
+#endif
 //	if (tt_screen_width <= 800) { // condition new on 150202 since for high resolution can have bigger balloons -- restored on 070502 since sometimes text is too small
 		if (new_percent < 10) {
 			new_percent = 40; //was 31; // square root of 1/10 is about 1/3
