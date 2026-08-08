@@ -2256,8 +2256,24 @@ void Talk_Balloon::new_character_size(long percent, boolean update_characters_fi
 		  // 6*16 is empirical -- -3 to estimate loss due to avoiding breaking words
 //		   = (10000L*6*(16-3))/(percent*percent);
 //  } else { // default is now 80% of what it used to be
-     character_width = (percent*default_talk_balloon_character_width())/100; 
+     character_width = (percent*default_talk_balloon_character_width())/100;
      character_height = (percent*default_talk_balloon_character_height())/100; // 11 lines -- was 17/10 instead of 2
+#ifdef __EMSCRIPTEN__
+	  // Ken: text in Marty's balloon is usually fine but sometimes comes out with the glyphs
+	  // overlapping and looking vertically stretched. The cell is shrunk per-axis by
+	  // shrink_{width,height}_from_640x480_screen_size, and each guards on its OWN dimension --
+	  // so a screen whose aspect differs from the art mode shrinks one axis and not the other,
+	  // which would give exactly a tall narrow cell. Print the ratio actually applied.
+	  { static int ncs = 0;
+	    if (ncs < 10) { ncs++;
+		  printf("[tt] balloonchar: pct=%ld cell=%ldx%ld  defaults=%ldx%ld  screen=%ldx%ld artmode=%dx%d adjust=%d\n",
+		         (long) percent,(long) character_width,(long) character_height,
+		         (long) default_talk_balloon_character_width(),(long) default_talk_balloon_character_height(),
+		         (long) tt_screen_width,(long) tt_screen_height,
+		         (int) tt_graphics_video_mode_width,(int) tt_graphics_video_mode_height,
+		         (int) tt_good_sizes_adjust_to_screen_size);
+		  fflush(stdout); } }
+#endif
      if (update_characters_fitting_in_full_size) { // conditional new on 150202
 		  characters_fitting_in_full_size = (10000L*5*(18-3))/(percent*percent);
 	  };
@@ -2489,6 +2505,31 @@ boolean Talk_Balloon::say(Martian *speaking_martian, // new on 090502
    martian->started_talking();  // was tt_martian prior to 090502
 	return(TRUE);
 };
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+/* Dev hook: make Marty say an arbitrary sentence, so the talk-balloon layout can be reproduced
+ * without training a robot first. Ken's bad case was a long one -- "To test the robot, just give
+ * him a box like the one in his thought bubble." -- and short ones look fine, so the length is
+ * the variable that matters. Console: Module.ccall('tt_dev_marty_say','null',['string'],[s]). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_marty_say(int which) {
+	// Sentences of increasing length: the balloon picks its size from the text length, so a sweep
+	// shows at which length the layout goes wrong. #3 is Ken's exact failing sentence.
+	static const char *lines[] = {
+		"Hi there!",
+		"Drop it on the robot.",
+		"To test the robot, give him a box.",
+		"To test the robot, just give him a box like the one in his thought bubble.",
+		"To test the robot, just give him a box like the one in his thought bubble, and then watch what he does with it."
+	};
+	int n = (int) (sizeof lines / sizeof lines[0]);
+	if (which < 0 || which >= n) which = 3;
+	if (tt_martian == NULL) { printf("[tt] martysay: no Marty\n"); fflush(stdout); return; }
+	printf("[tt] martysay: #%d len=%d '%s'\n",which,(int) strlen(lines[which]),lines[which]);
+	fflush(stdout);
+	tt_martian->say((char *) lines[which]);   // const_string is not const char *
+};
+#endif
 
 void Talk_Balloon::compute_size(int text_length, Martian *martian) {
 	// doesn't quite work right if too close to the side since not all of

@@ -2435,6 +2435,14 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 						tt_speak_button_name = FALSE;
 						tt_parts_change_when_bammed = FALSE;
 						tt_good_sizes_adjust_to_screen_size = FALSE; // I think
+#ifdef __EMSCRIPTEN__
+						// Ken: tiny Tooly is back in Free Play, but ONLY when re-using a previous
+						// user name -- a new name is fine. This branch is the original's back-compat
+						// for pre-v30 files and it turns screen-relative sizing OFF, which is exactly
+						// the difference between a saved user and a fresh one. Say so if it fires.
+						printf("[tt] oldver: log_version=%d < 30 -> good_sizes_adjust=FALSE\n",
+						       (int) tt_log_version_number); fflush(stdout);
+#endif
 					};
 					if (tt_log_version_number < 32) {
 						tt_number_shrinkage = .95;
@@ -5137,6 +5145,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_label() {
  * measure clean (dtime=0/dframe=0), so print what the LABEL is built from -- tt_current_log_segment
  * and tt_current_time -- alongside the programmer's actual posture, which is a subclass identity
  * (PROGRAMMER_AT_FLOOR=6 is sitting, ROOM_WALKING=5 is standing). Console: Module._tt_dev_where(). */
+/* Dev hook: the sizing state behind "tiny Tooly with a previous user name". Console:
+ * Module._tt_dev_sizing(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_sizing() {
+	printf("[tt] sizing: log_version=%d good_sizes_adjust=%d number_shrinkage=%f parts_bam=%d\n",
+	       (int) tt_log_version_number,(int) tt_good_sizes_adjust_to_screen_size,
+	       (double) tt_number_shrinkage,(int) tt_parts_change_when_bammed);
+	fflush(stdout);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_where() {
 	printf("[tt] where: seg=%d cur_time=%ld label_s=%ld kind=%d replaying=%d mode=%d floor=%d notfloor=%d drag=%d\n",
 	       (int) tt_current_log_segment,(long) tt_current_time,
