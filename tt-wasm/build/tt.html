@@ -152,6 +152,15 @@
 <!-- Starttt.exe's opening screen. Structure and command strings from the original
      starttt.htm / pickdemo.htm / askname.htm; demo names are this build's own .dmo files. -->
 <div id="launcher" hidden>
+  <!-- Shown in place of the choices once a choice is made, so the opening screen stays up instead
+       of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
+       black and then the second opening screen shows after about 10s"). -->
+  <div class="lpanel" id="lwait" hidden>
+    <h1>Getting ToonTalk ready&hellip;</h1>
+    <p style="text-align:center;color:#b9b9c8;font-size:15px;margin:0">
+      This takes a few seconds. Hang on!
+    </p>
+  </div>
   <div class="lpanel" id="lmain">
     <h1>What do you want to do with ToonTalk?</h1>
     <div class="lcols">
@@ -520,8 +529,25 @@
       if (which === 'name') { user.focus(); user.select(); }
     };
     var finish = function (cmd) {
-      box.hidden = true;
+      // Keep the opening screen up -- swapped to the wait message -- rather than blanking to a
+      // black canvas for the ~10s the notebook takes to load. Dropped on the FIRST RENDERED FRAME
+      // rather than a timer, so it self-corrects however long the load takes. TT_presents is the
+      // signal deliberately: Module.calledRun is never set in this build, so gating on it would
+      // leave this covering a perfectly good engine -- the failure the buildLauncher comment above
+      // records. The timeout is only a backstop against that same outcome.
+      var wait = document.getElementById('lwait');
+      main.hidden = true; name.hidden = true;
+      if (wait) wait.hidden = false;
       stage.style.display = '';
+      var started = window.TT_presents || 0, waited = 0;
+      var poll = setInterval(function () {
+        waited += 100;
+        if ((window.TT_presents || 0) > started || waited >= 45000) {
+          clearInterval(poll);
+          box.hidden = true;
+          if (wait) wait.hidden = true;
+        }
+      }, 100);
       ttNote('launcher: ' + cmd);
       // If the engine is still loading, hold the choice rather than dropping it -- the click must
       // not be silently ignored just because it landed early.
