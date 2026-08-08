@@ -118,6 +118,12 @@
   button.lcard:disabled { cursor: not-allowed; }
   button.lcard:disabled .lbig { filter: grayscale(1) brightness(.6); }
   .ldemo:hover { background: #2f2f44; border-color: #55556e; }
+  /* the picture of whatever was just chosen, shown while it loads */
+  #lloadimg {
+    display: block; height: auto; margin: 0 auto 18px;
+    border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+  }
+  #lloadimg[hidden] { display: none; }
   .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
   .lrow button, #lback {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
@@ -156,7 +162,8 @@
        of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
        black and then the second opening screen shows after about 10s"). -->
   <div class="lpanel" id="lloading" hidden>
-    <h1>Getting ToonTalk ready&hellip;</h1>
+    <h1 id="lloadtitle">Getting ToonTalk ready&hellip;</h1>
+    <img id="lloadimg" alt="" hidden>
     <p style="text-align:center;color:#b9b9c8;font-size:15px;margin:0">
       This takes a few seconds. Hang on!
     </p>
@@ -513,6 +520,46 @@
   // screen sat there saying "loading ToonTalk..." forever on top of a fully loaded Playground.
   // The 60s backstop covers the one case a frame never arrives at all (engine died before drawing);
   // TT_engineFailed clears it immediately when the engine reports the failure itself.
+  // Name and picture the thing being loaded, so the wait screen shows what you just clicked
+  // (Ken: "the message can at least say loading Playground city or notebook as appropriate").
+  // The launcher's own buttons are already in the page, just hidden -- so the demo artwork and
+  // labels are read back off them rather than kept in a second table that could drift out of step.
+  function ttLoadingSubject() {
+    var q = location.search, m;
+    if ((m = /[?&]demo=([A-Za-z0-9_.-]+)/.exec(q))) {
+      var b = document.querySelector('.ldemo[data-demo="' + m[1] + '"]');
+      if (b) {
+        var lbl = (b.querySelector('span') || {}).textContent || '';
+        var grp = b.closest ? b.closest('.lgroup') : null;
+        // All three headings (Basics / Ping Pong Game / Computer Science Examples) live in ONE
+        // .lgroup, so querySelector('h2') would always answer "Basics" -- pongact2_v2 came out as
+        // "Basics — Part 2". Take the last heading that precedes this button instead.
+        var h2 = null;
+        if (grp) {
+          var hs = grp.querySelectorAll('h2');
+          for (var i = 0; i < hs.length; i++) {
+            if (hs[i].compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) h2 = hs[i];
+          }
+        }
+        // "Part 2" alone is meaningless once the list is gone, so it gets its heading: "Ping Pong
+        // Game -- Part 2". Names that already say what they are ("Exploding Houses") do not --
+        // "Basics -- Exploding Houses" is just longer.
+        if (h2 && /^part\b/i.test(lbl)) lbl = h2.textContent.trim() + ' — ' + lbl;
+        var im = b.querySelector('img');
+        return {what: lbl || 'the demo', img: im && im.getAttribute('src'), big: false};
+      }
+      return {what: 'the demo', img: null, big: false};
+    }
+    if ((m = /[?&]user=([^&]+)/.exec(q))) {
+      var u = decodeURIComponent(m[1]);
+      var what = u === 'Playground2001X' ? 'the Playground city'
+               : u === 'PlaygroundBookX' ? 'the Playground notebook'
+               : u + '’s notebook';
+      return {what: what, img: 'launcher/freeplay.jpg', big: true};
+    }
+    if (/[?&]puzzle=/.test(q)) return {what: 'the puzzle game', img: 'launcher/playpzl.jpg', big: true};
+    return {what: null, img: 'launcher/freeplay.jpg', big: true};
+  }
   function ttShowLoadingScreen() {
     var box = document.getElementById('launcher');
     var panel = document.getElementById('lloading');
@@ -520,6 +567,18 @@
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     if (main) main.hidden = true;
     if (name) name.hidden = true;
+    var subj = ttLoadingSubject();
+    var title = document.getElementById('lloadtitle');
+    if (title && subj.what) title.textContent = 'Loading ' + subj.what + '…';
+    var img = document.getElementById('lloadimg');
+    if (img && subj.img) {
+      img.src = subj.img;
+      // The demo thumbnails are 80x60, so they are shown small and unsmoothed rather than
+      // blown up to the size of the big freeplay/playpzl choice pictures and going to mush.
+      img.style.width = subj.big ? 'min(320px, 70vw)' : 'min(176px, 50vw)';
+      img.style.imageRendering = subj.big ? '' : 'pixelated';
+      img.hidden = false;
+    }
     panel.hidden = false;
     box.hidden = false;
     var before = globalThis.TT_presents || 0, waited = 0;
