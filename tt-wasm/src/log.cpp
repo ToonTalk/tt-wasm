@@ -2060,7 +2060,17 @@ boolean open_log(ascii_string log_file_name, output_stream &stream,
 		{ // demo replay: which log path fails to open? (Ken 2026-07-19)
 			static int ol_log = 0;
 			if (ol_log < 8) { ol_log++;
-				printf("[tt] openlog: '%s' ok=%d archive=%s\n", new_log_file_name, (int)opened_ok,
+				// SIZE is the point now (Ken: ?floor=1 time travel replays, a named user does not --
+				// same reader, and the header fields parse fine, so the stream just ends at once).
+				// An open log segment reads 0 bytes on disk because the stream is buffered until
+				// closed, so a segment zipped before it is flushed extracts as a stub and replay
+				// finishes it in one frame. A few hundred bytes here means truncation; a few
+				// thousand means the file is whole and the reader is bailing early instead.
+				long ol_size = -1;
+				{ FILE *f = fopen(new_log_file_name,"rb");
+				  if (f != NULL) { fseek(f,0,SEEK_END); ol_size = ftell(f); fclose(f); } }
+				printf("[tt] openlog: '%s' ok=%d size=%ld archive=%s\n", new_log_file_name,
+				       (int)opened_ok, ol_size,
 				       tt_log_in_archive ? tt_log_in_archive : "(none)"); fflush(stdout);
 			}
 		}
