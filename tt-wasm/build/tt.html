@@ -155,7 +155,7 @@
   <!-- Shown in place of the choices once a choice is made, so the opening screen stays up instead
        of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
        black and then the second opening screen shows after about 10s"). -->
-  <div class="lpanel" id="lwait" hidden>
+  <div class="lpanel" id="lloading" hidden>
     <h1>Getting ToonTalk ready&hellip;</h1>
     <p style="text-align:center;color:#b9b9c8;font-size:15px;margin:0">
       This takes a few seconds. Hang on!
@@ -305,6 +305,8 @@
   // to be a black canvas with the status line still saying "engine running".
   window.TT_engineFailed = function (reason, reason2) {
     var msg = [reason, reason2].filter(Boolean).join(' ').trim() || 'ToonTalk stopped.';
+    // Otherwise the "Getting ToonTalk ready..." screen hides the reason it will never be ready.
+    if (window.TT_hideLoadingScreen) window.TT_hideLoadingScreen();
     statusEl.style.color = '#ff8a8a';
     statusEl.textContent = 'ToonTalk stopped: ' + msg;
     ttNote('engine failed: ' + msg);
@@ -500,6 +502,37 @@
     if (wait) wait.hidden = true;
     if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
   };
+  // When the page already knows what to run, buildLauncher below shows nothing -- which left the
+  // user staring at a black canvas for the whole load (Ken: "I still see a black screen while
+  // playground city is loading"; that city walks in ~12s since the GetFocus fix). Keep the opening
+  // screen up with a wait message instead of cutting to black.
+  //
+  // Taken down on the FIRST PRESENTED FRAME, not a timer: that is the exact moment there is real
+  // artwork to show, it self-corrects as loads get faster or slower, and it cannot leave the
+  // overlay stranded over a running engine -- which is precisely what went wrong before, when this
+  // screen sat there saying "loading ToonTalk..." forever on top of a fully loaded Playground.
+  // The 60s backstop covers the one case a frame never arrives at all (engine died before drawing);
+  // TT_engineFailed clears it immediately when the engine reports the failure itself.
+  function ttShowLoadingScreen() {
+    var box = document.getElementById('launcher');
+    var panel = document.getElementById('lloading');
+    if (!box || !panel) return;
+    var main = document.getElementById('lmain'), name = document.getElementById('lname');
+    if (main) main.hidden = true;
+    if (name) name.hidden = true;
+    panel.hidden = false;
+    box.hidden = false;
+    var before = globalThis.TT_presents || 0, waited = 0;
+    var timer = setInterval(function () {
+      waited += 100;
+      if ((globalThis.TT_presents || 0) > before || waited >= 60000) {
+        clearInterval(timer);
+        box.hidden = true;
+        if (waited >= 60000) ttNote('loading screen: no frame after 60s -- removed anyway');
+      }
+    }, 100);
+    window.TT_hideLoadingScreen = function () { clearInterval(timer); box.hidden = true; };
+  }
   (function buildLauncher() {
     // Only when the page does NOT already know what to run. pre.js's gateOnLauncher skips
     // ?demo=/?puzzle=/?user=/?launcher=0 and therefore never calls TT_showLauncher for them --
@@ -509,7 +542,7 @@
     // ?floor=1 which goes straight to the bootstrap floor.
     if (/[?&](demo|puzzle|user)=/.test(location.search) ||
         /[?&]launcher=0/.test(location.search) ||
-        /[?&]floor=1/.test(location.search)) return;
+        /[?&]floor=1/.test(location.search)) { ttShowLoadingScreen(); return; }
     var box = document.getElementById('launcher');
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     var stage = document.getElementById('stage');
