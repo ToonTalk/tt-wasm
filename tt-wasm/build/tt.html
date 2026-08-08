@@ -118,12 +118,25 @@
   button.lcard:disabled { cursor: not-allowed; }
   button.lcard:disabled .lbig { filter: grayscale(1) brightness(.6); }
   .ldemo:hover { background: #2f2f44; border-color: #55556e; }
-  /* the picture of whatever was just chosen, shown while it loads */
-  #lloadimg {
-    display: block; height: auto; margin: 0 auto 18px;
-    border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+  /* The original's own opening screen (pics/opening.bmp), shown while ToonTalk loads. The two
+     text blocks are the lines the engine draws over it -- resource strings 1653 + 929 at the top
+     and 5544 bottom-left -- positioned and sized as fractions of the 640x480 art so they stay put
+     when it scales. The engine draws this same screen once it is running, so the handover is
+     invisible rather than a cut. */
+  #lsplash { position: relative; width: min(640px, 92vw); margin: 0 auto; line-height: 1.2; }
+  #lsplash img {
+    display: block; width: 100%; height: auto; border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
   }
-  #lloadimg[hidden] { display: none; }
+  #lsplashtop {
+    position: absolute; left: 0; right: 0; top: 1.2%;
+    text-align: center; color: #000; font-weight: 700;
+    font-size: clamp(11px, 3.35vw, 22px);
+  }
+  #lsplashwait {
+    position: absolute; left: 1%; bottom: 1%;
+    color: #000; font-size: clamp(9px, 1.9vw, 13px);
+  }
   .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
   .lrow button, #lback {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
@@ -162,11 +175,11 @@
        of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
        black and then the second opening screen shows after about 10s"). -->
   <div class="lpanel" id="lloading" hidden>
-    <h1 id="lloadtitle">Getting ToonTalk ready&hellip;</h1>
-    <img id="lloadimg" alt="" hidden>
-    <p style="text-align:center;color:#b9b9c8;font-size:15px;margin:0">
-      This takes a few seconds. Hang on!
-    </p>
+    <div id="lsplash">
+      <img src="launcher/opening.png" alt="ToonTalk — Marty's Animated Programming World">
+      <div id="lsplashtop">ToonTalk 3 (version 3.191)<br>(c) 1992-2007. Ken Kahn. All rights reserved.</div>
+      <div id="lsplashwait">Loading, please wait.</div>
+    </div>
   </div>
   <div class="lpanel" id="lmain">
     <h1>What do you want to do with ToonTalk?</h1>
@@ -545,20 +558,18 @@
         // Game -- Part 2". Names that already say what they are ("Exploding Houses") do not --
         // "Basics -- Exploding Houses" is just longer.
         if (h2 && /^part\b/i.test(lbl)) lbl = h2.textContent.trim() + ' — ' + lbl;
-        var im = b.querySelector('img');
-        return {what: lbl || 'the demo', img: im && im.getAttribute('src'), big: false};
+        return {what: lbl || 'the demo'};
       }
-      return {what: 'the demo', img: null, big: false};
+      return {what: 'the demo'};
     }
     if ((m = /[?&]user=([^&]+)/.exec(q))) {
       var u = decodeURIComponent(m[1]);
-      var what = u === 'Playground2001X' ? 'the Playground city'
-               : u === 'PlaygroundBookX' ? 'the Playground notebook'
-               : u + '’s notebook';
-      return {what: what, img: 'launcher/freeplay.jpg', big: true};
+      return {what: u === 'Playground2001X' ? 'the Playground city'
+                  : u === 'PlaygroundBookX' ? 'the Playground notebook'
+                  : u + '’s notebook'};
     }
-    if (/[?&]puzzle=/.test(q)) return {what: 'the puzzle game', img: 'launcher/playpzl.jpg', big: true};
-    return {what: null, img: 'launcher/freeplay.jpg', big: true};
+    if (/[?&]puzzle=/.test(q)) return {what: 'the puzzle game'};
+    return {what: null};   // nothing specific to say -- the plain "Loading, please wait." stands
   }
   function ttShowLoadingScreen() {
     var box = document.getElementById('launcher');
@@ -567,18 +578,11 @@
     var main = document.getElementById('lmain'), name = document.getElementById('lname');
     if (main) main.hidden = true;
     if (name) name.hidden = true;
+    // Name what is loading inside the original's own wait line rather than adding a second
+    // message beside it: "Loading the Playground city, please wait."
     var subj = ttLoadingSubject();
-    var title = document.getElementById('lloadtitle');
-    if (title && subj.what) title.textContent = 'Loading ' + subj.what + '…';
-    var img = document.getElementById('lloadimg');
-    if (img && subj.img) {
-      img.src = subj.img;
-      // The demo thumbnails are 80x60, so they are shown small and unsmoothed rather than
-      // blown up to the size of the big freeplay/playpzl choice pictures and going to mush.
-      img.style.width = subj.big ? 'min(320px, 70vw)' : 'min(176px, 50vw)';
-      img.style.imageRendering = subj.big ? '' : 'pixelated';
-      img.hidden = false;
-    }
+    var wait = document.getElementById('lsplashwait');
+    if (wait && subj.what) wait.textContent = 'Loading ' + subj.what + ', please wait.';
     panel.hidden = false;
     box.hidden = false;
     var before = globalThis.TT_presents || 0, waited = 0;
