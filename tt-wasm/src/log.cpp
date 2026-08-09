@@ -5174,6 +5174,24 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_where() {
 	fflush(stdout);
 };
 
+/* Dev hook: jump straight to a recorded segment, WITHOUT the time-travel buttons. The buttons are
+ * only built once time travel is entered in-world, which cannot be driven from JS -- that is what
+ * has blocked reproducing Ken's "jumps a checkpoint then stops" here. The buttons are only chrome;
+ * jump_to_log_segment is the actual work, and reaching it is what makes the noqueue/cyclestop
+ * probes fire. tt_time_travel must not be OFF or the reason=7 guard in Main.cpp is skipped, so set
+ * it first. Console: Module._tt_dev_jump(1). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_jump(int segment) {
+	printf("[tt] devjump: -> segment %d (from %d, oldest=%d youngest=%d tt_state=%d)\n",
+	       segment,(int) tt_current_log_segment,(int) tt_oldest_log_segment,
+	       (int) tt_youngest_log_segment,(int) tt_time_travel);
+	fflush(stdout);
+	if (tt_time_travel == TIME_TRAVEL_OFF) tt_time_travel = TIME_TRAVEL_ON;
+	boolean ok = jump_to_log_segment(segment);
+	printf("[tt] devjump: returned %d -- now segment %d time=%ld\n",(int) ok,
+	       (int) tt_current_log_segment,(long) tt_current_time);
+	fflush(stdout);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_travel_button(int n) {
 	printf("[tt] ttdev: button %d -- current=%d oldest=%d youngest=%d buttons=%p hidden=%d\n",n,
 	       (int) tt_current_log_segment,(int) tt_oldest_log_segment,(int) tt_youngest_log_segment,
