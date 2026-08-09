@@ -1586,6 +1586,21 @@ boolean one_tt_cycle() {
 			if (replaying()) { // && tt_log_version_number >= 38) { // new on 280204
 				unsigned short int events_counter_in;
 				replay_events_counter(events_counter_in);
+#ifdef __EMSCRIPTEN__
+				// Which of the two operands sent us down this branch? The recording says this
+				// cycle had events but there is no queue to run them, and "no queue" is either
+				// tt_queue == NULL (never created) or the city being stopped (paused during the
+				// jump). Different faults, different fixes -- reason=7 alone cannot tell them
+				// apart (Ken: time travel jumps a checkpoint then stops).
+				{ static int q = 0;
+				  if (q < 10 && events_counter_in != 0) { q++;
+					printf("[tt] noqueue: events=%d tt_queue=%s city=%s stopped=%d seg=%d frame=%ld\n",
+					       (int) events_counter_in,(tt_queue == NULL) ? "NULL" : "ok",
+					       (tt_city == NULL) ? "NULL" : "ok",
+					       (tt_city == NULL) ? -1 : (int) tt_city->stopped(),
+					       (int) tt_current_log_segment,(long) tt_frame_number);
+					fflush(stdout); } }
+#endif
 				if (events_counter_in != 0) {
 					log(S(IDS_LOG_REPLAY_ERROR),FALSE,!tt_run_demos_despite_anomalies); // last arg was TRUE prior to 311204
 					// error message below new on 291204
