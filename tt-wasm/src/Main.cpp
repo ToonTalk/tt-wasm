@@ -1210,6 +1210,18 @@ boolean one_tt_cycle() {
 								 << "=" << relative_toontalk_time << " ToonTalk time." << endl;
 		};
 #endif
+#ifdef __EMSCRIPTEN__
+		{ // Pacing visibility: in-app replay diverged (persona at the door before it opened)
+		  // because these two clocks started from different regimes and the sleep below never
+		  // fired -- playback free-ran. Print the decision for the first frames of any replay.
+		  static int pace_log = 0;
+		  if (pace_log < 10) { pace_log++;
+			printf("[tt] pace: real=%ld tt=%ld (real_end=%ld ct_end=%ld) %s\n",
+			       (long) relative_real_time,(long) relative_toontalk_time,
+			       (long) tt_real_time_pause_ended,(long) tt_current_time_pause_ended,
+			       relative_real_time < relative_toontalk_time ? "SLEEP" : "run");
+			fflush(stdout); } }
+#endif
 		if (relative_real_time < relative_toontalk_time) {
 			// don't sleep more than 100ms on any one cycle even if running ahead of schedule
 			sleep(min(100,relative_toontalk_time-relative_real_time));
@@ -1734,6 +1746,20 @@ boolean one_tt_cycle() {
 	if (tt_replay == REPLAY_REPRODUCE_TIMING_ON_NEXT_FRAME) {
 		set_replay(REPLAY_REPRODUCE_TIMING);
 		tt_frame_number--; // so when debugging the frame numbers "line up"
+#ifdef __EMSCRIPTEN__
+		// Restart the pacing epochs whenever deferred replay timing actually begins. The in-app
+		// flow [enter time travel -> jump -> play] skipped every existing reset: entering set
+		// tt_real_time_pause_began, but jump_to_log_segment clears it (log.cpp "since again not
+		// recording that was paused"), so the unpause branch above never fired, and time_travel()
+		// skips ITS reset when the mode is already ON_NEXT_FRAME. With a stale epoch,
+		// relative_toontalk_time went negative and the sleep-based pacing never engaged --
+		// playback free-ran at requestAnimationFrame speed. On 2007 hardware a native cycle
+		// took roughly one recorded delta anyway, which is why the original got away with it;
+		// in the browser the unpaced replay outruns every real-time-driven behavior (the door's
+		// opening cycle), which is Ken's persona reaching the door before it opens.
+		tt_real_time_pause_ended = timeGetTime();
+		tt_current_time_pause_ended = tt_current_time;
+#endif
 	};
 	tt_stop_all_pictures = FALSE; //  new on 161004 -- since already tried to move this cycle
 #ifdef __EMSCRIPTEN__
