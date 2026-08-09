@@ -2439,12 +2439,39 @@ boolean Notebook::handle_xml_tag(Tag tag, xml_node *node) {
 			};
 			XMLPage *page = new XMLPage(xml_node_to_element(element));
 			set_page_internal(page_number,page); // prior to 190703 this did a very dangerous coercion
+#ifdef __EMSCRIPTEN__
+			// Second half of the time-travel desync fix (the dump-side PageInstantiated change was
+			// not enough -- Ken's v4 recording still desynced). Both branches below instantiate the
+			// page contents DURING LOAD, and the freshly built sprites never learn they are inside a
+			// notebook: measured clipremote[0] kind=15 active=1 in_notebook=0 right after the
+			// snapshot restore, which makes the clipboard sensor live on replay and consume one
+			// token byte per frame that the recorder (whose sensor sat shelved in the notebook,
+			// in_notebook=1 from the eager default-page build) never wrote. Shelve the contents
+			// after instantiation, exactly like the live build; the notebook's display path
+			// un-shelves whichever page is actually open (set_in_notebook(NULL) "so sensors work
+			// while open in the notebook"). Original-made demos are unaffected: replaying ?demo=1
+			// shows their notebooks never activate a clipboard remote at load at all.
+			if (xml_has_attribute(element,L"GUID")) {
+				page->contents()->increment_ref_count();
+				if (page->contents() != NULL) page->contents()->set_in_notebook(this);
+			} else if (xml_get_attribute_int(element,L"PageInstantiated",0)) {
+				if (page->contents() != NULL) page->contents()->set_in_notebook(this);
+			};
+			{ static int pl_log = 0;
+			  if (pl_log < 30) { pl_log++;
+				printf("[tt] pageload: n=%d guid=%d inst_attr=%d instantiated=%d (frame=%ld)\n",page_number,
+				       (int) xml_has_attribute(element,L"GUID"),
+				       (int) xml_get_attribute_int(element,L"PageInstantiated",0),
+				       (int) page->instantiated(),(long) tt_frame_number);
+				fflush(stdout); } }
+#else
 			if (xml_has_attribute(element,L"GUID")) { // someone is pointing to this page (e.g. current selection) -- new on 250803
 				page->contents()->increment_ref_count(); // this will cause the sprite to be computed and "protected" - hope this is right
 			} else if (xml_get_attribute_int(element,L"PageInstantiated",0)) { // new on 170105
 				// put on else branch on 240105 since no need to check if already did it above
 				page->contents(); // so it is active if a sensor same during replay
 			};
+#endif
 			// following new with ALPHA_FEATURE (271003)
 			// replaced the node arg with element on 240105 for the following 2 calls
 			page->set_media_file_names(xml_get_attribute_string(element,L"Media",NULL)); // node was element prior to 270204
@@ -2579,6 +2606,11 @@ Sprite *Notebook::page_sprite(int page_number, boolean expand_if_notebook_define
 };         
 
 void Notebook::set_page_internal(int page_number, Page *page) { // updated 201020 was Sprite *sprite
+#ifdef __EMSCRIPTEN__
+	// port-only: give the page a backpointer so XMLPage::contents() can shelve the sprites it
+	// mints (see the desync fix there -- they were born active with in_notebook=0)
+	if (page != NULL) page->set_owner_notebook(this);
+#endif
    // 1-indexing
    if (page_number > pages_count) { // prior to 280103 was >= but expand_pages returns immediately if they are equal
       expand_pages(page_number);
@@ -6091,11 +6123,31 @@ XMLPage::~XMLPage() {
 Sprite *XMLPage::contents() {
    if (sprite == NULL) {
       sprite = xml_load_sprite(XML,tag_token(XML));
+#ifdef __EMSCRIPTEN__
+		{ static int xp_log = 0;
+		  if (xp_log < 30) { xp_log++;
+			printf("[tt] xmlpage: instantiated sprite=%p kind=%d (frame=%ld)\n",(void*) sprite,
+			       sprite != NULL ? (int) sprite->kind_of() : -1,(long) tt_frame_number);
+			fflush(stdout); } }
+#endif
 		set_sprites_to_active_now(); // new on 080403 since otherwise pages are inactive
 		if (sprite != NULL) {
-			sprite->update_display(UPDATE_TO_FIT_ON_PAGE); // new on 071004 to fix bug with sizes of robots (and others with parts outside) 
+			sprite->update_display(UPDATE_TO_FIT_ON_PAGE); // new on 071004 to fix bug with sizes of robots (and others with parts outside)
 			// if city saved in a different resolution
 		};
+#ifdef __EMSCRIPTEN__
+		// THE time-travel desync fix, final link. Sprites minted here were born active with
+		// in_notebook=0 (measured: clipremote kind=15 active=1 in_notebook=0 right after a
+		// snapshot restore), so a restored Sensors notebook had a LIVE clipboard sensor that
+		// read one clipboard-token byte per frame from a recording whose writer -- the port's
+		// eagerly built, shelved default notebook -- never wrote any. Shelve the fresh sprite in
+		// its owning notebook, making the restored state match the live state. Taking a sensor
+		// out of the notebook still activates it (real set_in_notebook(NULL) on removal), and
+		// original v54 demos never activate notebook sensors at all (measured on ?demo=1).
+		if (sprite != NULL && owner_notebook != NULL) {
+			sprite->set_in_notebook(owner_notebook);
+		};
+#endif
    }; // what if error and sprite is NULL? Caller should be prepared
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 270804) {

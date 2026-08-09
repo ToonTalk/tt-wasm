@@ -422,6 +422,12 @@ class Page { // new on 181002 since performance hit of having every page be a Sp
 		virtual boolean instantiated() { // new on 170105
 			return(TRUE); // by default
 		};
+#ifdef __EMSCRIPTEN__
+		virtual void set_owner_notebook(Notebook *notebook) {
+			// port-only: lets XMLPage shelve lazily instantiated contents in its notebook
+			// (base pages already track membership through their real sprites)
+		};
+#endif
 //		virtual xml_element *xml_create_and_append_element(xml_element *parent, xml_document *document) = 0; // new on 220203
 //    virtual void xml(xml_element *element, xml_document *document) = 0;
 #endif
@@ -497,9 +503,18 @@ class XMLPage : public Page { // holds the XML encoding and perhaps also the spr
 		boolean instantiated() { // new on 170105
 			return(sprite != NULL);
 		};
+#ifdef __EMSCRIPTEN__
+		void set_owner_notebook(Notebook *notebook) {
+			owner_notebook = notebook;
+		};
+#endif
    protected:
       Sprite *sprite;
       xml_element *XML;
+#ifdef __EMSCRIPTEN__
+		Notebook *owner_notebook = NULL; // port-only: the notebook this page belongs to, so
+		                                 // contents() can shelve freshly minted sprites
+#endif
 //		flag xml_generated_this_session; 
 		// new on 210703 - much simpler than the following and almost as good (except when saving with media) -- made obsolete on 200903
 //		string media_files; // new on 210703 - list (space separated) of short media file names used on this page

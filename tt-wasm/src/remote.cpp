@@ -381,6 +381,15 @@ void Remote::update_globals() {
 			if (now_active != last_active) { last_active = now_active;
 				printf("[tt] clipactive: %d (frame=%ld replaying=%d logging=%d)\n",now_active,
 				       (long) tt_frame_number,(int) replaying(),(int) tt_logging);
+				// v4 shows the sensor STILL activates after the snapshot restore even with the
+				// PageInstantiated dump fix -- some other load path creates it out-of-notebook.
+				// Print every registered clipboard remote's flags to identify WHICH sprite it is.
+				{ Sprites *r = remotes_for(identifier); int i = 0;
+				  while (r != NULL) { Sprite *s = r->first();
+					printf("[tt] clipremote[%d]: %p kind=%d active=%d in_notebook=%d ok=%d\n",
+					       i,(void*) s,(int) s->kind_of(),(int) s->active(),
+					       (int) s->in_notebook(),(int) s->ok_to_activate());
+					i++; r = r->rest(); } }
 				fflush(stdout); }
 		}
 #endif

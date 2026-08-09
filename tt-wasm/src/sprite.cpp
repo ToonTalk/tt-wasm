@@ -9479,8 +9479,17 @@ void Sprite::restore_floor_priority() {
 
 void Sprite::set_in_notebook(Notebook *notebook, boolean recur) {
    // prior to 210802 took a flag rather than the notebook itself
-//   if (in_notebook_flag == new_flag) return; // new on 170702 to ignore calls that already know about 
+//   if (in_notebook_flag == new_flag) return; // new on 170702 to ignore calls that already know about
 	// commented out on 190702 since might not have been called with recur flag earlier
+#ifdef __EMSCRIPTEN__
+	// Desync hunt: trace every in_notebook transition on remotes (kind 15) to find who leaves
+	// the restored clipboard sensor out-of-notebook (or un-shelves it after the load).
+	{ static int sin_log = 0;
+	  if (sin_log < 40 && ((int) kind_of()) == 15) { sin_log++;
+		printf("[tt] setinbook: %p %d -> %d (frame=%ld)\n",(void*) this,
+		       (int) in_notebook_flag,(int) (notebook != NULL),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
    in_notebook_flag = (notebook != NULL);
 #if TT_DEBUG_ON
 	if (tt_debug_target == debug_counter) {
