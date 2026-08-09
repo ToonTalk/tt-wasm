@@ -4281,6 +4281,17 @@ void time_travel(TimeTravelState state) {
 		set_rerecorded_segment(tt_current_log_segment);
 	};
 	tt_mouse_acquired = (tt_time_travel == TIME_TRAVEL_OFF);
+#ifdef __EMSCRIPTEN__
+	// The line above is the original's spec for the mouse during time travel: RELEASED, with the
+	// OS cursor shown, for the whole session (Ken asked "how did it used to work?" -- like this).
+	// The port's windowed pointer-capture ignored tt_mouse_acquired, so a paused session kept the
+	// cursor trapped in the canvas and the "Save this session" button could never be reached.
+	// Publish the state and drop the capture; pre.js declines to re-take it while active.
+	EM_ASM({
+		globalThis.TT_timeTravelActive = ($0 !== 0);
+		if ($0 && document.pointerLockElement) document.exitPointerLock();
+	}, (int) (tt_time_travel != TIME_TRAVEL_OFF));
+#endif
 	if (pointing_cursor == NULL) { // condition new 290404
 		show_cursor(tt_time_travel != TIME_TRAVEL_OFF
 #if TT_ALPHA_FEATURE

@@ -309,6 +309,13 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // reports failure only through the document's pointerlockerror event, so a version that hung
   // its logging off the return value reported nothing at all.
   var takeLock = function () {
+    // The original RELEASES the mouse for the whole of time travel (log.cpp time_travel():
+    // tt_mouse_acquired = (tt_time_travel == TIME_TRAVEL_OFF), OS cursor shown) so the cursor
+    // could reach anything. Mirror that: while time travel is active, never take the capture --
+    // otherwise a paused session traps the cursor in the canvas and the "Save this session"
+    // button below it is unreachable (Ken). time_travel() publishes the flag and also drops any
+    // capture already held when time travel starts.
+    if (globalThis.TT_timeTravelActive) return;
     if (!wantLock() || !c.requestPointerLock) return;
     try {
       var p = c.requestPointerLock({ unadjustedMovement: false });
