@@ -4223,6 +4223,19 @@ void time_travel(TimeTravelState state) {
 	if (tt_time_travel == TIME_TRAVEL_ON && log_in == NULL) { // new on 220903 - e.g. hit pause and then play while running/recording
 		tt_time_travel = TIME_TRAVEL_RECORD;
 	};
+#ifdef __EMSCRIPTEN__
+	// Every transition, because time travel can switch ITSELF off here: asking for ON while
+	// log_in == NULL becomes RECORD and then OFF below. If that fires after a successful jump it
+	// looks exactly like Ken's "jumps to the checkpoint, then no replay". Watch for a line whose
+	// asked= and got= differ. 0=OFF 1=PAUSED 2=JUST_PAUSED 3=ON 4=RECORD 5=ABOUT_TO_START.
+	{ static int tv = 0;
+	  if (tv < 24) { tv++;
+		printf("[tt] ttstate: %d -> asked=%d got=%d log_in=%s seg=%d frame=%ld\n",
+		       (int) previous_state,(int) state,(int) tt_time_travel,
+		       (log_in == NULL) ? "NULL" : "open",
+		       (int) tt_current_log_segment,(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	boolean begin_recording = (tt_time_travel == TIME_TRAVEL_RECORD); // new on 180703
 	if (begin_recording) {
 #if TT_ALPHA_FEATURE
