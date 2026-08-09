@@ -6154,6 +6154,32 @@ xml_element *XMLPage::top_level_xml(xml_document *document, xml_element *parent,
 		debug_ref_count(ref_count,XML_copy);
 #endif
 		xml_append_child(XML_copy,parent);
+#ifdef __EMSCRIPTEN__
+		// ROOT CAUSE of the time-travel "jumps a checkpoint, no replay" desync. The loader treats
+		// PageInstantiated as "make this page's sensors LIVE during replay" (handle_xml_tag:
+		// page->contents() "so it is active if a sensor same during replay"), and an active
+		// clipboard sensor reads a token byte from the log EVERY frame (winmain clipboard_text).
+		// In the original, contents were instantiated lazily -- the object existed only if the
+		// user had opened the page -- so "instantiated" meant "was live", and record/replay wrote
+		// and read the token in lockstep. The port builds the default notebook pages EAGERLY at
+		// startup, so sprite != NULL is always true, every recording stamps the Sensors page as
+		// instantiated, and every replay activates a clipboard sensor the recording had shelved
+		// in the notebook: the reader consumes one token byte per frame that the writer never
+		// wrote, drifts, misreads the event counter as garbage<<8, and reason=7 abandons the
+		// segment. Measured end to end in Ken's tester30 session: writer frames 6 bytes with no
+		// tokens (clipactive: 0 while recording), reader consuming 7 with rd/cliptoken at the
+		// slip position (clipactive: 1 on replay). Dump the attribute only when the page was
+		// genuinely live, which restores the original's record/replay parity for port recordings
+		// and leaves original-made demos untouched (their attributes were written by the
+		// original itself).
+		if (sprite != NULL && sprite->ok_to_activate()) {
+			xml_set_attribute(parent,L"PageInstantiated",1);
+		};
+	};
+		if (sprite != NULL && sprite->ok_to_activate() && !dumping_an_individual()) {
+			xml_set_attribute(XML_copy,L"PageInstantiated",1);
+		};
+#else
 		if (sprite != NULL) {
 			xml_set_attribute(parent,L"PageInstantiated",1); // new on 170105 for demos and time travel (since random and clipboard sensor might act differently otherwise)
 		};
@@ -6161,6 +6187,7 @@ xml_element *XMLPage::top_level_xml(xml_document *document, xml_element *parent,
 		if (sprite != NULL && !dumping_an_individual()) { // rewritten on 240105 -- added individual test on 240105 since wasteful otherwise
 			xml_set_attribute(XML_copy,L"PageInstantiated",1); // new on 170105 for demos and time travel (since random and clipboard sensor might act differently otherwise)
 		};
+#endif
 	// following new with ALPHA_FEATURE (271003)
 	if (media_file_names != NULL) { // commented out && tt_saving_media on 280204 
 		// since need to maintain these lists in any case - e.g. notebook within notebook

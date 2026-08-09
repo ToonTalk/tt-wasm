@@ -398,7 +398,14 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   var hadLock = false;
   document.addEventListener('pointerlockchange', function () {
     var locked = (document.pointerLockElement === c);
-    if (hadLock && !locked && !document.fullscreenElement) {
+    if (hadLock && !locked && !document.fullscreenElement &&
+        // ...but NOT when the lock was released DELIBERATELY: time_travel() drops it so the
+        // cursor can reach the page (the original releases the mouse for all of time travel),
+        // and the paused chooser drops it so its buttons are clickable. Forwarding the synthetic
+        // Esc in those cases fed the engine a key the user never pressed -- pressing Pause built
+        // the time-travel panel and this instantly buried it under the "ToonTalk has been
+        // stopped" chooser (Ken: "it is no longer clear how to get the time travel interface").
+        !globalThis.TT_timeTravelActive && !globalThis.TT_pauseOverlay) {
       post(0x0100, 27, 0);        // WM_KEYDOWN VK_ESCAPE
       post(0x0102, 27, 0);        // WM_CHAR, for the engine paths that read characters
       showLockHint(true);

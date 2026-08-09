@@ -2697,6 +2697,12 @@ millisecond replay_clock(boolean accumulate) {
 		throw(END_OF_LOG_FILE);
 	};
 	short unsigned int short_millisecond_delta;
+#ifdef __EMSCRIPTEN__
+	{ static int rc = 0;
+	  if (rc < 8) { rc++;
+		printf("[tt] rd/clock: at %ld (frame=%ld)\n",(long) log_in->tellg(),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	log_in->read((string) &short_millisecond_delta,sizeof(short_millisecond_delta));
 #if TT_DEBUG_ON
 	if (short_millisecond_delta == 0) {
@@ -3292,6 +3298,12 @@ boolean replay_user(boolean &event,
   //  event = (boolean) log_in->get();
 //  if (tt_titles_ended_on_frame <= tt_frame_number || tt_log_version_number < 39) { 
 		// condition new on 230304 since now no events are recorded during titles
+#ifdef __EMSCRIPTEN__
+	{ static int ru = 0;
+	  if (ru < 8) { ru++;
+		printf("[tt] rd/user: at %ld (frame=%ld)\n",(long) log_in->tellg(),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	  event = interpret_event_flags(log_in->get()); // rewritten on 220402 to have additional flags
   //} else {
 	 // event = 0; // new on 230304
@@ -3699,6 +3711,16 @@ ClipboardTokens replay_clipboard_token() {
 #endif
 		return(NO_CLIPBOARD_CHANGE); // throw(END_OF_LOG_FILE);
 	};
+#ifdef __EMSCRIPTEN__
+	// Suspected owner of the one-byte-per-frame desync: replay reads this token whenever the
+	// clipboard is queried, but Ken's recording contains no token bytes at all (writer frames are
+	// exactly delta+special+flag+counter). If this prints at offset 958 on frame 55, it is the
+	// mystery byte.
+	{ static int ct = 0;
+	  if (ct < 8) { ct++;
+		printf("[tt] rd/cliptoken: at %ld (frame=%ld)\n",(long) log_in->tellg(),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	ClipboardTokens token = (ClipboardTokens) log_in->get();
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 101 || tt_debug_mode == 110100 || tt_debug_mode == 160299 || tt_debug_mode == 40803) {
@@ -3819,6 +3841,12 @@ void record_special_events() {
 };
 
 void replay_special_events() {
+#ifdef __EMSCRIPTEN__
+	{ static int rs = 0;
+	  if (rs < 8) { rs++;
+		printf("[tt] rd/special: at %ld (frame=%ld)\n",(long) log_in->tellg(),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	unsigned char events = log_in->get();
 #ifdef __EMSCRIPTEN__
 	// Is the port writing special-event records the original would not have? bit0 =

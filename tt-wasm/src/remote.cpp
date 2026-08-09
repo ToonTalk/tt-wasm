@@ -369,6 +369,21 @@ void Remote::update_globals() {
 	for (int i = MOUSE_LEFT_BUTTON_REMOTE; i <= TEXT_TO_SPEECH_REMOTE; i++) {
       RemoteIdentifier identifier = (RemoteIdentifier) i;
       // no need to include the decoration remotes since they are the only way to change things
+#ifdef __EMSCRIPTEN__
+		// The one-byte-per-frame time travel desync: the CLIPBOARD_REMOTE case below queries the
+		// clipboard, which reads a token byte on replay and writes one when recording -- so the
+		// stream only stays aligned if this gate answers the SAME on both sides. Ken's recording
+		// has no tokens (inactive while recording) yet replay reads one per frame (active after
+		// the snapshot city is restored). Log the gate's transitions to see the divergence.
+		if (identifier == CLIPBOARD_REMOTE) {
+			static int last_active = -1;
+			int now_active = (int) any_active(remotes_for(identifier));
+			if (now_active != last_active) { last_active = now_active;
+				printf("[tt] clipactive: %d (frame=%ld replaying=%d logging=%d)\n",now_active,
+				       (long) tt_frame_number,(int) replaying(),(int) tt_logging);
+				fflush(stdout); }
+		}
+#endif
 		if (any_active(remotes_for(identifier))) {
 			switch (identifier) {
 				case MOUSE_LEFT_BUTTON_REMOTE: 
