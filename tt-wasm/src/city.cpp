@@ -262,10 +262,23 @@ boolean City::update_display(TTRegion *new_view_region) {
 
 boolean City::display_region() {
 #ifdef __EMSCRIPTEN__
-   { static int n = 0; if (n < 5) { n++;
-     printf("[tt] City::display_region view=[%ld,%ld .. %ld,%ld] houses=%d\n",
-       (long)view_region.min_x, (long)view_region.min_y, (long)view_region.max_x, (long)view_region.max_y,
-       (int)current_house_counter()); fflush(stdout); } }
+   /* Ken: after jumping to the beginning the city looks like bare grass -- no streets, no houses --
+    * though segpos shows the programmer restored to exactly the fresh-boot position. Print the
+    * region whenever it CHANGES (not just the first few frames) so a jump's region can be compared
+    * against the fresh boot's. */
+   { static int n = 0;
+     static city_coordinate last[4] = {1,1,1,1};
+     /* Flying changes the region every frame, so print only DISCONTINUITIES -- a jump moves it by
+      * hundreds of thousands, an ordinary descent by a few thousand. Keeps the console readable
+      * while still showing whether a time-travel jump reframed the camera. */
+     city_coordinate jumped_by = view_region.min_x-last[0];
+     if (jumped_by < 0) jumped_by = -jumped_by;
+     if (n < 20 && jumped_by > 50000) { n++;
+       last[0] = view_region.min_x; last[1] = view_region.min_y;
+       last[2] = view_region.max_x; last[3] = view_region.max_y;
+       printf("[tt] City::display_region view=[%ld,%ld .. %ld,%ld] houses=%d (frame=%ld)\n",
+         (long)view_region.min_x, (long)view_region.min_y, (long)view_region.max_x, (long)view_region.max_y,
+         (int)current_house_counter(), (long) tt_frame_number); fflush(stdout); } }
 #endif
    draw_streets();
    all_blocks.display(&view_region);

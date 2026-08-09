@@ -2859,12 +2859,26 @@ boolean jump_to_log_segment(int version_number, boolean possibly_successive) {
 		boolean jumped = close_input_log(TRUE,TRUE,version_number,possibly_successive);
 		printf("[tt] jumpseg: close_input_log(ver=%d) -> %d  cur_seg=%d\n",
 		       version_number,(int) jumped,(int) tt_current_log_segment); fflush(stdout);
-		if (jumped && tt_screen != NULL) {
+		// NOT "if (jumped)": close_input_log returns 0 on the successful jump (the console shows
+		// "close_input_log(ver=1) -> 0" on every good jump), so the guard this block used to carry
+		// meant it never ran at all. Recomposing is harmless when the jump failed, so do it either
+		// way rather than depend on an inverted-looking contract.
+		if (tt_screen != NULL) {
 			// Ken: jumping to the beginning in-app showed partially rendered houses (a fresh
 			// ?demo= boot of the same archive paints them all). The restore draws over a live
 			// screen whose dirty band only covers what the restore itself touched; force a full
 			// repaint of the restored world.
 			tt_screen->screen_dirty();
+			// ...and RECOMPOSE, not just repaint. Ken: "It doesn't look like the beginning" -- the
+			// jump landed on bare grass with no streets or houses. Measured: segpos restores the
+			// programmer to exactly the fresh-boot position, but City's view_region never changes
+			// across the jump, so the blocks are culled against the pre-jump camera window. While
+			// TIME_TRAVEL_PAUSED the loop only ever calls tt_screen->display() (winmain.cpp 7552,
+			// and the frozen-cursor path at 1272), never update_display() -- so nothing pushes the
+			// restored world's camera down to City::update_display until the user presses play,
+			// which is why playing corrects it instantly. Compose one frame here, the way the
+			// commented-out line at winmain.cpp:1268 does.
+			tt_screen->display(tt_screen->update_display());
 		};
 		return(jumped);
 #else
