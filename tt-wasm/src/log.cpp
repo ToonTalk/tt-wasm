@@ -5212,6 +5212,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_jump(int segment) {
 	fflush(stdout);
 };
 
+/* Dev hook: press PLAY after a jump. tt_dev_jump leaves the engine PAUSED at the checkpoint,
+ * which is correct but static -- this is what actually starts the segment replaying, and so where
+ * Ken's "one frame then straight to the next checkpoint" has to happen. Separate from the jump so
+ * the two steps can be observed independently. Console: Module._tt_dev_play(). */
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_play() {
+	printf("[tt] devplay: before, tt_state=%d log_in=%s seg=%d frame=%ld time=%ld\n",
+	       (int) tt_time_travel,(log_in == NULL) ? "NULL" : "open",
+	       (int) tt_current_log_segment,(long) tt_frame_number,(long) tt_current_time);
+	fflush(stdout);
+	time_travel(TIME_TRAVEL_ON);
+	printf("[tt] devplay: after, tt_state=%d replaying=%d\n",
+	       (int) tt_time_travel,(int) replaying());
+	fflush(stdout);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_time_travel_button(int n) {
 	printf("[tt] ttdev: button %d -- current=%d oldest=%d youngest=%d buttons=%p hidden=%d\n",n,
 	       (int) tt_current_log_segment,(int) tt_oldest_log_segment,(int) tt_youngest_log_segment,
