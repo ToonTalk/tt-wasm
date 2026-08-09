@@ -5185,7 +5185,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_dev_jump(int segment) {
 	       segment,(int) tt_current_log_segment,(int) tt_oldest_log_segment,
 	       (int) tt_youngest_log_segment,(int) tt_time_travel);
 	fflush(stdout);
-	if (tt_time_travel == TIME_TRAVEL_OFF) tt_time_travel = TIME_TRAVEL_ON;
+	// Enter via time_travel(), not by assigning the enum. Assigning TIME_TRAVEL_ON directly while
+	// log_in == NULL (which is the case during live recording) is precisely what that function
+	// converts to TIME_TRAVEL_RECORD and then back to OFF -- so the state did not stick and the
+	// engine dropped straight back to recording. PAUSED is what the buttons put it in before a
+	// jump; Ken's traces show 2 (JUST_PAUSED) then 3 (ON) across a real one.
+	time_travel(TIME_TRAVEL_PAUSED);
+	printf("[tt] devjump: after enter, tt_state=%d log_in=%s\n",(int) tt_time_travel,
+	       (log_in == NULL) ? "NULL" : "open"); fflush(stdout);
 	boolean ok = jump_to_log_segment(segment);
 	printf("[tt] devjump: returned %d -- now segment %d time=%ld\n",(int) ok,
 	       (int) tt_current_log_segment,(long) tt_current_time);
