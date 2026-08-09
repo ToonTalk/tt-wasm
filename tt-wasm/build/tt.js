@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp9b68gybh.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcqhlv6fi.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp9b68gybh.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpfrazw3ic.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpcqhlv6fi.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb9i8zber.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpfrazw3ic.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpb9i8zber.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -775,6 +775,25 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       saveRow.appendChild(saveBtn);
       panel.appendChild(saveRow);
       panel.appendChild(saveNote);
+      // "Save this session" -- Ken's request: the page's own button sits UNDER this modal's
+      // backdrop, so while the chooser is up it can be seen but not clicked. The session
+      // recording is the time-travel archive, which is exactly what this dialog's moment is
+      // about, so offer it here. Like Save Everything it reports and does NOT dismiss.
+      if (window.TT_recording && window.TT_saveDemo) {
+        var demoRow = document.createElement('div');
+        demoRow.style.cssText = 'padding:8px 12px 14px;text-align:center';
+        var demoBtn = document.createElement('button');
+        demoBtn.textContent = 'Save this session as a demo';
+        demoBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+        demoBtn.onclick = function () {
+          var ok = false;
+          try { ok = !!window.TT_saveDemo(); } catch (e) {}
+          saveNote.textContent = ok ? 'Session saved as toontalk-session.dmo (check your downloads).'
+                                    : 'Nothing recorded yet — play for a few seconds first.';
+        };
+        demoRow.appendChild(demoBtn);
+        panel.appendChild(demoRow);
+      }
     }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
@@ -1547,13 +1566,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnj7zh8bw.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1pxv8exe.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnj7zh8bw.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1pxv8exe.js
 
 
 var programArgs = [];

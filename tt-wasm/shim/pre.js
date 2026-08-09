@@ -560,6 +560,25 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       saveRow.appendChild(saveBtn);
       panel.appendChild(saveRow);
       panel.appendChild(saveNote);
+      // "Save this session" -- Ken's request: the page's own button sits UNDER this modal's
+      // backdrop, so while the chooser is up it can be seen but not clicked. The session
+      // recording is the time-travel archive, which is exactly what this dialog's moment is
+      // about, so offer it here. Like Save Everything it reports and does NOT dismiss.
+      if (window.TT_recording && window.TT_saveDemo) {
+        var demoRow = document.createElement('div');
+        demoRow.style.cssText = 'padding:8px 12px 14px;text-align:center';
+        var demoBtn = document.createElement('button');
+        demoBtn.textContent = 'Save this session as a demo';
+        demoBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+        demoBtn.onclick = function () {
+          var ok = false;
+          try { ok = !!window.TT_saveDemo(); } catch (e) {}
+          saveNote.textContent = ok ? 'Session saved as toontalk-session.dmo (check your downloads).'
+                                    : 'Nothing recorded yet — play for a few seconds first.';
+        };
+        demoRow.appendChild(demoBtn);
+        panel.appendChild(demoRow);
+      }
     }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
