@@ -114,7 +114,23 @@ boolean log_or_user_actions(boolean &event,
 	};
 	if (tt_logging) { // used to be event && ... so only eventful events logged
 		// added last_mouse_delta_x,last_mouse_delta_y on 051100
+#ifdef __EMSCRIPTEN__
+		// ROOT CAUSE of Ken's time travel "jumps a checkpoint and stops". This flag gates TWO
+		// writes -- the clock delta (Main.cpp:1348) and log_user just below -- but the READ side
+		// calls replay_clock and replay_user unconditionally. Any frame this skips therefore leaves
+		// the reader one record ahead of the writer, and from then on the event counter is read
+		// misaligned: 21 comes back as 5376 (21<<8), a non-zero count with no queue, which throws
+		// EVENTS_COUNTER_NON_ZERO_WITH_NO_EVENT_QUEUE and abandons the segment after one frame.
+		//
+		// The original's own optimisation ("avoid recording extra stuff during titles") was safe
+		// for it because its title timing matched what its reader assumed; the port's frame rate
+		// and title timing differ, so it skips frames the reader still expects. Recording every
+		// frame costs a few bytes per title frame and makes the two sides agree by construction.
+		// Ken accepted invalidating existing recordings for this.
+		tt_record_clock = TRUE;
+#else
 		tt_record_clock = (tt_frame_number >= tt_titles_ended_on_frame || event); // rewritten on 300104 to avoid recording extra stuff during titles
+#endif
 		if (tt_record_clock) {
 			log_user(key,extended,event,delta_x,delta_y,last_mouse_delta_x,last_mouse_delta_y,
 						mouse_button_status,joystick_button_status,duration,more,second_byte);
