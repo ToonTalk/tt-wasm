@@ -1157,7 +1157,7 @@ void log_events_counter(unsigned short int counter) {
 	// comparing these two offsets for the same segment measures the slip directly instead of
 	// eyeballing field types. Reading the header field-by-field has cleared everything so far.
 	{ static int lw = 0;
-	  if (lw < 12 && counter != 0) { lw++;   // only frames that CARRY events -- empty ones align fine
+	  if (lw < 24) { lw++;   // EVERY frame: the counter is always 0, so gating on it printed nothing
 		printf("[tt] evwrite: counter=%d at offset %ld (seg=%d frame=%ld)\n",
 		       (int) counter,(long) log_out.tellp(),(int) tt_current_log_segment,
 		       (long) tt_frame_number);
@@ -3244,7 +3244,7 @@ void replay_events_counter(unsigned short int &counter) {
 	// Printed AFTER the read so the value is known. Match these against evwrite by frame number:
 	// same frame, same offset and same counter means the stream is aligned there.
 	{ static int lr = 0;
-	  if (lr < 12 && counter != 0) { lr++;
+	  if (lr < 24) { lr++;
 		printf("[tt] evread: counter=%d at offset %ld (seg=%d frame=%ld)\n",
 		       (int) counter,lr_off,(int) tt_current_log_segment,(long) tt_frame_number);
 		fflush(stdout); } }
