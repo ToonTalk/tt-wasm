@@ -1717,6 +1717,20 @@ static boolean tt_message_loop_iteration() {
 		};
 	}
 	{
+		/* Publish replay ownership of the cursor to the page. On Windows the recorded stream
+		 * warps the real cursor (SetCursorPos) during replay and those positions rule; the
+		 * browser cannot move the physical cursor, so pre.js must instead STOP feeding live
+		 * mousemoves into the virtual cursor while this is set -- otherwise the user's hand
+		 * resting on the time-travel panel overwrote the replayed warps and every replayed
+		 * click landed offset (the persona walking into the wall beside the door). */
+		static boolean last_published_replaying = FALSE;
+		boolean now_replaying = replaying();
+		if (now_replaying != last_published_replaying) {
+			last_published_replaying = now_replaying;
+			EM_ASM({ globalThis.TT_engineReplaying = ($0 !== 0); }, (int) now_replaying);
+		};
+	}
+	{
 		// Replay pacing: REPLAY_REPRODUCE_TIMING calls sleep() (Main.cpp) to hold the
 		// demo to the recorded clock, but the browser loop cannot block — sleep()
 		// (utils.cpp) instead records a wake deadline and we skip whole iterations

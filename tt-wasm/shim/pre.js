@@ -231,6 +231,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   };
   c.addEventListener('mousemove', function (e) {
     syncMouseMode();
+    // While the engine is replaying (a demo or time travel playback) it OWNS the cursor: on
+    // Windows the recorded stream warps the real cursor via SetCursorPos and those positions
+    // rule; the browser cannot move the physical cursor, so the user's hand resting on the
+    // time-travel panel would overwrite the replayed warps here and every replayed click/walk
+    // landed offset -- Ken's persona walking into the wall beside the door. Saved DMOs replayed
+    // fine only because nobody moves the mouse in a headless pane. Panel clicks are unaffected:
+    // mousedown carries its own coordinates in the message. Live tracking resumes the moment
+    // the engine stops replaying (TT_engineReplaying, published from the main cycle).
+    if (globalThis.TT_engineReplaying) return;
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
