@@ -1151,6 +1151,18 @@ const unsigned char EVENT_COUNTER_TOKEN = 142;
 
 void log_events_counter(unsigned short int counter) {
 //	log_put(EVENT_COUNTER_TOKEN); // obsolete as of 290204 since always output it
+#ifdef __EMSCRIPTEN__
+	// Where the WRITER thinks the frame stream starts. Paired with the same print in
+	// replay_events_counter: the counter reads as (true<<8), so the reader is one byte behind, and
+	// comparing these two offsets for the same segment measures the slip directly instead of
+	// eyeballing field types. Reading the header field-by-field has cleared everything so far.
+	{ static int lw = 0;
+	  if (lw < 12 && counter != 0) { lw++;   // only frames that CARRY events -- empty ones align fine
+		printf("[tt] evwrite: counter=%d at offset %ld (seg=%d frame=%ld)\n",
+		       (int) counter,(long) log_out.tellp(),(int) tt_current_log_segment,
+		       (long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	log_write((bytes) &counter,sizeof(counter));
 #if TT_DEBUG_ON
    if (tt_debug_mode == 202 || tt_debug_mode == 101 || tt_debug_mode == 230304) {
@@ -3223,7 +3235,20 @@ void replay_events_counter(unsigned short int &counter) {
 			close_input_log(FALSE,FALSE); // second arg was TRUE prior to 210300 - prior to 180703 was (tt_time_travel != TIME_TRAVEL_OFF)
 		};
 	};
+#ifdef __EMSCRIPTEN__
+	// Where the READER thinks the frame stream starts -- compare with hdrend/write above.
+	long lr_off = (long) log_in->tellg();
+#endif
 	log_in->read((string) &counter,sizeof(counter));
+#ifdef __EMSCRIPTEN__
+	// Printed AFTER the read so the value is known. Match these against evwrite by frame number:
+	// same frame, same offset and same counter means the stream is aligned there.
+	{ static int lr = 0;
+	  if (lr < 12 && counter != 0) { lr++;
+		printf("[tt] evread: counter=%d at offset %ld (seg=%d frame=%ld)\n",
+		       (int) counter,lr_off,(int) tt_current_log_segment,(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 #if TT_DEBUG_ON
    if (tt_debug_mode == 1021 || tt_debug_mode == 110100 || tt_debug_mode == 160299 || tt_debug_mode == 202 || tt_debug_mode == 230304) {
       tt_error_file() << "Reading event counter = " << counter << " on frame " << tt_frame_number << endl;
@@ -3795,6 +3820,17 @@ void record_special_events() {
 
 void replay_special_events() {
 	unsigned char events = log_in->get();
+#ifdef __EMSCRIPTEN__
+	// Is the port writing special-event records the original would not have? bit0 =
+	// tt_paragraph_id_just_finished >= 0, which the port's TTS sets (speak.cpp:677). A non-zero
+	// byte here on the frames before the bad counter would put the extra byte in this record.
+	{ static int se = 0;
+	  if (se < 20 && events != 0) { se++;
+		printf("[tt] special: events=0x%02x (para=%d paused=%d file=%d drop=%d) frame=%ld\n",
+		       (int) events,(int) (events & 1),(int) ((events >> 1) & 1),
+		       (int) ((events >> 2) & 1),(int) ((events >> 3) & 1),(long) tt_frame_number);
+		fflush(stdout); } }
+#endif
 	if (events == 0) return; // this is so common may as well optimize for this case here - 200204
 	if (events > 15) { // new on 140204
 		tt_err_file_important = TRUE;
