@@ -40,8 +40,13 @@
  * in exchange for removing something that is ALREADY inert: every DirectPlay entry point here is
  * a zero-stub and a web page has no route to a peer. Not worth it; revisit only if the networking
  * ever becomes reachable enough to confuse someone. */
+/* TEMPORARILY RESTORED to 1 (Ken's suggestion) to A/B the time-travel desync against the
+ * DirectInput removal made earlier today. The joystick branch in the event record looks
+ * byte-neutral either way -- log_put writes one byte for joystick_button_status OR
+ * mouse_button_status -- but the timing is suspicious and this is a one-line test rather than
+ * more reading. Revert to 0 if it makes no difference. */
 #undef TT_DIRECT_INPUT
-#define TT_DIRECT_INPUT 0
+#define TT_DIRECT_INPUT 1
 #endif
 
 #define TT_MULTIPLE_PRECISION 1 // new on 280102
