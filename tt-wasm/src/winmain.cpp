@@ -9794,7 +9794,18 @@ void update_defaults() {
 	tt_movement_selection_feedback = ini_int(AC(IDC_SWITCHES),"MovementSelectionFeedback",FALSE,tt_movement_selection_feedback); // new on 200901
 	tt_color_selection_feedback = ini_int(AC(IDC_SWITCHES),"ColorSelectionFeedback",FALSE,tt_color_selection_feedback); // new on 200901
 	tt_dither_to_8bits = ini_int(AC(IDC_SWITCHES),"DitherTo8BitColor",FALSE,tt_dither_to_8bits); // new on 201101
-   set_absolute_mouse_mode(ini_int(AC(IDC_SWITCHES),"AbsoluteMouseMode",FALSE,0)); // new on 250402 -- 
+#ifdef __EMSCRIPTEN__
+   // Ken's 050605 note below is exactly the bug behind the in-app time-travel divergence. The
+   // original never needs the mode in the log because this line runs once and the mode pair is
+   // fixed for the session, so a recording always replays under the mode it was made in. The
+   // browser breaks that: releasing pointer lock (which opening the time-travel panel requires)
+   // calls em_set_mouse_mode and rewrites the pair to ABSOLUTE. Keep the INI's answer so replay
+   // can put it back -- restore_recording_mouse_mode(), called from set_replay.
+   tt_ini_absolute_mouse_mode = ini_int(AC(IDC_SWITCHES),"AbsoluteMouseMode",FALSE,0);
+   set_absolute_mouse_mode(tt_ini_absolute_mouse_mode);
+#else
+   set_absolute_mouse_mode(ini_int(AC(IDC_SWITCHES),"AbsoluteMouseMode",FALSE,0)); // new on 250402 --
+#endif
 	// above should really end up recorded in DMO files -- noted on 050605
    tt_show_mouse_cursor = ini_int(AC(IDC_SWITCHES),"ShowMouseCursor",FALSE,tt_show_mouse_cursor); // new on 250402
    tt_directional_pad_center_x = ini_int(AC(IDC_SWITCHES),"DirectionalPadCenterX",FALSE,tt_directional_pad_center_x); // new on 250402

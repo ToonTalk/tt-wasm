@@ -730,6 +730,10 @@ MouseMode tt_mouse_mode = RELATIVE_MOUSE_MODE; // new on 290801
 MouseMode tt_mouse_mode_on_floor = RELATIVE_MOUSE_MODE; // new on 180402
 MouseMode tt_mouse_mode_not_on_floor = RELATIVE_MOUSE_MODE;
 
+#ifdef __EMSCRIPTEN__
+int tt_ini_absolute_mouse_mode = 0;
+#endif
+
 long tt_directional_pad_center_x = 92; // new on 180402 - 92% of the way to the right (since radius in terms of height this should be flush against right side)
 long tt_directional_pad_center_y = 10; // 10% up from bottom
 long tt_directional_pad_center_radius = 10; // circle's radius is 10% of height

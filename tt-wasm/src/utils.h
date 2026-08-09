@@ -699,6 +699,10 @@ inline boolean relative_mouse_mode() { // not negation of above since can also b
 
 void set_absolute_mouse_mode(int mode);
 
+#ifdef __EMSCRIPTEN__
+void restore_recording_mouse_mode(); // defined in prgrmmr.cpp -- see set_replay
+#endif
+
 unsigned char name_to_character(string encoding, boolean &extended_key);
 
 void note_mouse_state_for_dragging();

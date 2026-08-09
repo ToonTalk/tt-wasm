@@ -11944,7 +11944,18 @@ void hexidecimal_as_guid(wide_string guid_string, GUID *guid) { // wide string s
 
 void set_replay(ReplayState new_state) {
 	if (tt_replay == new_state) return; // new on 200204 since not news
+#ifdef __EMSCRIPTEN__
+	// A replay must run under the mode its recording was made under. Nothing in the original needs
+	// this because the mode pair is fixed for the session, but the browser rewrites it every time
+	// pointer lock comes and goes -- and opening the time-travel panel has to drop the lock so the
+	// cursor can reach the buttons. Restore on the way in; stop_replay() hands the browser's mode
+	// back on the way out via TT_setMouseModeForUser.
+	boolean starting_a_replay = (tt_replay == NO_REPLAY && new_state != NO_REPLAY);
+#endif
 	tt_replay = new_state;
+#ifdef __EMSCRIPTEN__
+	if (starting_a_replay) restore_recording_mouse_mode();
+#endif
 	if (tt_replay != NO_REPLAY) {
 		 tt_dump_as_xml = TRUE; // regardless of toontalk.ini value (document this!) - new on 150903
 #if TT_ENHANCED_DRAG_AND_DROP

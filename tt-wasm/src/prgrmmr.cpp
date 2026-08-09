@@ -2543,6 +2543,28 @@ extern "C" EMSCRIPTEN_KEEPALIVE void em_set_mouse_mode(int absolute_mode_code) {
    fflush(stdout);
 }
 
+// Put the mouse mode back to what the INI asked for, which is the mode every recording in this
+// session was made under (winmain.cpp reads AbsoluteMouseMode once; the original never changes it
+// again). Replay interprets the recorded cursor stream through the CURRENT mode, so replaying a
+// relative-mode recording in absolute mode silently changes what the recorded input means:
+// Programmer_City_Landing shrinks max_y when absolute (prgrmmr.cpp, 060502 "hard to land"), so the
+// helicopter touched down 2640 short of where it did live, and the walk that followed started from
+// the wrong spot and overshot the door -- Ken: "the persona walks into a wall before going in the
+// door". The browser has to flip to absolute whenever pointer lock drops, and opening the
+// time-travel panel drops it, so by the time the user presses play the mode is wrong.
+void restore_recording_mouse_mode() {
+   set_absolute_mouse_mode(tt_ini_absolute_mouse_mode);
+   if (tt_programmer != NULL && tt_programmer->kind_of() == PROGRAMMER_AT_FLOOR) {
+      set_mouse_mode(tt_mouse_mode_on_floor);
+   } else {
+      set_mouse_mode(tt_mouse_mode_not_on_floor);
+   };
+   printf("[tt] replaymode: ini=%d -> tt_mouse_mode=%d (floor=%d notfloor=%d)\n",
+          tt_ini_absolute_mouse_mode,(int) tt_mouse_mode,
+          (int) tt_mouse_mode_on_floor,(int) tt_mouse_mode_not_on_floor);
+   fflush(stdout);
+}
+
 // Is the programmer sitting at the floor (as opposed to walking the street or flying)?
 // The web front end asks so it can give Escape the right meaning in full screen: on the floor
 // Escape stands you up; walking or flying it leaves full screen and shows the options.

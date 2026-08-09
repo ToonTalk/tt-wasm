@@ -712,6 +712,14 @@ extern MouseMode tt_mouse_mode;
 extern MouseMode tt_mouse_mode_on_floor;
 extern MouseMode tt_mouse_mode_not_on_floor;
 
+#ifdef __EMSCRIPTEN__
+// The AbsoluteMouseMode code the INI asked for. In the original this is read once and the
+// mode pair never changes again, so a log always replays in the mode it was recorded in.
+// The browser flips the mode whenever pointer lock comes and goes, which breaks that
+// invariant -- see restore_recording_mouse_mode().
+extern int tt_ini_absolute_mouse_mode;
+#endif
+
 extern long tt_directional_pad_center_x;
 extern long tt_directional_pad_center_y;
 extern long tt_directional_pad_center_radius;
