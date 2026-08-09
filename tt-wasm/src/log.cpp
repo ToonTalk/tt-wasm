@@ -2859,6 +2859,13 @@ boolean jump_to_log_segment(int version_number, boolean possibly_successive) {
 		boolean jumped = close_input_log(TRUE,TRUE,version_number,possibly_successive);
 		printf("[tt] jumpseg: close_input_log(ver=%d) -> %d  cur_seg=%d\n",
 		       version_number,(int) jumped,(int) tt_current_log_segment); fflush(stdout);
+		if (jumped && tt_screen != NULL) {
+			// Ken: jumping to the beginning in-app showed partially rendered houses (a fresh
+			// ?demo= boot of the same archive paints them all). The restore draws over a live
+			// screen whose dirty band only covers what the restore itself touched; force a full
+			// repaint of the restored world.
+			tt_screen->screen_dirty();
+		};
 		return(jumped);
 #else
 		return(close_input_log(TRUE,TRUE,version_number,possibly_successive));

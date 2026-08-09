@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7v983hjz.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmphm42jbjr.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7v983hjz.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpg739udcr.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmphm42jbjr.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmptfbbzrcm.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpg739udcr.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmptfbbzrcm.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -436,6 +436,14 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // canvas while the engine is still loading is an ordinary thing to do. calledRun is
     // Emscripten's own "run() has finished" flag.
     if (!Module['calledRun'] || !Module['_em_set_mouse_mode']) return;
+    // While the engine replays or the time-travel panel is up, the MODE belongs to the engine
+    // too: the recording carries its own mode timeline (userparams + the engine's own flips on
+    // entering/leaving time travel), and this sync -- fired by the first real mouse movement --
+    // overrode it once per state change and even recentred the virtual cursor. One silent flip,
+    // different divergence every run: Ken's persona missed the door a different way each time
+    // while the same file replayed perfectly in a pane nobody's mouse was over. Reset the cache
+    // so the first movement AFTER the engine lets go re-syncs from scratch.
+    if (globalThis.TT_engineReplaying || globalThis.TT_timeTravelActive) { lastMouseMode = -1; return; }
     var mode = (document.pointerLockElement === c) ? 0 : 1;
     if (mode === lastMouseMode) return;
     lastMouseMode = mode;
@@ -1582,13 +1590,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpe0wmasm6.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt09d4r7n.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpe0wmasm6.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpt09d4r7n.js
 
 
 var programArgs = [];
