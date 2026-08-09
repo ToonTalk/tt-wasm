@@ -2876,9 +2876,16 @@ boolean jump_to_log_segment(int version_number, boolean possibly_successive) {
 			// TIME_TRAVEL_PAUSED the loop only ever calls tt_screen->display() (winmain.cpp 7552,
 			// and the frozen-cursor path at 1272), never update_display() -- so nothing pushes the
 			// restored world's camera down to City::update_display until the user presses play,
-			// which is why playing corrects it instantly. Compose one frame here, the way the
-			// commented-out line at winmain.cpp:1268 does.
-			tt_screen->display(tt_screen->update_display());
+			// which is why playing corrects it instantly.
+			//
+			// REVERTED: composing a frame here (tt_screen->display(tt_screen->update_display()))
+			// did fix the picture, but it moved the camera at the moment the time-travel buttons
+			// are laid out, and those buttons live in CITY coordinates that follow the view --
+			// so a click mapped through one framing could miss rects computed under another and
+			// be swallowed entirely. Ken: "the controls became less reliable - clicking the
+			// leftmost button sometimes went to the start and sometimes it stayed in the same
+			// segment", with a console click landing inside=0 on all six buttons. Working
+			// controls beat a tidy paused frame; the stale picture corrects itself on play.
 		};
 		return(jumped);
 #else

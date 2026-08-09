@@ -2553,7 +2553,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void em_set_mouse_mode(int absolute_mode_code) {
 // door". The browser has to flip to absolute whenever pointer lock drops, and opening the
 // time-travel panel drops it, so by the time the user presses play the mode is wrong.
 void restore_recording_mouse_mode() {
-   set_absolute_mouse_mode(tt_ini_absolute_mouse_mode);
+   // NOT the INI's value. Ken's tester39 machine has AbsoluteMouseMode=1, but his recording ran
+   // pointer-locked at RELATIVE (console: "mousemode: code=0" on frame 8), so restoring the INI
+   // put replay in the wrong mode again -- touchdown 701155 against a recorded 699225, door
+   // gap=-2388 against a recorded gap=1. What a log is recorded under is not the INI setting, it
+   // is whatever mode was live while recording, and both paths that produce logs here record in
+   // relative mode: Free Play holds pointer lock while you play, and demos never take the lock
+   // (#55: "the replay itself runs in the original's RELATIVE mode -- that is what the recorded
+   // cursor stream and its clicks mean").
+   set_absolute_mouse_mode(0); // 0 => RELATIVE for both on-floor and off-floor
    if (tt_programmer != NULL && tt_programmer->kind_of() == PROGRAMMER_AT_FLOOR) {
       set_mouse_mode(tt_mouse_mode_on_floor);
    } else {
