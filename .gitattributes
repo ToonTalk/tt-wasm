@@ -1,0 +1,4 @@
+# Shell scripts must stay LF. Windows clones default to core.autocrlf=true,
+# which checks *.sh out with CRLF endings -- Git Bash then chokes on the \r
+# ("set: invalid option", "$'\r': command not found") and link.sh won't run.
+*.sh text eol=lf
