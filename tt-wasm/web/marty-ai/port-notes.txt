@@ -1,0 +1,27 @@
+This ToonTalk is the original Windows program compiled to WebAssembly, running
+entirely in the web browser. Practical differences a player may ask about:
+
+- Full screen: use the on-screen full-screen button. The game captures the mouse
+  (pointer lock) while you play; press Esc to release the mouse or leave full
+  screen. Esc inside the game also makes the character stand up / asks about
+  quitting, as in the original.
+- Time travel: press the Pause/Break key to open the time-travel controls (a row
+  of tape-recorder style buttons: back to start, back one stop, play, forward
+  one stop, to the end, and record to take over). The on-screen controls fade
+  out after a few seconds of no input and come back when the mouse moves. A
+  session can be downloaded as a .dmo file and replayed later.
+- Demos: the opening screen offers the original narrated demos; a demo can also
+  be started directly with a web address ending in ?demo=<name>.
+- Saving: cities and notebooks are saved inside the browser's own storage on
+  this computer (not as files). Downloading/uploading specific files is limited
+  compared to the Windows original.
+- Marty speaks with the browser's text-to-speech voices; how he talks (speech,
+  word balloons, or both) is still set the original way.
+- Importing your own pictures (PNG) and sounds works; the Windows-only
+  "file to sound" / MCI remote controls are retired in this version.
+- The clipboard sensor works with the browser clipboard.
+- Not available in the browser version: translating programs to Java applets,
+  installable extensions, long-distance birds between computers, joysticks and
+  force-feedback devices, printing.
+- Works best in a desktop browser (Chrome or Edge recommended) with a keyboard;
+  several features use function keys (F1 help, F2 calls Dusty, etc.).

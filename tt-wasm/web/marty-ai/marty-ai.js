@@ -1,0 +1,445 @@
+// Marty AI — give Marty the Martian a large language model.
+// Loaded ONLY by the generated tt-ai.html (link.sh injects the tag); the faithful
+// tt.html never references this file. No servers involved: the browser talks to
+// the provider's API directly with the player's own key.
+//
+// Providers: Claude (Anthropic), OpenAI, Gemini (Google), and Chrome's built-in
+// Gemini Nano (the Prompt API) when the browser has it. Cloud providers get the
+// full knowledge corpus (prompt-cached server-side); Nano gets the small one.
+(function () {
+  'use strict';
+  var LS_KEY = 'tt_marty_ai';
+
+  var state = {
+    provider: '', model: '', key: '', remember: false, speak: true,
+    history: [],            // [{role:'user'|'assistant', content}]
+    corpus: { full: null, nano: null },
+    nano: { session: null, api: null },   // api: 'new' | 'legacy'
+    busy: false
+  };
+
+  // ------------------------------------------------------------ persona
+  var PERSONA =
+    'You are Marty the Martian, the friendly helper who floats beside the player ' +
+    'in ToonTalk. Answer questions about ToonTalk: what things are, how to do ' +
+    'things, why something happened, and ideas for what to build next.\n' +
+    'Rules:\n' +
+    '- Two or three short sentences unless the player asks for more detail.\n' +
+    '- Be concrete: name the exact key, tool, or character (F2 calls Dusty...).\n' +
+    '- Plain spoken sentences only: no markdown, no lists, no code blocks.\n' +
+    '- If asked something unrelated to ToonTalk, answer kindly in one sentence ' +
+    'and steer back to ToonTalk.\n\n' +
+    'REFERENCE MATERIAL ABOUT TOONTALK:\n';
+
+  function systemPrompt(tier) {
+    return PERSONA + (tier === 'nano' ? state.corpus.nano : state.corpus.full);
+  }
+
+  function loadCorpus(tier) {
+    var file = tier === 'nano' ? 'knowledge-nano.txt' : 'knowledge-full.txt';
+    var slot = tier === 'nano' ? 'nano' : 'full';
+    if (state.corpus[slot]) return Promise.resolve(state.corpus[slot]);
+    return fetch('marty-ai/' + file, { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error('could not load ' + file + ' (' + r.status + ')');
+      return r.text();
+    }).then(function (t) { state.corpus[slot] = t; return t; });
+  }
+
+  // ------------------------------------------------------------ providers
+  function readErr(r) {                       // best-effort readable API error
+    return r.text().then(function (t) {
+      try { var j = JSON.parse(t);
+            t = (j.error && (j.error.message || j.error.status)) || t; } catch (e) {}
+      throw new Error('HTTP ' + r.status + ': ' + String(t).slice(0, 300));
+    });
+  }
+
+  var PROVIDERS = {
+    claude: {
+      label: 'Claude (Anthropic)', needsKey: true, defModel: 'claude-sonnet-5',
+      keyHint: 'console.anthropic.com → API keys',
+      listModels: function (cfg) {
+        return fetch('https://api.anthropic.com/v1/models?limit=100', {
+          headers: { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01',
+                     'anthropic-dangerous-direct-browser-access': 'true' }
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) { return j.data.map(function (m) { return m.id; }); });
+      },
+      chat: function (cfg, sys, history) {
+        return fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-api-key': cfg.key,
+                     'anthropic-version': '2023-06-01',
+                     'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: cfg.model, max_tokens: 700,
+            // cache_control: the big corpus is cached server-side after the
+            // first message, so later questions are fast and much cheaper.
+            system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
+            messages: history
+          })
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) {
+            return j.content.filter(function (b) { return b.type === 'text'; })
+                            .map(function (b) { return b.text; }).join('');
+          });
+      }
+    },
+    openai: {
+      label: 'OpenAI', needsKey: true, defModel: 'gpt-5-mini',
+      keyHint: 'platform.openai.com → API keys',
+      listModels: function (cfg) {
+        return fetch('https://api.openai.com/v1/models', {
+          headers: { authorization: 'Bearer ' + cfg.key }
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) {
+            return j.data.map(function (m) { return m.id; })
+                         .filter(function (id) { return /^(gpt|o[0-9])/.test(id); })
+                         .sort();
+          });
+      },
+      chat: function (cfg, sys, history) {
+        return fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json',
+                     authorization: 'Bearer ' + cfg.key },
+          body: JSON.stringify({
+            model: cfg.model,
+            messages: [{ role: 'system', content: sys }].concat(history)
+          })
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) { return j.choices[0].message.content; });
+      }
+    },
+    gemini: {
+      label: 'Gemini (Google)', needsKey: true, defModel: 'gemini-2.5-flash',
+      keyHint: 'aistudio.google.com → Get API key',
+      listModels: function (cfg) {
+        return fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', {
+          headers: { 'x-goog-api-key': cfg.key }
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) {
+            return (j.models || []).filter(function (m) {
+              return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0;
+            }).map(function (m) { return m.name.replace(/^models\//, ''); });
+          });
+      },
+      chat: function (cfg, sys, history) {
+        var contents = history.map(function (m) {
+          return { role: m.role === 'assistant' ? 'model' : 'user',
+                   parts: [{ text: m.content }] };
+        });
+        return fetch('https://generativelanguage.googleapis.com/v1beta/models/' +
+                     encodeURIComponent(cfg.model) + ':generateContent', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.key },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sys }] },
+            contents: contents
+          })
+        }).then(function (r) { return r.ok ? r.json() : readErr(r); })
+          .then(function (j) {
+            var c = j.candidates && j.candidates[0];
+            if (!c || !c.content || !c.content.parts) throw new Error('empty reply');
+            return c.content.parts.map(function (p) { return p.text || ''; }).join('');
+          });
+      }
+    },
+    nano: {
+      label: 'Chrome built-in (Gemini Nano)', needsKey: false, defModel: '(on this computer)',
+      keyHint: 'no key needed — runs on this computer',
+      // availability(cb): cb(status string or null when usable)
+      availability: function () {
+        if (typeof LanguageModel !== 'undefined' && LanguageModel.availability) {
+          state.nano.api = 'new';
+          return LanguageModel.availability().then(function (a) {
+            state.nano.avail = a;               // available | downloadable | downloading | unavailable
+            return a === 'unavailable' ? 'not available on this computer' : null;
+          });
+        }
+        if (window.ai && window.ai.languageModel && window.ai.languageModel.capabilities) {
+          state.nano.api = 'legacy';
+          return window.ai.languageModel.capabilities().then(function (c) {
+            state.nano.avail = c.available === 'readily' ? 'available' : 'downloadable';
+            return c.available === 'no' ? 'not available on this computer' : null;
+          });
+        }
+        return Promise.resolve('needs desktop Chrome with the built-in model');
+      },
+      chat: function (cfg, sys, history, onStatus) {
+        var last = history[history.length - 1].content;
+        function fresh() {
+          if (state.nano.api === 'new') {
+            return LanguageModel.create({
+              initialPrompts: [{ role: 'system', content: sys }],
+              monitor: function (m) {           // first use may download the model
+                m.addEventListener('downloadprogress', function (e) {
+                  if (onStatus) onStatus('Marty is downloading his little brain… ' +
+                                         Math.round((e.loaded || 0) * 100) + '%');
+                });
+              }
+            });
+          }
+          return window.ai.languageModel.create({ systemPrompt: sys });
+        }
+        var p = state.nano.session ? Promise.resolve(state.nano.session)
+                                   : fresh().then(function (s) { state.nano.session = s; return s; });
+        return p.then(function (s) { return s.prompt(last); })
+                .catch(function (e) {           // stale session: one retry on a fresh one
+                  state.nano.session = null;
+                  return fresh().then(function (s) {
+                    state.nano.session = s; return s.prompt(last);
+                  });
+                });
+      }
+    }
+  };
+
+  // ------------------------------------------------------------ settings persistence
+  function loadCfg() {
+    try {
+      var j = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      state.provider = j.provider || ''; state.model = j.model || '';
+      state.remember = !!j.remember; state.speak = j.speak !== false;
+      if (j.remember && j.key) state.key = j.key;
+    } catch (e) {}
+  }
+  function saveCfg() {
+    var j = { provider: state.provider, model: state.model,
+              remember: state.remember, speak: state.speak };
+    if (state.remember) j.key = state.key;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(j)); } catch (e) {}
+  }
+
+  // ------------------------------------------------------------ tiny DOM helper
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') n.textContent = attrs[k];
+      else if (k in n && k !== 'type') { try { n[k] = attrs[k]; } catch (e) { n.setAttribute(k, attrs[k]); } }
+      else n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { n.appendChild(c); });
+    return n;
+  }
+
+  // ------------------------------------------------------------ settings dialog
+  var dlg, dlgStatus, modelInput, keyInput, modelList;
+  function buildDialog() {
+    var provBox = el('div', { className: 'mai-prov' });
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var r = el('input', { type: 'radio', name: 'mai-prov', value: id });
+      r.addEventListener('change', function () { onProviderPick(id); });
+      var lab = el('label', null, [r, el('span', { text: PROVIDERS[id].label })]);
+      lab.dataset.prov = id;
+      provBox.appendChild(lab);
+    });
+    modelInput = el('input', { type: 'text', id: 'mai-model', autocomplete: 'off' });
+    modelList = el('datalist', { id: 'mai-models' });
+    modelInput.setAttribute('list', 'mai-models');
+    keyInput = el('input', { type: 'password', id: 'mai-key', autocomplete: 'off' });
+    var remember = el('input', { type: 'checkbox' });
+    var speak = el('input', { type: 'checkbox' });
+    dlgStatus = el('div', { className: 'mai-status' });
+
+    var listBtn = el('button', { type: 'button', text: 'List models' });
+    listBtn.addEventListener('click', function () {
+      var id = pickedProvider(); if (!id || id === 'nano') return;
+      dlgStatus.className = 'mai-status'; dlgStatus.textContent = 'asking ' + PROVIDERS[id].label + '…';
+      PROVIDERS[id].listModels({ key: keyInput.value.trim() }).then(function (ids) {
+        modelList.textContent = '';
+        ids.forEach(function (m) { modelList.appendChild(el('option', { value: m })); });
+        dlgStatus.textContent = ids.length + ' models — key works. Pick one in the model box.';
+      }).catch(function (e) {
+        dlgStatus.className = 'mai-status err'; dlgStatus.textContent = e.message;
+      });
+    });
+
+    var cancel = el('button', { type: 'button', text: 'Cancel' });
+    cancel.addEventListener('click', function () { dlg.close(); });
+    var save = el('button', { type: 'button', text: 'Save', className: 'mai-primary' });
+    save.addEventListener('click', function () {
+      var id = pickedProvider();
+      if (!id) { dlgStatus.className = 'mai-status err'; dlgStatus.textContent = 'pick a provider'; return; }
+      if (PROVIDERS[id].needsKey && !keyInput.value.trim()) {
+        dlgStatus.className = 'mai-status err'; dlgStatus.textContent = 'this provider needs an API key'; return;
+      }
+      state.provider = id;
+      state.model = modelInput.value.trim() || PROVIDERS[id].defModel;
+      state.key = keyInput.value.trim();
+      state.remember = remember.checked; state.speak = speak.checked;
+      state.nano.session = null;          // provider change invalidates any Nano session
+      saveCfg(); dlg.close(); openPanel();
+      addMsg('marty', 'New brain installed! Ask me anything about ToonTalk.');
+    });
+
+    dlg = el('dialog', { id: 'mai-dlg' }, [
+      el('form', { method: 'dialog' }, [
+        el('h3', { text: 'Give Marty an AI' }),
+        provBox,
+        el('label', null, [el('span', { text: 'Model:' }), modelInput, listBtn]),
+        modelList,
+        el('div', { className: 'mai-note', id: 'mai-modelnote' }),
+        el('label', { id: 'mai-keyrow' }, [el('span', { text: 'API key:' }), keyInput]),
+        el('div', { className: 'mai-note', id: 'mai-keynote' }),
+        el('label', null, [remember, el('span', { text: 'Remember the key in this browser (stored unencrypted on this computer)' })]),
+        el('label', null, [speak, el('span', { text: 'Marty speaks his answers out loud' })]),
+        dlgStatus,
+        el('div', { id: 'mai-btns' }, [cancel, save])
+      ])
+    ]);
+    document.body.appendChild(dlg);
+
+    // hydrate current settings
+    remember.checked = state.remember; speak.checked = state.speak;
+    if (state.provider) {
+      var r = dlg.querySelector('input[value="' + state.provider + '"]');
+      if (r) { r.checked = true; onProviderPick(state.provider); }
+      modelInput.value = state.model; keyInput.value = state.key;
+    }
+    // grey out Nano if this browser can't do it
+    PROVIDERS.nano.availability().then(function (why) {
+      if (!why) return;
+      var lab = dlg.querySelector('label[data-prov="nano"]');
+      lab.className += ' mai-off'; lab.title = why;
+      lab.querySelector('input').disabled = true;
+    });
+  }
+  function pickedProvider() {
+    var r = dlg.querySelector('input[name="mai-prov"]:checked');
+    return r ? r.value : '';
+  }
+  function onProviderPick(id) {
+    var p = PROVIDERS[id];
+    document.getElementById('mai-keyrow').style.display = p.needsKey ? '' : 'none';
+    document.getElementById('mai-keynote').textContent = p.needsKey ? ('Get a key at ' + p.keyHint) : p.keyHint;
+    document.getElementById('mai-modelnote').textContent =
+      id === 'nano' ? (state.nano.avail === 'available'
+                        ? 'The model is built into Chrome and ready; nothing to choose.'
+                        : 'Built into Chrome — the first question downloads the model once (large, may take a while).')
+                    : 'Free text — or press List models to fetch what your key can use.';
+    modelInput.disabled = (id === 'nano');
+    if (!modelInput.value || modelInput.disabled) modelInput.value = p.defModel;
+    modelList.textContent = '';
+  }
+
+  // ------------------------------------------------------------ chat panel
+  var panel, log, input, micBtn;
+  function buildPanel() {
+    log = el('div', { id: 'mai-log' });
+    input = el('input', { id: 'mai-in', type: 'text', placeholder: 'Ask Marty about ToonTalk…', autocomplete: 'off' });
+    // keyCode 13 too: synthetic/legacy events can carry key names other than 'Enter'
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) send();
+    });
+    var sendBtn = el('button', { type: 'button', text: 'Send', title: 'Send' });
+    sendBtn.addEventListener('click', send);
+    micBtn = el('button', { type: 'button', id: 'mai-mic', text: '🎤', title: 'Speak to Marty' });
+    micBtn.addEventListener('click', toggleMic);
+    if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) micBtn.hidden = true;
+
+    var gear = el('button', { type: 'button', text: '⚙', title: 'AI settings' });
+    gear.addEventListener('click', function () { dlg.showModal(); });
+    var close = el('button', { type: 'button', text: '×', title: 'Close' });
+    close.addEventListener('click', function () { panel.hidden = true; });
+
+    panel = el('div', { id: 'mai-panel', hidden: true }, [
+      el('div', { id: 'mai-head' }, [el('b', { text: '🛸 Marty' }), gear, close]),
+      log,
+      el('div', { id: 'mai-row' }, [input, micBtn, sendBtn])
+    ]);
+    // Inside #fsbox so the panel still renders when the game is fullscreen.
+    (document.getElementById('fsbox') || document.body).appendChild(panel);
+  }
+  function openPanel() { panel.hidden = false; input.focus(); }
+
+  function addMsg(kind, text) {
+    var cls = kind === 'user' ? 'mai-user' : kind === 'err' ? 'mai-err'
+            : kind === 'think' ? 'mai-think' : 'mai-marty';
+    var d = el('div', { className: 'mai-msg ' + cls, text: text });
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    return d;
+  }
+
+  function send() {
+    var text = input.value.trim();
+    if (!text || state.busy) return;
+    if (!state.provider) { dlg.showModal(); return; }
+    // Key not remembered and page was reloaded: ask for it again instead of a 401.
+    if (PROVIDERS[state.provider].needsKey && !state.key) {
+      dlgStatus.className = 'mai-status err';
+      dlgStatus.textContent = 'Please enter your API key again (it was not remembered).';
+      dlg.showModal(); return;
+    }
+    input.value = '';
+    addMsg('user', text);
+    state.history.push({ role: 'user', content: text });
+    while (state.history.length > 12) state.history.shift();
+    if (state.history[0] && state.history[0].role !== 'user') state.history.shift();
+    state.busy = true;
+    var thinking = addMsg('think', 'Marty is thinking…');
+    var tier = state.provider === 'nano' ? 'nano' : 'full';
+    var onStatus = function (t) { thinking.textContent = t; };
+    loadCorpus(tier).then(function () {
+      return PROVIDERS[state.provider].chat(
+        { key: state.key, model: state.model }, systemPrompt(tier), state.history, onStatus);
+    }).then(function (reply) {
+      reply = (reply || '').trim() || '(no answer)';
+      thinking.remove();
+      addMsg('marty', reply);
+      state.history.push({ role: 'assistant', content: reply });
+      speakOut(reply);
+    }).catch(function (e) {
+      thinking.remove();
+      state.history.pop();                       // failed turn: don't poison history
+      addMsg('err', e.message);
+    }).finally(function () { state.busy = false; input.focus(); });
+  }
+
+  // ------------------------------------------------------------ speech in/out
+  var rec = null, recOn = false;
+  function toggleMic() {
+    if (recOn) { try { rec.stop(); } catch (e) {} return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    rec = new SR();
+    rec.lang = navigator.language || 'en-US';
+    rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = function (ev) {
+      var t = ev.results[0][0].transcript;
+      input.value = t; send();
+    };
+    rec.onend = function () { recOn = false; micBtn.className = ''; };
+    rec.onerror = function (ev) {
+      recOn = false; micBtn.className = '';
+      if (ev.error !== 'aborted' && ev.error !== 'no-speech')
+        addMsg('err', 'microphone: ' + ev.error);
+    };
+    recOn = true; micBtn.className = 'rec';
+    try { rec.start(); } catch (e) { recOn = false; micBtn.className = ''; }
+  }
+  function speakOut(text) {
+    if (!state.speak || !window.speechSynthesis) return;
+    try {
+      speechSynthesis.cancel();
+      speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    } catch (e) {}
+  }
+
+  // ------------------------------------------------------------ boot
+  function boot() {
+    loadCfg();
+    buildPanel();       // panel first: dialog Save reveals it
+    buildDialog();
+    var btn = el('button', { id: 'aibtn', type: 'button', text: '🛸 Ask Marty' });
+    btn.title = 'Give Marty an AI and ask him questions';
+    btn.addEventListener('click', function () {
+      if (!state.provider) dlg.showModal();
+      else if (panel.hidden) openPanel();
+      else panel.hidden = true;
+    });
+    var controls = document.getElementById('controls');
+    if (controls) controls.appendChild(btn); else document.body.appendChild(btn);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();

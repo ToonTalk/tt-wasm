@@ -1,0 +1,4294 @@
+TOONTALK KNOWLEDGE BASE
+Compiled from the ToonTalk 3 shipped manual (doc/English) and the engine's own
+help strings. ToonTalk is Ken Kahn's animated programming world where programs
+are built by demonstration inside a city: robots are programs, boxes are data
+structures, birds carry messages to their nests, and tools like Dusty the
+vacuum, Pumpy the bike pump, and the magic wand edit the world.
+
+
+======================================================================
+SECTION: WHAT TOONTALK IS
+======================================================================
+
+--- toontalk.htm ---
+ToonTalk - Making programming child's play
+
+INFO DESK
+
+SUPPORT DESK
+
+PRESS ROOM
+
+Inside of
+ToonTalk's animated world you will build and run all sorts of computer programs. While
+learning how to program you will face challenging puzzles, express your creativity, learn
+new ways to solve problems, and have loads of fun!
+
+TOONTALK IS NOW
+FREE!
+This site has been translated to Japanese, German,
+Swedish, European Portuguese, and Brazilian Portuguese.
+
+The US English
+ToonTalk 3 WebLabs/Playground edition is
+now available at no cost.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- about.htm ---
+ToonTalk 3 (Internal version US 3.191)
+
+Protected by US Patent No. 5,517,663.
+
+ToonTalk is a registered trademark of Animated Programs.
+
+--- kidsask.htm ---
+"ToonTalk is a video game for making video
+games."
+
+-- David Kahn, age 10.
+
+"It's an animated world where kids can
+make, run, debug, and trade programs."
+
+-- Ken Kahn, David's
+dad and inventor of ToonTalk
+
+You start off flying a helicopter. After you land
+you can walk into houses and use animated tools and characters to
+add to your town or build games.
+
+In ToonTalk, you fly your
+helicopter into a city you've designed.
+
+I think you really should check out the animated tools and characters .
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+--- adultask.htm ---
+ToonTalk is a completely new kind of software -- both a state-of-the-art programming language and a
+video game. Children create programs by performing actions in an animated world.
+
+Computer programming can be a creative,
+empowering, and rewarding activity. Programs can be constructed for an incredible
+variety of purposes -- games, music, math, animation, simulation, science, language,
+robotics, education. The process of building programs entails a rich set of problem-solving skills involving analysis and design.
+And computer programming is a worthy subject to learn on its own merits.
+
+But programming can be hard -- hard to learn and hard to do.
+Programmers usually have to learn a formal textual programming language full of difficult
+abstract concepts like variables, procedures, flow of control, data structures,
+modularity, and recursion. Some children do learn languages like Logo
+or Basic, especially when taught by a gifted and dedicated teacher, but most find it
+frustrating and boring.
+
+ToonTalk is different. It is not only easy to learn, but
+fun too. It borrows heavily from video games -- appealing graphics and animation, a
+virtual world to explore, animated characters to interact with and get help from. Children
+can learn ToonTalk by playing the tutorial game, by viewing demos and tours, or by
+exploring with or without the help of a Martian animated coach and guide.
+
+But ToonTalk isn't just a video game for teaching
+programming -- the very act of building, running, and debugging programs is like playing
+an adventure game. In ToonTalk, it is not only fun to play with the resulting
+creation, it is fun to build it.
+
+The protean nature of the computer is such that it can
+act like a machine or like a language to be shaped and exploited. It is a medium that can
+dynamically simulate the details of any other medium, including media that cannot exist
+physically. It is not a tool, although it can act like many tools. It is the first
+metamedium, and as such it has degrees of freedom for representation and expression never
+before encountered and as yet barely investigated. Even more important, it is fun, and
+therefore intrinsically worth doing.
+
+... Computers are to computing as instruments are to
+music. Software is the score, whose interpretation amplifies our reach and lifts our
+spirit. Leonardo da Vinci called music ``the shaping of the invisible,'' and his phrase is
+even more apt as a description of software.
+
+-Alan Kay, ``Computer Software'', Scientific American,
+September 1984
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- computer.htm ---
+The Computer Science behind
+ToonTalk
+
+ToonTalk is an interpreter for a concurrent constraint
+programming language. Concurrent constraint programming is a synthesis of concurrent logic
+programming and constraint logic programming. (See, for example, Saraswat). The class of
+languages for which programs are roughly interchangeable with ToonTalk programs include Oz, E-Lang,
+Janus, Flat Guarded Horn Clauses, KL1/KLIC, Flat
+Concurrent Prolog, Parlog, and Strand. The syntax of all these languages is textual while
+ToonTalk has an action-oriented video game animation syntax. The programming environment
+is completely different as well. In ToonTalk, the process of constructing, testing, and
+debugging programs closely resembles playing a video game. "From
+Prolog and Zelda to ToonTalk" is a paper discussing these ideas in detail.
+
+Pictorial Janus is a visual version of Janus in which
+pictures are used for source code and the execution of a program can be seen as an
+animation. ToonTalk differs from Pictorial Janus (and all visual programming languages) in
+that the source code is animated and concrete as opposed to the static and abstract syntax
+of visual programming languages. (See Pictorial Janus ftp site and Paderborn University web page.)
+
+The computational model underlying ToonTalk supports the
+dynamic creation and termination of asynchronous processes. First-class send and receive
+capabilities provide a means for these processes to communicate and synchronize. All state
+is local to processes. There is a close relationship between concurrent object-oriented
+programming languages (including actor languages) and ToonTalk. (See ToonTalk
+papers.) Here is an
+essay about how ToonTalk is concurrent and why it is difficult to extend conventional
+languages to be concurrent.
+
+ToonTalk includes a puzzle game that includes a
+sequence of over 60 puzzles. The connections to computer programming and computer science
+for each puzzle are described here.
+
+One way to understand ToonTalk is that it provides
+"concretizations" of computational abstractions. For each computational
+abstraction ToonTalk provides a tangible equivalent analog.
+
+Computational
+Abstraction
+ToonTalk
+Concretization
+
+computation
+city
+
+actor or process or
+object
+
+house
+
+methods
+robots
+
+method
+preconditions
+contents of thought
+bubble
+
+method actions
+actions taught to
+robot
+
+tuples or messages
+or vectors
+boxes
+
+comparison tests
+scales
+
+actor spawning
+loaded trucks
+
+actor termination
+bombs
+
+constants
+numbers, text, and
+pictures
+
+channel transmit
+capabilities
+birds
+
+channel receive
+capabilities
+nests
+
+program storage
+notebooks
+
+Another way to understand the computational
+model of ToonTalk is to consider what you can train robots to do:
+
+· send a message (i.e. tell a constraint)
+
+by giving a box or pad to a bird,
+
+· spawn a new agent
+
+by dropping a box and a team of robots into a
+truck,
+
+· perform simple primitive operations (e.g. +, -, *)
+
+by dropping a pad on a pad,
+
+· copy an item
+
+by using a magician's wand,
+
+· terminate an agent
+
+by setting off a bomb,
+
+· change the contents of a tuple
+
+by taking out items and placing new ones.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- kenkahn.htm ---
+Ken Kahn
+
+ToonTalk was designed and built by Ken Kahn who, after earning a doctorate in computer
+science from MIT, has spent over 30 years as a researcher in programming languages, computer
+animation, and programming systems for children. He has been a faculty member at MIT,
+University of Stockholm, and Uppsala University. For over eight years he was a researcher
+at Xerox PARC. He has made several animated films that have been shown in film festivals,
+whose mission is to make computer programming child's play. He received a patent covering
+the underlying technology of ToonTalk (US Patent Number
+5,517,663).
+
+He has recently participated in several international research projects (Playground,
+WebLabs, and the BBC Digital Curriculum
+Project). He is currently contributing to the European
+ReMath project and is leading the
+
+Constructing2Learn and
+Modelling4All projects at the University of Oxford.
+
+ToonTalk.
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+--- origins.htm ---
+Where did the idea for ToonTalk
+come from?
+
+There is rarely a simple answer to a question of
+where ideas came from. The design of ToonTalk was influenced by
+
+- Rocky's Boots and Robot Odyssey -
+these games from The Learning Company in the early 1980s had players doing a very limited
+sort of programming in an animated game world.
+
+- Zelda and other adventure games - many of the
+user interface ideas from ToonTalk came from studying games.
+
+- Concurrent Constraint
+Programming - the underlying computation model of ToonTalk comes from Janus, a
+concurrent constraint programming language. There is a large overlap with the idea of
+actor programming pioneered by
+Carl
+Hewitt in the 1970s.
+
+- Logo and Smalltalk - programming languages designed for children
+about 30 years ago.
+
+- Grasp - Jaron Lanier started to build an animated
+programming language in the early 1980s but became distracted by pioneering work in
+virtual reality.
+
+- Visual Programming & Program Animation -
+ToonTalk can be seen as taking the idea of using static pictures as source code and using
+animation as both source code and for depicting the execution of programs.
+
+- Pictorial
+Janus - A version of Janus which combined the ideas of visual programming and program
+animation.
+
+- Incredible Machine and Lemmings -
+These two games directly inspired the tutorial game in ToonTalk.
+
+Special thanks to Markus Fromherz, David Kahn, and
+Mary Dalrymple for their help. And to the many beta testers who sent suggestions.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+--- whomeet.htm ---
+Who will you meet in ToonTalk?
+
+The very helpful Marty the
+Martian is the first one you'll
+meet. Some tools you can use are Dusty the Vacuum
+, Pumpy the Bike Pump
+, and Maggie the Magic Wand
+. And Tooly the Toolbox
+is full of neat stuff. Bammer the Mouse smashes things but is really useful. And you can train robots
+to do pretty much anything a
+computer can do. And one of the characters is you. And there's
+more!
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- you.htm ---
+You choose whether you want to
+look like
+
+or like
+or else like
+.
+
+After ToonTalk asks your name, you can click on
+"Long Hair", "Bald", or "With Hat".
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+======================================================================
+SECTION: THE CITY, HOUSES, AND GETTING AROUND
+======================================================================
+
+--- location.htm ---
+Streets and Avenues of the
+ToonTalk City
+
+Each block in the ToonTalk City has an address that
+is the number of the avenue and street at its lower left corner. Avenues run north and
+south. Avenues further east have higher numbers. Streets run east and west. Streets that
+are further north have bigger numbers. You can do the same things with streets and avenues
+that you can do with numbers like add and subtract. So if you
+drop a 1 on "Fourth Avenue" it'll change to "Fifth Avenue".
+
+You can drop a street or avenue (or both) into a truck. The crew will try to find the closest empty lot to the address
+you give them and build a house there.
+
+You can find the address of the house you are in on page 48 of the sensor notebook.
+
+examples of robots that use addresses to make neat patterns of houses in the city when
+they run.
+
+Advanced tip: You can customize ToonTalk so that avenues are cardinal
+numbers rather than words for cardinal numbers.
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+--- flying.htm ---
+ToonTalk Screen Shot while User is Flying
+
+The user is flying the helicopter over a
+town running the 'Exploding Houses' demo.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- walking.htm ---
+ToonTalk Screen Shot Walking
+Outside
+
+The user leaves a house followed by
+Tooly, the Toolbox, and heads for the helicopter.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- inside.htm ---
+ToonTalk Screen Shot on Floor
+inside a House
+
+Here, the user has picked up a bird and
+Marty is talking about what birds do.
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+--- rocket.htm ---
+ToonTalk Screen Shot inside the
+Rocket
+
+The user has just started playing the
+puzzle game and is greeted by Marty, the Martian.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- visitpg.htm ---
+Visiting the ToonTalk Playground
+
+Playground was a European research project that developed material in ToonTalk
+to help children make their own games. You can visit the city they built that
+is full of games, tools, and game components. It runs best on a fast computer. The
+Playground notebook has the same material in notebooks and runs
+on all computers. Note that your first visit may require a
+lengthy download. Please be patient.
+
+--- playgrnd.htm ---
+Loading Playground games into
+ToonTalk
+
+The
+Playground files have been updated for ToonTalk 3 (3.188 or Beta 52) or later.
+The ToonTalk start dialog includes a button to access the Playground files. If
+not installed then the files will be downloaded the first time they are used.
+You can also add all the files directly.
+
+The Playground
+Project built upon ToonTalk (and Logo) to help small children make their
+computer games. The Game
+Place is where games made by children and researchers have been posted. These games
+require a relatively recent version of ToonTalk. They also use their own pictures and
+sounds. If you are not participating in the Playground Project you can still run (and
+modify or combine) the games in the Game Place. And you can submit your own games. Note
+that most of these games require ToonTalk version 2.28 or Beta 25 or later.
+
+Typically these games have been saved turned off. Simply
+press space while pointing to or holding one to turn it on. Also if you flip the games
+over you'll often find instructions on the back. After playing with a game see if you can
+figure out how it works. And then see if you can improve it.
+
+If you have ToonTalk version 2.35 or Beta 27 or later then
+when you click on links to games, cities, or components at the Game Place then
+ToonTalk should be able to find and download the sounds and pictures as needed. If you get
+warnings about missing files then try this.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+======================================================================
+SECTION: OBJECTS: NUMBERS, TEXT, BOXES
+======================================================================
+
+--- number.htm ---
+ToonTalk Numbers
+
+Many improvements were made to
+numbers beginning with beta 34 (or release version 2.5 or greater). Click here to see the new page. The old page follows.
+
+Inside of Tooly is a stack
+of text pads with a 1 on them. If you drop a number, for example 2, on another number, 7,
+they will be added by Bammer turning the 7 into a 9 and
+destroying the 2. If you type the key for an operation before dropping the 2 then the
+following will happen:
+
+- x or * multiply (7x2 becomes 14)
+
+- / divide (7/2 becomes 3)
+
+- % remainder (7%2 becomes 1)
+
+- = set to number on top (7=2 becomes 2 as does any
+number with =2 dropped on it)
+
+- - makes the number negative (7 plus -2 becomes 5)
+
+You can change a number when holding or pointing to
+it by typing. You can also drop a number on a notebook to go to
+that page number. If you drop a number on a text pad you'll change
+the first or last letter depending on which side of the pad you dropped it. If, for
+example, you dropped 2 on the right side of the text pad containing "ABC", it'll
+be turned into "ABE".
+
+ADVANCED USERS ONLY:
+
+Blank numbers.
+
+A blank number pad can be any number. They are
+handy inside of a robot's thought bubble. This way a robot will
+only accept a box with a number where the blank number is. This corresponds to a
+"type test" in conventional programming languages.
+
+They can also be used for something called
+"type conversion". You can change a text pad that is
+showing a number into a number by dropping it on a blank number pad. Or you can take a box and drop it on a blank number pad and the pad will end up showing
+how many holes the box has. You can even drop a team of robots on a blank number pad to
+find out how many robots there are. Dropping a notebook on an erased number pad turns the
+pad into the number of pages in the notebook. You need to use Dusty
+to remove the number from a pad to make it blank.
+
+The following operations on numbers as strings of
+bits are supported as well but only advanced users need to worry about them.
+
+- ~ complements all the bits (NOT 2 becomes -3)
+
+- & bitwise and of numbers (7 AND 2 becomes 2 or
+in binary 111 AND 010 becomes 010)
+
+- | bitwise or of numbers (7 OR 2 becomes 7 or in
+binary 111 OR 010 becomes 111)
+
+- ^ bitwise exclusive or of numbers (7
+XOR 2 becomes 5) -- only prior to version 2.50 or beta 34. See new numbers page.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+--- newnum.htm ---
+New Version of ToonTalk Numbers
+
+This page describes numbers,
+including many improvements
+were made to numbers beginning with beta 34 (or release version 2.50 or greater). Click here to read about the old version.
+
+If you drop a number, for example, 2, on
+another number, say, 7, they will be added by Bammer turning the 7 into a 9 and
+destroying the 2. If you type the key for an operation before dropping the 2 then the
+following will happen:
+
+-
+x or * multiply (7 x2 becomes 14)
+
+-
+/ divide (7 /2 becomes 3)
+SHOW ME
+
+-
+% remainder (7 %2 becomes 1)
+SHOW ME
+
+-
+^ to raise to a power (7 ^2 becomes
+49)
+SHOW ME
+
+-
+= set to number on top (7 =2 becomes 2 as does any
+number with =2 dropped on it)
+SHOW ME
+
+-
+- makes the number negative (7 plus -2 becomes 5)
+
+You can change a number when holding or pointing to
+it by typing. You can also drop a number on a notebook to go to
+that page number. If you drop a number on a text pad you'll change
+the first or last letter depending on which side of the pad you dropped it. If, for
+example, you dropped 2 on the right side of the text pad containing "ABC", it'll
+be turned into "ABE".
+
+ADVANCED USERS ONLY:
+
+Blank numbers.
+
+A blank number pad can be any number. They are
+handy inside of a robot's thought bubble. This way a robot will
+only accept a box with a number where the blank number is. This corresponds to a
+"type test" in conventional programming languages.
+
+They can also be used for something called
+"type conversion". You can change a text pad that is
+showing a number into a number by dropping it on a blank number pad.
+SHOW ME Or you can take a box and drop it on a blank number pad and the pad will end up showing
+how many holes the box has. You can even drop a team of robots on a blank number pad to
+find out how many robots there are. Dropping a notebook on an erased number pad turns the
+pad into the number of pages in the notebook. You need to use Dusty
+to remove the number from a pad to make it blank.
+SHOW ME
+
+The following operations on numbers as strings of
+bits are supported as well but only advanced users need to worry about them.
+
+-
+~ complements or negates all the bits
+(~2 becomes -3 since it is
+two's complement)
+
+-
+& bitwise and of numbers (7 &2 becomes 2 or
+in binary 111 AND 010 becomes 010)
+
+-
+| bitwise or of numbers (7 |2 becomes 7 or in
+binary 111 OR 010 becomes 111)
+
+Arbitrarily large integers.
+
+This means that numbers behave as they should and not as
+they do in nearly every other programming language. In the earlier version of ToonTalk all
+numbers needed to be between 2147483647 and -2147483648. Now the only limit is the amount
+of memory need to store a number. Numbers with 100,000 digits work just fine however some
+operations may take a noticeable amount of time. Multiplying two 100,000 digit long
+numbers may freeze ToonTalk for a few seconds.
+
+Prior to 3.107 or beta 45, ToonTalk would crash or
+exit when displaying a number with more than about 750,000 digits. The limit was
+raised to 7,500,000 in version
+3.107. Numbers larger than this can still be used in computations but they
+display an explanation that ToonTalk can't compute the digits. Even larger
+numbers can be displayed in a base that is a power of two (e.g. hexadecimal or
+base 32).
+
+Beginning with 3.125 or beta 46, if the number pad
+is in a box or notebook or its size has been changed by Pumpy and there isn't
+enough room to display all the digits then the first and last digits are
+displayed at full size and the digits in between are displayed as shrinking to
+dots and then growing again. (This feature can be turned off using the
+toontalk.ini
+
+OKToDisplayNumbersShrinkingAndGrowing
+switch.) Here is the 37th
+Mersenne prime
+which has 909,526 digits:
+
+SHOW ME (this will pause for a few seconds while
+computing)
+
+Exact rational numbers.
+
+In the older version division always returned the quotient
+and threw away the remainder (though using % you can get the remainder). So dropping
+"/3" on "4" used to result in "1" while now it results in
+"4/3". This is not approximated internally but is stored exactly with a
+numerator and denominator that can be as long as needed. For example, dropping
+"*6" on to "4/3" will result in exactly "8".
+
+Beginning with Beta 39 (or version 2.99g) there is
+a new way of displaying numbers that are fractions that cannot be shown as exact
+decimals. The idea is to have the digits shrink as they approach the right side
+of the number pad. Here is 1/7:
+
+SHOW ME
+
+A number like "3/2" can be displayed as either or or . At the beginning of the notebook on
+page 12 of your main notebook you'll find four styles of displaying rational numbers. They
+are
+
+-
+Fraction. A numerator over a denominator
+where they have no common divisors and hence are as small as possible.
+
+-
+Integer followed by a proper fraction. The
+closest integer to the number (from zero) followed by a proper fraction. The sum of the
+integer and fraction is exactly the number.
+
+-
+Exact decimal or fraction if no exact decimal exists.
+Same as number 1 except it will display as a decimal number if it can do so exactly.
+
+-
+Exact decimal or an integer followed by a proper
+fraction if no exact decimal exists. Same as number 2 except it will display as a
+decimal number if it can do so exactly.
+
+SHOW ME
+
+You can use choose among the four sample numbers in the
+notebook on page 12 to control which format is used. Also if you erase one of these
+numbers and drop a number with a different format on top, it'll be converted to the format
+of the erased number.
+
+Fractions are displayed as follows (unless this
+feature is turned off by setting
+
+OKToDisplayNumbersShrinkingAndGrowing to 0 or the internal version number
+is less than3.125):
+
+and
+.
+
+Sensors and rational numbers.
+
+Most numeric sensors truncate whatever value they are given
+to an integer. The only exceptions are a picture's sensors for its x and y position,
+width and height, and x and y
+speed. These can now have fractional values. By default only the speed sensors display
+the exact value - the other sensors display their integer value. You can override this by
+adding "-integer_positions 0" to the
+command line.
+
+Editing and typing numbers.
+
+Beginning with version 3.78 or beta 43 you
+can now type numbers even if the intermediate states are syntactically
+incorrect. It is only when dropped or when deselected does the newly typed
+number gets updated. If the result is syntactically incorrect the number reverts
+to its previous value. You can also use arrow keys to edit numbers (except the
+shrinking digits since they are infinitely long).
+
+ADVANCED USERS ONLY:
+
+Changes to operations.
+
+It has always worked in ToonTalk to pick up a number, say 5,
+and type '\' and it becomes '\5' which is the operation of dividing by 5. You can drop it
+any number and it'll divide that number by 5. But "\5" isn't really a number, it
+is an operation on numbers. To help make this distinction clear the color of operations is
+somewhat different from numbers. So "\5" looks like .
+
+[...trimmed...]
+
+--- numbbase.htm ---
+ToonTalk numbers can be
+viewed in many different bases
+
+ToonTalk numbers can be seen or
+typed in any base between 2 and 36. If you have a number pad with the desired
+base and then type '#' to it, you'll have 0 in that base. If you drop a number
+on it, the sum will be shown in the new base. For example, if you have 2 and
+then type '#' you'll get 2#0. If you drop 5 on that it'll become 2#101 since 5
+is 101 in binary.
+
+For bases over 10, the additional digits
+begin with 'a' for 10 and going to 'z' for 35. So, for example, if you type
+"36#toon" and drop it on "36#talk" you'll get "36#1mza7".
+And if you drop "36#toon0000" on "36#talk" you'll get
+"36#toontalk". Then if you drop "36#toontalk" on 0 you'll get
+2326294721000.
+
+SHOW ME
+
+The '#' sign and proceeding base is not
+shown when the base is 10.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- slownumb.htm ---
+ToonTalk can temporarily
+freeze when working with very large numbers
+
+If you are reading this from a local file
+
+ToonTalk can work with numbers of any size (that fits in the
+computer). As numbers get very long you might notice ToonTalk freezes for a while when the
+number changes, is copied, or when you sit down in a room with large numbers on the floor.
+Numbers with less than a thousand digits should not cause this problem. Nor should you see
+freezing when robots are working with numbers with a million digits if they are in another
+house or on the back of picture. However the first time you look at a number that is a
+million digits long you may have to wait many hours as ToonTalk converts the number for
+viewing.
+
+If you really want to work with numbers
+that have thousands or millions of digits, then you can avoid these long pauses by seeing
+the numbers in base 2 (binary), base 4, base 8 (octal), base 16 (hexadecimal) or base 32. Click here to learn how to change the base of numbers.
+
+These problems can also occur when dealing
+with exact fractions since they are internally represented as two potentially large
+numbers: one for the numerator and the other for the denominator.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- text.htm ---
+ToonTalk Text Pads
+
+There is a very large stack of text pads with the
+letter "A" on them inside of Tooly. You can pick one up
+and type words, sentences, or anything you like. If you press the Enter key, you'll
+add a new line to the pad. If you drop a text pad on another one they are combined by Bammer. So if you drop "Talk" on the right side of
+"Toon" you'll be left with "ToonTalk". If you drop it on the left side
+of "Toon" you'll get "TalkToon".
+
+Tip. You can drop text pads on a notebook to find a page with that text on it. SHOW ME
+
+Tip. You can drop a number
+on a text pad to make the first or last letter (depending on which side you drop it)
+change by that number. So dropping 2 on "a" results in "c".
+
+Tip. The text pads that you'll find in your notebook (for example, "Pictures" on page 1) are made
+with "variable width" characters. For example, a W is much wider than an I. You
+can use these text pads just like the regular "fixed width" ones. Text with
+variable width characters usually looks nicer and is easier to read.
+SHOW ME
+
+You can use arrow keys to change the
+insertion point to edit text pads.
+SHOW ME
+
+ADVANCED USERS ONLY.
+
+Blank text pads.
+
+Dusty can help you make
+blank text pads. They are handy mostly inside of a robot's thought
+bubble. Since a robot will only take boxes that look like what's in his thought bubble
+this is a good way of making the robot less fussy. If a box in his thought bubble contains
+a text pad that says "OK" then he'll only accept boxes with the text pads saying
+"OK". But if you make it blank then he'll be happy with anything on top so any
+text pad will do just fine.
+
+Blank text pads can be used to convert a number
+into text. Just drop a number on top of a blank pad and you'll
+get a text pad with the same digits on it. Even though it looks like a number it's written
+on a text pad now instead of a number pad.
+SHOW ME
+
+Changing how the text looks.
+
+If you flip a text pad over (by holding down the
+shift button and clicking a mouse button while holding a text pad), then you can use some
+of the remote controls in the notebook that flies out to change
+the color or visibility of the text pad.
+SHOW ME
+
+Fixed width
+vs. variable width fonts.
+
+ToonTalk has two kinds of text pads:
+
+Notice how that only with the fixed width font are
+a 'W' and an 'I' the same size. The two kinds of text pads are otherwise
+identical (they match in thought bubbles, etc.). A variable width font text pad
+is what you get if you paste some text into ToonTalk. Also if you put a variable
+width font on the clipboard, you'll just see the text and not the surrounding
+XML (unless you've put robots on the back of the pad or changed the color of the
+text.) A fixed width 'A' lives inside of Tooly the Toolbox.
+Variable font text pads are used in the built-in notebooks.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- box.htm ---
+Boxes
+
+Boxes are great for storing things. You can put
+anything except for Tooly, Dusty, Pumpy, and
+Maggie the Magic Wand into boxes.
+
+You can join two boxes by dropping a box on the
+edge of another box. They need to overlap a little bit. While holding a box you can type a
+number from 0 to 9 and the box will change to have the number of holes you typed. If the
+new size is smaller then the extra part of the box on the right will drop off. You can
+break a box by dropping it on a number. For example, if a box
+with 5 holes is dropped on a 3, it will break into a box with 3 holes and another box with
+2 holes.
+
+You can add labels to a box by pointing to the part
+of a box under a hole and typing. This is a good way of remembering what's in a box.
+(Robots ignore labels when deciding whether to work on a box.)
+
+SHOW ME
+
+Tip. You can train a robot
+to find or change any element of a box just by going to the hole and taking things out or
+putting them back.
+
+Advanced tip. If you don't know which hole
+you want a robot to work on while training him but you'll have the number of the hole when
+the robot is working then here's what you can do. When training the robot give him a box
+with the number and the box you want him to work on (and anything else he'll need). Train
+the robot to take out the number and set it down and then to take out the box and drop it
+on the number. The box will split in two pieces. The one on the left should have the same
+number of holes as the number underneath. The second box contains the rest of the original
+box. So if the robot uses the contents of the first hole in this box, he'll be accessing
+the "nth" element in the box (where n is the number). When finished the robot
+should put the two box pieces back together and put it back where it came from. Computer
+scientists call this ability to directly access the nth element array
+illustrates this technique.
+
+Boxes without holes. If you type 0 while
+holding a box you'll find you are holding a box without a hole. You can also
+make one by dropping a box on a zero or a number that is the same as the size of
+the box. There isn't too much you
+can do with these zero-holed boxes. You can join them to other boxes and they'll go away. Computer
+scientists like things like this. They help make procedures that robots follow
+to be more general by working in the extreme cases - e.g., when you split a box
+into 2 parts but it just happens to be that one part is the whole thing (so the
+other part needs to be a zero-hole box).
+
+Blank boxes. Dusty
+can help you make a blank box. These are handy in a robot's thought
+bubble when you want a robot to be sure he's got a box but you don't care how many
+holes the box has.
+
+Advanced
+tip. You can also use blank boxes to "explode" a text pad. If you drop a
+text pad like "cat" on a blank box the box will turn into one with 3 holes. The
+first hole will contain just the letter "c", the second hole "a", and
+the third hole "t". You can also explode a team of robots this way. The team
+will be split up and each robot will end up in a hole of the box by himself. You can also drop a notebook on an erased box and the box
+will have one hole filled for each page of the notebook. Computer scientists
+call this converting of one kinds of thing to another type coercion.
+SHOW ME
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+======================================================================
+SECTION: OBJECTS: ROBOTS (PROGRAMS)
+======================================================================
+
+--- robot.htm ---
+You can train robots to do your
+bidding.
+
+Inside of Tooly you'll find
+a very large stack of robots. If you take one out you'll see he has an empty thought bubble. You can start training a fresh robot by dropping a
+box on him. You'll enter into the robot's thoughts and you'll control him. You can have
+him pick things up, use tools, and drop things. He'll remember everything. If you train
+him to take things out of, or put things into, a box he'll remember which hole it was by
+counting from the left side of the box. Once you are finished training him press the
+escape key (usually labeled Esc).
+
+You can then make the robot repeat what you trained
+him to do by giving him the box again. When he's done he'll try to do it again if the box
+still matches the box in his thought bubble.
+SHOW ME
+
+You can change a robot's name by typing a
+new name while holding him. Sometimes long names look better if you break the
+line by using the 'Enter' key.
+SHOW ME
+
+Tip. Robots are quite fussy. They only will
+work on a box like the one in their thought bubble. Luckily you can use Dusty to suck some things out of the box in a thought bubble. A good
+idea is to suck out only enough to get the robot to work when you want him to. Sometimes
+it is easier to suck the box out of the thought bubble, spit it out, change it and then
+drop it back on the thought bubble.
+
+Teams of robots. You can make a team of
+robots by dropping them on each other. When you give a box to the team the robot in front
+sees if it matches his thought bubble. If it does, he'll start working on it and the other
+teammates will move out of the way. If it doesn't match, he'll pass it along to the next
+robot in line. If there is stuff missing from the box or there is a nest where the robot
+wants something else or the mismatch was due to sensors that are changing on their own
+then he'll wait around. When the box is filled or the nest is covered he'll start up
+again.
+SHOW ME
+
+Tip. If you want a robot to do something
+only if something is not there, then you can have the robot in front of him check
+for something like the number 42 and the robot behind him won't be given the box to work
+on unless the number is different from 42.
+SHOW ME
+
+Anywhere you need a robot you can use a team of
+robots as well. So you can drop a team in a truck or put a team on
+the back of a picture. The best way to break up a team is to use
+Dusty to pull them apart.
+
+Tip. If you trained
+a robot to almost do the right thing, but messed up a little, then you can re-train the
+robot. Just vacuum the box out of the robot's thought bubble, spit it out, and then drop
+the box on the robot (careful not to drop it back on the thought bubble). You'll re-enter
+the robot's thought bubble, but this time the robot will redo what he was trained to do
+until you click a mouse or keyboard button. Then you can keep training him as usual.
+SHOW ME
+
+Advanced tip. You can't train a robot to
+give something to other robots, but you can train a robot to load up a truck with other
+robots. Computer scientists would describe this as saying that while you can't do a
+procedure call, you can do a more general process spawn. If you want to get something back
+from the robots then arrange for them to give a reply to a bird.
+SHOW ME
+
+Advanced tip. When you train a robot to give
+something to a bird, the bird flies off and returns empty handed (empty clawed?). But
+during training the bird does not take things to her nest since when the robot is run
+later it might be a different bird. If you need to compute something using something
+placed on a nest by a bird, then you'll need at least 2 robots. One to give the bird the
+item and another to work on the resulting item on the nest. A good trick is to give the
+first robot the box after training him to produce the box you want for training the second
+robot.
+SHOW ME
+
+Advanced tip. Computer
+scientists talk about recursive programs - programs that use themselves. Here's how
+you can make recursive programs in ToonTalk. Put a fresh robot on a blank page of your
+main notebook. Then train another robot to, among other things,
+find the page with the saved robot. Train the robot to put a copy of the robot in the
+notebook into a truck along with a box for him to work on. After finishing your robot's
+training, find the page where you saved the robot. Use Dusty to
+remove that robot and put in his place the robot you just trained.
+
+There is a
+much easier way to express recursion. A robot can now use
+the magic wand to create a copy of himself and his teammates.
+SHOW ME
+
+The factorial of a number (1 times 2 times 3 and so
+on up to your number) can be computed recursively or iteratively (repeatedly
+robots to compute the factorial using recursion once. Click here to find robots that compute factorial
+using recursion twice. Robots that compute factorial without recursion can found on page
+12 of the examples notebook which is on page 6 of your main notebook.
+
+Advanced
+tip. You can put robots in boxes and even train other robots to manipulate those
+robots. Computer scientists call this meta-programming. Robots cannot train other
+robots, but they can re-arrange teams, remove, edit and replace boxes in thought bubbles,
+and the like. Dropping a team of robots on a blank box
+breaks the team up -- one robot per hole of the box.
+
+Advanced
+tip. A robot in a box in a thought bubble will only match another robot with
+the same name. You can use Dusty to "erase" a robot so that it will only match
+any robot.
+
+Advanced
+tip. You can also train a robot to pick up a team of
+robots from a box and put them in a truck together with a box for them to work on.
+Computer scientists call this higher-order programming. There is a way of combining
+higher-order programming and recursive programming -- see if you can figure out how.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- bubble.htm ---
+A Robot's Thought Bubble
+
+After you train a robot his
+thought bubble contains a copy of the box he was trained to work on.
+When a robot is given a box, he'll see if it matches the box in his thought bubble. If
+there is anything in the box in the thought bubble that is different from what is in the
+box he was given, he'll reject the box. If the box contains sensors
+that might change, then he'll wait for the sensor to change. If he's part of a team, he'll
+let the robot behind him check it out. If there isn't a robot behind him he'll just quit
+working. He has no problem working on a box that has more stuff than the one in his
+thought bubble. If there is something in the box in his thoughts and in the same place in
+the box he's given there's a nest or its empty, then he'll just wait. He'll start up again
+if the bird covers her nest or if you drop something in the hole.
+
+Tip. Robots can be too fussy. You can use Dusty to remove stuff from their thought bubbles so they'll accept
+more kinds of boxes. If you remove too much they may try working on boxes that they really
+don't know what to do with.
+
+Advanced Tip. If you use Dusty to remove
+just the stuff on the surface of a number pad in his
+thought bubble, then the robot will still wait until a number pad is at the same place in
+the box he's given, but he won't care what number is on the pad. Same thing with blank text pads, boxes, and erased pictures. SHOW ME
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+======================================================================
+SECTION: OBJECTS: BIRDS AND NESTS (MESSAGES)
+======================================================================
+
+--- bird.htm ---
+Birds and their Nests
+
+Inside of Tooly you'll find
+a very large stack of nests. If you take one out you'll see an egg in the nest. If you set
+it down, out will hatch a bird. A bird likes to take everything she's been given and put
+it on her nest. Even if her nest has been moved to some other part of the city, she'll
+find it. One quirky thing about birds is they only like things that are rectangular.
+She takes number and text pads, pictures, and boxes - nothing else. Luckily,
+lots of other things go into boxes. She will even take a box with the nests of other birds
+or even a box with other birds in it. If she wants to put something in her nest and
+something is already there, she'll put the new thing on the bottom of the stack of things
+already there.
+
+After bringing something to their nest, birds
+
+You can use Pumpy to make a bird very
+large and drop a picture on her T-shirt. If it fits completely inside her shirt,
+it is now stuck to her T-shirt. You can also type while holding a
+bird to put text on her T-shirt. You can also put a label on a nest by typing while
+holding the nest.
+SHOW ME
+
+FOR ADVANCED USERS:
+
+Bird copies. If you use your Magic Wand to copy a bird then both birds think the same nest is
+theirs. But it's not really a problem. They'll share the nest just fine. Computer
+scientists call this many-to-one communication.
+
+Nest copies. If you use the wand to copy a
+nest and then give the bird that hatched in that nest something, then the bird has a
+problem. She thinks both nests are hers and wants to bring what she's been given to both
+nests. She manages this by copying herself and what she's holding. This way a copy gets
+delivered to each nest. The new copies of the bird fly away after they've delivered their
+package. Computer scientists call this one-to-many communication or multi-casting. If you
+also copy the bird you get many-to-many communication.
+
+SHOW ME
+
+Bird and nest copies. If you copy
+something that contains both a bird and her nest then the copy has a new bird
+and a new nest. The new bird thinks the new nest is hers and the old bird
+doesn't notice the new nest.
+
+Combining nests. A nest can be dropped on another nest. Bammer will smash them
+together and birds of either nest will now fly to the combined nest.
+
+SHOW ME
+Beginning with Beta 48 or version 3.152 (or product version 3), this has been
+made to consistently follow these rules if nest A is dropped on nest B: (1)
+anything that would have been delivered to nest A shows up on nest B instead and
+(2) copies of whatever is delivered to nest B are delivered to any copies made
+of the result of smashing nests A and B together. Note that the birds of nest A
+will not deliver to copies of nest B that were made before being smashed
+together nor to copies made subsequently to earlier copies of nest B. Diagrams
+illustrating this can be found here.
+
+Long-distance birds.
+Birds can fly over a network to nests on
+other computers.
+
+Creating a new nest when loaded. If a bird
+is saved while its nest is in Dusty or has been destroyed then when loaded the
+bird will create a new nest.
+
+Creating a new egg when a nest is loaded.
+If a nest is saved without any of its birds then when loaded a fresh egg will be
+in the nest and a new bird will hatch.
+
+Advanced tip. If a robot
+is expecting something in a box and there's a nest there instead, the robot will wait
+around hoping that the bird will cover her nest with what he's looking for. Computer
+scientists call this process synchronization. This is a great way to get robots in
+different houses to work together and exchange messages. Click for
+an example of a bunch of robots who work together
+to figure out prime numbers.
+
+SHOW ME
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+======================================================================
+SECTION: OBJECTS: SCALES, TRUCKS, BOMBS, NOTEBOOKS
+======================================================================
+
+--- scale.htm ---
+Scales Compare Things
+
+Inside of Tooly, you'll
+find a very large stack of scales. You can use scales to find out which number is bigger or which word or sentence
+comes first in alphabetical order. Drop a set of scales in a hole of a box
+with holes on both sides. If you put numbers in those holes then the scale will tilt
+towards the bigger (or heavier) number. If you put in text pads instead, the scales will
+tilt toward the one that comes later in alphabetical order.
+
+Scales can also be used to compare pictures. User
+pictures are compared by the alphabetic order of the file names. User pictures are
+"heavier" than built in pictures. Built in pictures are compared by an internal
+index comparison.
+
+Tip. If you use Dusty to erase what is next to a scale then the scale continues to
+tilt the same way as before. It is as if the scale remembers what was there before you
+erased. If, however, you remove what is next to the scale then it'll totter back and forth
+and not match anything.
+
+Advanced Tip. You can train a robot to do something if a number is bigger than another and another
+robot to do something else if it is less than (and even have a third robot do his thing if
+the numbers are the same). The "Swap" demo shows an example of training a robot
+to switch two numbers if the first one is less than the second one. Note that a set of
+scales will totter back and forth if it is next to an empty hole.
+
+Advanced Tip. If you want to stop the
+scales from tottering, maybe because you want to have a robot with a thought bubble such
+that he will work for any data type, then you can press '+' or '-' to cycle through the
+different states the scale can have. Or you can type '.' to freeze the scale the way it
+currently is. Pressing the space bar will cause it to compare its neighbors again.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- truck.htm ---
+Trucks make New Houses
+
+Inside of Tooly you'll find
+a very large stack of trucks. A truck has a crew inside that is eager to drive off and
+build a brand new house. But they won't build a new house without having a robot that'll work in the house. And a robot won't work unless he's
+given a box to work on. So you need to drop a robot (or a team of
+robots) and a box into a truck before they'll drive off. They'll find the nearest empty
+lot, build a house there, and put the robot inside and give him the box. He'll start
+working right away.
+
+A playful example of houses being built can be seen
+in the "Exploding Houses" demo or you can try out the robot on page 6 of the notebook of examples which is on page 6 of your main notebook.
+
+Tip. The crew of the truck will build a
+house that looks just like the one the truck started from. You can tell them which kind of
+house should be built by dropping a picture of the house you
+want into the truck before you fill the truck up. You can find pictures of houses in the
+notebook of pictures on page 2 of your main notebook.
+SHOW ME
+
+Tip. You can "turn off" a truck by
+typing '.' while holding or pointing to it. If turned off a truck will not drive
+off when filled until the space bar is pressed while holding or pointing to it.
+
+Advanced Tip. The truck's crew will build
+the new house in a nearby empty lot. If you want to tell them where to build the house,
+you can drop in an address into the truck before you fill it
+up. You'll find addresses on page 48 of your sensor
+notebook that is on page 4 of your main notebook.
+SHOW ME
+
+Advanced Tip. If you drop a
+notebook into a truck then the robots will use that notebook instead of a copy
+of your main notebook. A robot trained to search for something in the main
+notebook (e.g. by
+dropping a number or text pad on it) then the robot will first check the
+notebook that was included in the truck and if no matching page is found will
+use the main notebook. Using
+notebooks like this is what computer scientists call a "module" or "package".
+
+Advanced Tip. If a robot
+on the back of a picture drops a box and a team of robots in a truck then the
+box and team will begin to work on the back of the picture. This default can be
+overridden by training the robot to drop an address in the truck.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- bomb.htm ---
+Bombs for
+Recycling Houses
+
+Inside of Tooly, you'll
+find a very large stack of bombs. You can pick one up, press any button and it'll blow up
+the house you're in. Luckily, you'll make it out OK, though a bit dazed. Tooly makes it
+out OK too along with his friends. Other stuff that was in the house got sucked up very
+quickly by Dusty so you can go to another house and have him spit
+those things out.
+
+You can train robots to
+blow up houses too. See the "Exploding Houses" demo. If you aren't in the house
+when it blows up then Dusty isn't there either to save stuff in the house. It's gone for
+good.
+
+If a trained robot on the back of a picture sets
+off a bomb, then he'll destroy himself and the whole picture. If you want the
+robot to destroy himself but not the picture he is on the back of then have him
+vacuum away his box instead.
+
+Tip. While blowing up houses can be fun, its
+main purpose is recycling. If you train robots to do tasks for you and put them in trucks, then your city might fill up with houses with robots that
+have finished doing their work. It is just tidy to have a robot blow up the house when
+he's finished doing his job. Computer scientists call this "explicit deallocation of
+memory".
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- notebook.htm ---
+Notebooks are good for storing
+things
+
+Your notebook lives inside of Tooly,
+who follows you wherever you go. On the pages of your notebook you'll find other
+notebooks. One is for pictures and animation clips. Another is
+for sound effects. One notebook is full of sensors
+that you can use to make games and other programs. A lot of examples of things you can
+build in ToonTalk is in another one. One notebook is full of options
+you can change so you'll look different, so Marty talks faster or
+slower, or with bigger or smaller letters, how big the city is, and lots of other things.
+There is a
+
+notebook at the end of your main notebook that includes
+special numbers
+and operations on numbers.
+
+Your notebook is also a great place to save things
+you've built in ToonTalk or robots that you've trained. Just drop
+them on a blank page. The end of your notebook is full of blank pages. There is one thing
+to watch out for though. Only your main notebook that lives with Tooly will stick with
+you. If you save something in another notebook and then leave ToonTalk it'll be gone
+(unless you save the whole city). You can save that other notebook by dropping it on a
+blank page of your main notebook. Only with Dusty's help
+can you remove things from a notebook. Your main notebook is the one with your
+name at the bottom.
+
+Every time you start up ToonTalk and tell it your
+name you'll get your notebook with all the changes you've made. If you give ToonTalk
+another name, you'll get a fresh notebook. You can share things you've made with others by
+using the clipboard sensor.
+
+If you drop a number on a notebook, it'll go to
+that page. If you drop a text pad, it'll go to the page that has that text on it. In the
+notebook there can be more text after the text you dropped. Like if you have the word
+"food" in the notebook and you drop "foo" on the notebook it'll find
+the page with "food" on it. You can also jump to a page by dropping a picture
+that matches a page.
+
+You can type while holding a notebook to
+give it a title or label. It will appear on the bottom of every page.
+
+There are many keyboard
+commands that you can give notebooks.
+
+Tip. If the notebook is on page 1
+and you press Backspace, it'll jump to the last page.
+
+Advanced tip. If you
+drop a notebook on an erased box, you'll get a box with a hole filled with every
+page of your notebook. Or if you drop a box on an erased notebook, the notebook
+will fill with the contents of the holes in the box.
+
+Advanced tip. Robots can be trained to add or remove things from notebooks. Note that
+they can't do so with the main notebook since that is shared by all the robots and the
+programmer.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+======================================================================
+SECTION: PICTURES, SOUNDS, AND THE OUTSIDE WORLD
+======================================================================
+
+--- picture.htm ---
+Using Pictures and Animation
+Clips
+
+The notebook on page 2
+of your main notebook contains a collection of pictures and animations. You can just take
+one out, and if it is an animation, it'll start running. Some have more than one animation
+cycle that it can show. You can use keyboard commands
+to change which one is showing.
+
+If you drop a picture (or animation) on another
+then Bammer will smash them together. They'll stay stuck together
+unless you use Dusty to pull them apart.
+
+You can flip pictures over by pressing
+"f" while holding them. You'll see a big gray area on the back and a notebook
+full of remote controls and sensors will fly out. With these
+remote controls you can change where the picture is, how fast it is moving, how big it is,
+and how it looks. You can also find sensors that show you when the picture is colliding
+with something else. You can train robots to work with these
+remote controls and sensors and then put them on the back of a picture. Then you can give
+those robots the boxes they want. When you flip the picture over, the robots will start
+working and can give the pictures any imaginable sort of behavior. They might bounce,
+explode on contact, do a little dance or whatever. The "Ping Pong" demo shows
+two kids using these things to build a Ping Pong game.
+
+Beginning with version 3.79 or Beta 43
+you'll see a title bar with a miniature of the picture on the back of pictures.
+You can type a comment into this area.
+
+Tip. You can flip a picture over and drop it
+on the back of another picture. This is much quicker than moving a bunch of robots and
+boxes from one picture to the next. It is a great way to "package up" a behavior
+and then give that behavior to lots of different objects.
+
+Tip. You can bring your own pictures into ToonTalk using one of the
+sensors.
+
+Tip. Most games are made using what computer
+scientists call sprites - little animation cycles that can move and behave. That's
+what ToonTalk pictures with robots on the back are.
+
+Blank Pictures. You can use Dusty to make a
+blank picture. This is handy inside of thought bubbles when you
+want a robot to work on any picture.
+
+Advanced Tip. You can make numbers and text
+act like pictures if you flip them over or make a blank picture and drop a number or text
+pad on top. You can even put robots on the back. The "Ping Pong" demo shows the
+kids making a score keeper by putting a robot on the back of a picture of a number.
+
+Advanced
+Tip. You can put a bird on the back of a picture. This can be real handy when you use
+the sensor that shows what a picture is colliding with.
+If the nest of the bird on the back of the picture is in a box that a team of robots is
+waiting on, then this can enable any kind of interaction between colliding objects. For
+example, robots on the back of a rabbit could be waiting for a picture of a vegetable to
+appear on the collision detector. The robots can then vacuum off the picture (a copy of
+the vegetable that the rabbit is colliding with), spit it out, flip it over, pick up the
+bird, and give her a box to ask how it tastes. The box is taken to a nest on the back of
+the vegetable where a robot is waiting to answer such questions.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+--- sound.htm ---
+Using Sound Effects
+
+The notebook on page 8 of your
+main notebook contains sound pads with the names of sounds on them. If you
+point to a sound and type space, you should hear the sound. You can
+turn off a sound by pressing the '.' key. If you train a robot to make a sound you'll hear
+it only if you are in the same room as the robot.
+
+If you type to a sound pad while holding
+it you can edit the text.
+
+You can also bring
+sounds into ToonTalk that you have created elsewhere. You can create speech sounds if you have the ToonTalk CD-ROM or
+have voices installed on your computer. You can also play sounds in the MIDI format using MCI.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+--- clpboard.htm ---
+Bringing Things in and out of
+ToonTalk
+
+A common way to bring things
+into ToonTalk is by using the Windows clipboard. The easiest way to do this is by using
+control-c (holding down the control key (labeled 'Ctrl' on most keyboards) and
+then pressing 'c') to copy whatever you are holding into the clipboard. If you
+are on the floor and not holding anything then you'll put a copy of everything
+on the floor on the clipboard. If you are standing in a house then the entire
+house is put on the clipboard. If you are outside you'll copy the entire city.
+
+Once something is on the
+clipboard you can paste it into any text editor or mail program. Control-v works as a
+shortcut for nearly all programs. You can also paste it into another ToonTalk (or the same
+one as an odd way to make a copy) using control-v. If you paste it into programs like Microsoft Word or
+WordPad then be sure to save as text and not in Word format. If you are using
+unusual letters (e.g. ä) in labels or text pads then it is best to save as Unicode.
+
+If you save the clipping as a
+file with the extension TT then when it is double clicked on the object in the clipping
+will be added to your ToonTalk if paused. If no ToonTalk is running it'll start a new
+ToonTalk. In either case the first time you sit on the floor the object will appear.
+If, instead, you save the clipping with the extension XML, you can inspect the
+internal format of ToonTalk objects using a web browser or other XML-capable
+tool.
+
+You can also use the clipboard sensor to bring things into and out of
+ToonTalk but most people find control-c and control-v quicker and easier.
+
+If you want to save
+something that includes pictures or sounds then it is better to click on 'Save
+to File' in the dialog that appears if you press Pause while holding something.
+
+Advanced tip: You
+can type control-c to a file when using the Windows Explorer (the desktop program). Then
+when you type control-v to ToonTalk it'll import that file. If it is a picture you should
+see the picture on the floor. If it is a sound then a sound. If it is a TT file then the
+ToonTalk object. Otherwise the text of the file will appear as a ToonTalk text pad.
+
+Advanced tip:
+You can type control-c when pointing to a picture in a browser and then paste
+the picture into ToonTalk with control-v.
+
+Advanced tip:
+You can drag one or more files into ToonTalk at once.
+
+Advanced tip:
+If you hold down the shift key while typing control-v and the clipboard contains
+the name of a file or URL, then the contents of the file will appear in ToonTalk
+when you are on the floor.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- sensor.htm ---
+Using Sensors
+
+On page 4 of your main notebook is a notebook full
+of sensors. These are great for making things respond to the mouse and keyboard. There are
+also sensors for measuring time, getting random numbers, and the address of the house.
+Some sensors are for bringing in pictures, sounds, text, and ToonTalk objects from the
+outside. Sensors work very much like the controllers for pictures.
+
+The sensors in the notebook are:
+
+Page 2 - Mouse's Right Speed
+This sensor measures how fast the computer's mouse
+(not Bammer) is moving from left to right. If it is negative the
+mouse is moving from right to left. A speed of 1000 means the mouse can cross the screen
+in 1 second.
+Page 4 - Mouse's Up Speed
+This sensor measures how fast the computer's mouse
+is moving up. If it is negative the mouse is moving down. A speed of 1000 means the mouse
+can cross the screen in 1 second.
+Page 6 - Mouse's Left Button
+Clicked
+This sensor answers the question, "Was the left
+mouse button just pressed?" If you press the left mouse button it'll switch from
+a robot can catch it and react to it being "yes".
+Page 8 - Mouse's Middle Button
+Clicked
+This sensor answers the question, "Was the
+middle mouse button just pressed?" If you press the middle mouse button it'll switch
+Page 10 - Mouse's Right Button
+Clicked
+This sensor answers the question, "Was the
+right mouse button just pressed?" If you press the right mouse button it'll switch
+
+Page 12 - Mouse's Left Button Down
+This sensor answers the question, "Is the left
+mouse button down right now?" If you press the left mouse button it'll switch from
+"no" to "yes" and stay that way until you release the mouse button.
+Page 14 - Mouse's Middle Button
+Down
+This sensor answers the question, "Is the
+middle mouse button down right now?" If you press the middle mouse button it'll
+switch from "no" to "yes" and stay that way until you release the
+mouse button.
+Page 16 - Mouse's Right Button Down
+
+This sensor answers the question, "Is the right
+mouse button down right now?" If you press the right mouse button it'll switch from
+"no" to "yes" and stay that way until you release the mouse button.
+Page 18 - Key Just Pressed
+This sensor shows the keyboard button that was just
+pushed. When you push a key, this sensor goes from blank, to showing the key, to blank
+again very quickly. A robot can be trained to catch the change.
+Page 20 - Last Keystroke
+This sensor answers the question "What was the
+last button on the keyboard to be pressed?" It shows the key until another button is
+pushed.
+Page 22 - Shift
+Button Down
+This sensor answers the question
+"Is the Shift button on the keyboard down right now?"
+Page 24 - Control Button Down
+This sensor answers the question "Is the Control
+button (often labeled Ctrl) on the keyboard down right now?"
+Page 26 -
+Milliseconds since Last
+Frame
+This sensor answers the question "How much time
+has passed since you last answered this question?". The answer is in milliseconds
+(one thousandths of a second). It is possible to build timers and clocks using this
+sensor.
+Page 28 - Number between 0 and 999
+This sensor answers the question "What is a
+number between 0 and 999?" It tries its best to be random, like flipping a
+coin or tossing dice. If you want a copy of this that doesn't change drop it on a zero.
+Page 30 - To
+and from other Programs
+This sensor connects ToonTalk to the clipboard of Microsoft Windows. If you drop something on
+this sensor when it is empty (black), then Bammer will smash what you dropped into the
+clipboard. You can now go to some other Windows program like a mail program or word
+processor and select Paste from its menu (usually its Edit menu). The text
+that is pasted can be saved in files, sent by email, or whatever. When you want to go the
+other direction and bring something into ToonTalk from the outside then just select the
+text that ToonTalk generated and select Copy from the menu. The ToonTalk clipboard
+sensor will now show the object that was copied. You can use Dusty
+to remove it from the clipboard and then spit it out. You can also copy text into ToonTalk
+this way. Control-c to copy and control-v to paste are convenient keyboard shortcuts.
+Page 32 -
+Hand Visible?
+This sensor answers the question, "Is your hand
+visible?". You can press the space bar while pointing to or holding this sensor and
+you'll make your hand invisible if its visible or visible if its invisible. When playing a
+game like Ping Pong (on page 24 of the samples notebook on page 6 of your main notebook)
+you usually want to hide your hand. This is a good way to let robots do that for you when
+the game starts. Pushing F9 also hides your hand. Pushing it again shows it.
+Page 34 -
+File to Picture
+This sensor converts file names into pictures. Just
+drop a text pad with the file name of a Windows BMP file onto the sensor and Bammer should smash it. If your picture file is in the ToonTalk
+"users" subdirectory or the FileSearchPath,
+then you can use just the short name of the file. You can then remove the picture using Dusty. You can make
+BMP files in lots of ways - the Paint Brush program included in Windows makes them. You
+can make the color black in your pictures transparent if you use the visibility controller for your picture. The file name can be
+a URL like http://www.toontalk.com/ghost.bmp. The file can be JPG, PNG, GIF, or DIB as well if the file name ends with ".jpg",
+".jpeg", ".png", ".gif", or ".dib". If you load
+a picture with a transparent color (currently only GIF and PNG files support this), then
+that color will be invisible when the picture's visibility
+is set to 'See Some'. Some GIF files with transparency that display properly in a browser
+will display in ToonTalk areas as white instead of transparent. Various programs will save these GIF
+files correctly. For example, reading and writing them into Adobe Photoshop fixes the
+problem. Also, unfortunately, the Microsoft API being used also makes cyan (100% red, 0%
+green, and 100% blue) invisible as well. If you need cyan and transparency then don't use
+a transparent color but use black for transparency (and very near black for when you need
+black). Or use a color near cyan. You can also bring pictures into ToonTalk by running
+ToonTalk in a window and then pressing control-F8 to release the mouse and then dragging
+files into the ToonTalk windows. Pressing control-F8 again restores the mouse. Or by
+copying the file name in the Windows Explorer and pasting it into ToonTalk.
+Page 36 - File
+to Sound
+This sensor converts file names into sounds.
+Just drop a text pad with the file name of a Windows WAV (sounds) file onto the sensor and
+Bammer should smash it. The sound will play until finished or you
+use Dusty to vacuum it off. You can get a
+sound pad that you can use many times. Just vacuum it off the sensor and have Dusty
+spit it out. If your wave file is in the ToonTalk "users" subdirectory or the FileSearchPath, then you can use just the short name
+[...trimmed...]
+
+--- remote.htm ---
+Using Sensors and Remote Controls
+
+If you flip over a picture,
+you'll see a notebook fly out. In the notebook you'll find
+sensors and remote controls for the picture. Sensors keep showing you something about the
+picture. Remote controls let you change things. Sometimes they are combined. Controllers
+are what we call sensors, remote controls, and combinations. Special sensors are in a
+special sensor notebook.
+
+Most controllers show a number that you can change
+just like any number. And when you do something about the picture changes as well. Also
+when you change the picture some other way the number changes automatically. Some
+controllers show text or pictures. You can change many of them by pressing the space bar,
+while holding it or pointing to it.
+
+Tip. To try out what a controller does, take
+it out and set it down on the floor. Flip the picture back over and set it down. Change
+the controller and see what happens. Or change the picture and see how the controller
+changes.
+
+Tip. Controllers sense or change the picture
+they are on the back side of. If they have never been on the back of a picture then they
+must have come from a notebook that lives on the back of a picture. Then they'll control
+that picture.
+
+Advanced Tip. If you want to place
+a sensor for a picture A on the back of picture B then the sensor needs to be sitting on a
+nest or else it will become a sensor for B when dropped on the back. We recommend using
+this only when pictures A and B are closely related to maintain modularity of your
+program. The protection that nests provide from switching which picture is being
+controlled applies as well to sensors brought to the nest by birds as well as those placed
+there directly by the programmer.
+
+Here is the list of controllers you'll find in a
+picture's notebook:
+
+Page 2 - From Left Side
+
+Picture's distance from the left side. If the
+picture isn't part of another picture then 0 is the left edge of the screen and 1000 is
+the right edge of the screen. If the picture has been added to another picture then 0 is
+the left edge of the picture it is a part of and 1000 is its right edge.
+Page 4 - From Bottom
+Picture's distance from the bottom. If the picture
+isn't part of another picture then 0 is the bottom of the screen and 1000 is the top of
+the screen. If the picture has been added to another picture then 0 is the bottom of the
+picture it is a part of and 1000 is its top.
+Page 6 - Speed to Right
+
+Speed the picture moves toward the right. 1000 means
+it'll cross the screen in 1 second. Negative means it'll move to the left.
+Page 8 - Speed to Top
+Speed the picture moves toward the top. 1000 means
+it'll cross the screen in 1 second. Negative means it'll move to the bottom.
+Page 10 - Width
+The width of the picture. 1000 means as wide as the
+screen. Or if the picture is part of another than as wide as the other picture.
+Page 12 - Height
+The height of the picture. 1000 means as tall as the
+screen. Or if the picture is part of another than as tall as the other picture.
+Page
+14 - Which Picture?
+Some pictures or animations have different
+appearances. Some have 4 or 8 different directions they can move. This controller shows
+the number of the picture being shown. For rectangles, circles and lines, it controls the
+color of the geometric shape. For text and number pads it controls the color of the
+characters. Changing the value of this remote control for pictures that are built-in
+animations (e.g. an animated explosion) will reset the animation cycle so it start again
+from the beginning.
+Page 16 - Colliding?
+This controller shows a simple cartoon of either a
+collision or a miss. You can turn a collision into a miss by pointing to the detector and
+pressing the space bar.
+Page 18 -
+Touching Who?
+This sensor shows who the picture is colliding with.
+It is black if nothing. If the picture is colliding with more than one just one
+is shown. You can use Dusty to vacuum off the top picture to see others. Also you can flip
+over those pictures you vacuum off. You will have the remote control for the
+Looks of the picture that is colliding.
+If there is a bird on the back this can be very
+useful.
+Page 20 - Left Right hit?
+Like the controller on page 16 except only shows a
+collision if it was mostly the left or right movement of the picture which caused it.
+Page 22 - Up Down hit?
+Like the controller on page 16 except only shows a
+collision if it was mostly the up or down movement of the picture which caused it.
+Page 24 - Visible?
+This controls whether the picture
+is invisible or visible. Also whether the background is visible or not.
+Page 26 -
+Animation Finished?
+This sensor answers the question "Has my
+animation stopped?". Some animations like walking never stop. Others like explosions
+stop and don't cycle.
+Page 28 - Held in Hand?
+This sensor answers the question "Is the
+picture currently held?".
+Page 30 - Selected?
+This sensor answers the question "Is the
+picture wiggling and ready to be picked up or used?".
+Page 32 - Just Dropped?
+This sensor answers the question "Has this
+picture just been dropped?".
+Page
+34 - Looks
+This one shows what the picture currently looks
+like. You (or a robot you've trained) can drop a different picture (or a number or text
+pad) here and the picture will be covered by the new picture. If you erase the looks
+controller of the front side of picture A and drop another picture B on top then A will
+then look like B. If you are running version 2.34 or Beta 26 or later then this
+sensor can show either side of a picture. You can flip it by typing 'f' while holding it.
+This way you can train robots to view and alter either the front or backside of a picture.
+If you erase the sensor showing the back of a picture then everything on the back is
+removed. This sensor is great for making objects explode or numbers that change as the
+score changes or thousands of other neat uses.
+Page 36 - Parts
+This contains an ordinary box which
+contains remote controls for the looks of all the pictures that are directly
+on top of this picture. It contains one remote control for the looks of each
+picture per hole. Or if the picture is flipped it contains a box with a hole
+for each thing on the back. You can vacuum the box off the sensor and
+manipulate its contents (but changing the contents or adding or removing holes has no effect
+on the picture). If you
+want, for example, a robot to remove a particular part you can train the robot
+to find the part by going through the elements in the box until you find the
+part. Then you can place a box and a robot on the back that has been trained
+to blow up a bomb. If you use Dusty to erase the sensor you'll remove all the
+parts from the picture. You can also flip the sensor (by typing 'f') and it'll
+show the parts on the other side of the picture.
+Page 38 - Containers
+This contains a box. If the picture is
+part of another picture the first hole of the box will contain that picture.
+[...trimmed...]
+
+======================================================================
+SECTION: TOOLS AND CHARACTERS
+======================================================================
+
+--- dusty.htm ---
+Dusty the Vacuum sucks up stuff
+and spits it out again.
+
+If you press the space bar while holding Dusty
+he'll turn on and suck up whatever is under his nose.
+
+from 'S' to 'R' to 'E' and then back to 'S'. S is for suck, R for reverse to spit out
+things previously sucked, and E for erase.
+SHOW ME
+
+If you are in a house when it blows up
+then Dusty will suck up everything on the floor.
+
+For advanced users there are also special keyboard commands and mouse
+buttons you can use while holding him. Also you can set the
+size of his stomach.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press |
+contact us
+
+--- pumpy.htm ---
+Pumpy the Bike Pump can make
+things get bigger and smaller.
+
+If you press the space bar while holding him he'll
+pump air into whatever is under the end of his hose.
+
+from 'B' for big, to 'W' for wide, 'N' for narrow, 'L', for little, 'S' for short, 'T' for
+tall, and 'G' for good size.
+SHOW ME
+
+For advanced users there are special keyboard commands to quickly make Pumpy make things
+smaller, taller, shorter, wider, and thinner.
+
+You can call for Pumpy to jump into your hand by
+pressing the F3 key.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- tooly.htm ---
+Tooly the Toolbox
+
+Tooly the Toolbox is full of neat
+things to play with.
+
+Tooly follows you wherever you go. Inside of Tooly
+you'll find
+
+- numbers and text pads
+
+- boxes and nests
+
+- scales and robots
+
+- trucks and bombs
+
+Also Dusty, Pumpy, the Magic Wand, and your notebook travel around inside Tooly.
+
+Tip. If want Tooly and the things inside to
+be bigger or smaller, you can use Pumpy to change his size.
+
+Tip. You can call for Tooly
+to run to where you are sitting by pressing F6.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- bammer.htm ---
+Bammer the Mouse uses his hammer
+to combine things.
+
+When Bammer sees a number pad
+drop on another number, he'll smash them together leaving behind the result. It is usually
+the sum of the numbers but you can make him do other kinds of math.
+Bammer will also smash together two text pads to make one. Bammer
+also smashes boxes together. If he sees a picture
+drop on another picture he smashes them together too. Only Dusty
+can remove a picture that has been smashed into another. Sometimes he'll come out even if
+the two things are not the same kind of thing. Like a number on text pad or text on a
+picture.
+
+If a bird puts something on
+her nest when there is something already on top, Bammer leaves things alone.
+
+Tip: If you want to drop
+something on something else and have Bammer ignore it then press F11 rather than clicking
+the mouse button.
+
+Tip: If
+Bammer has smashed things together that you don't want smashed then press F11
+and he'll undo his mischief. F11 undoes only the most recent action by Bammer in
+that room.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- wand.htm ---
+Maggie, the Magic Wand, copies
+things.
+
+Just pick her up and move the tip of the wand over
+the thing you want to copy. It starts wiggling. Just press the space bar and you've got a
+copy. Another press of the space bar drops the copy.
+
+The button on the tip of the wand can change from
+'C' for copy, to 'O' for copy and restore original (if anything has been erased), and 'S'
+for copy self (the only way to get another wand). Note that the 'S' feature is disabled in
+the puzzle game (except for robots) to avoid confusion for beginners.
+
+For advanced users there are special keyboard commands you can use while holding the
+wand.
+
+Advanced Tip. One thing Maggie can do is
+copy something that Dusty made blank so that the copy isn't blank.
+It looks like the thing did before Dusty made it blank. You can push o or O to do this
+with the wand. A neat trick is to take out a trained robot from a notebook and then copy
+the box in his thought bubble so that you get back the box that he was originally trained
+with. If you drop the copy on the robot, you'll see him do what he was trained to do.
+
+SHOW ME
+
+Advanced Tip. If a robot is trained to use a
+wand with its button set to 'S' then the robot (and his team mates) are copied. This is a
+convenient way to create recursive processes.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- marty.htm ---
+I'm Marty the Martian and I'm
+always ready to teleport in and give you some help.
+
+You can get Marty to come or go by pressing the F1
+button. If you are holding or pointing to something when Marty teleports in then he'll
+tell you lots of things about what you are holding or pointing to. With the CD-ROM version
+of ToonTalk, Marty can speak words rather than just show the words in talk balloons
+or subtitles.
+
+Tip: If you have the ToonTalk
+CD-ROM or have voices installed on your computer then you can select which voice Marty
+uses by clicking on 'Set Options'. You can also choose to have Marty use subtitles.
+
+Advanced Tip: You can use the options notebook to change how fast Marty speaks, how big the
+letters are when he shows speech bubbles, how important something has to be before Marty
+will talk about it, and whether he uses speech, bubbles or both.
+
+Advanced Tip: If you have more than one
+language version of ToonTalk installed you can have Marty speak in one language and
+display subtitles in another. You'll need to set the SpokenLanguage
+option to do this.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- marttalk.htm ---
+Do you want to change how Marty talks?
+
+I want Marty
+to speak and use talk balloons.
+
+I want Marty
+to speak and not use talk balloons.
+
+I want Marty
+to speak and I want subtitles.
+
+I
+don't want Marty to speak. Each balloon should stay up long enough for a
+typical 10-year to read.
+
+I don't want
+Marty to speak. Each balloon should stay up long enough for a typical adult to
+read.
+
+I don't want
+Marty to speak. Each balloon should stay up a very long time. I'll press
+'PageDown' when I've read a balloon.
+
+I don't want
+Marty to speak but I do want subtitles.
+
+Marty can speak, use talk balloons like comics, or both. And when using talk
+balloons he can leave little time or lots of time between balloons. Note that
+Marty can speak only voices have been installed on your computer. Voices are
+installed by the ToonTalk CD-ROM.
+
+--- tts.htm ---
+ToonTalk and Text to Speech
+
+The ToonTalk CD-ROM includes and automatically installs a
+text-to-speech engine so that Marty can speak. It is also used by the text-to-speech sensor so you can use text-to-speech
+in your own ToonTalk programs.
+
+If you would like to try ToonTalk with another speech engine
+or you downloaded the beta version of ToonTalk, you can download a free
+text-to-speech engine from Microsoft. You'll then need to select 'Set
+Options' next time to run ToonTalk and select the voice you wish to hear.
+
+If you don't see any voices listed on the options screen
+after installing voices then you probably need to download Microsoft's SAPI extensions. Note
+that the ToonTalk 2 CD-ROM installs the SAPI extensions when needed except on Windows XP.
+If you are running Windows XP with version 2 this is how to
+fix it.
+
+Please report any problems.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+======================================================================
+SECTION: USING THE MOUSE AND KEYBOARD
+======================================================================
+
+--- mouse.htm ---
+Using your Mouse in ToonTalk
+
+To simplify things, usually all the mouse buttons
+mean the same thing in ToonTalk. You can assign special meanings to the middle and right
+buttons. The right button can be assigned so that clicking it while holding a tool
+"uses" it. If you are holding text, numbers, and pictures they will
+flip over. If you are holding a notebook it'll flip to the next page. If you are
+holding a tool it turn on. The easiest way to enable or disable mouse shortcuts is to select the option you want after
+clicking on "Set Options" after starting ToonTalk.
+
+The middle button can be assigned to any
+key. The default assignment for the middle button is F11 for dropping things
+without being smashed by Bammer. Another popular setting is F12 for tossing
+pictures. A tossed picture starts off with the same horizontal and vertical
+speed as your hand. It can also be used by holding down the control button while
+clicking any mouse button. You can customize the middle button
+here.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- dragdrop.htm ---
+Drag and Drop in ToonTalk
+
+You can drag files that contain pictures, sounds, or ToonTalk
+objects into ToonTalk. And beginning with ToonTalk 3 (or Beta 47 or 3.134X) you
+can drag a link from a web page as well. You can even select many files and drag
+them all at once into ToonTalk. Just follow these steps:
+
+-
+
+Pause ToonTalk and select 'Come Back Later'.
+
+-
+
+Select the file, files, or web page link you want to bring into
+ToonTalk with the right mouse button.
+
+-
+
+Keep the right mouse button down as you move the mouse over the
+ToonTalk icon in the task bar.
+
+-
+
+KEEP THE RIGHT MOUSE BUTTON DOWN until ToonTalk resumes and then
+release the mouse where you want your items to appear.
+
+-
+
+to see your new items.
+
+Alternatively you can copy and paste files into ToonTalk using
+control-c and control-v. Note that if you want to paste the contents of a web
+page link into ToonTalk then you can right click in the browser and select 'Copy
+Shortcut' and then when you paste it into ToonTalk hold down the shift button
+while typing control-V. Otherwise just the name of the file will appear in
+ToonTalk not its contents. Pasting of links into ToonTalk requires ToonTalk 3
+(or Beta 47 or 3.134X) or later.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press |
+contact us
+
+--- keyboard.htm ---
+ToonTalk Keyboard commands
+
+ADVANCED USERS ONLY:
+
+You don't have to learn the keyboard commands that follow.
+You can do most everything with just your mouse. Many of these keyboard commands just give
+you faster ways to do things.
+
+If you have a joystick that has
+more than 2 buttons and it is connected to your computer, you can use those extra buttons instead of some the
+keyboard commands below.
+
+During the opening titles:
+
+Push any button to move to the next screen. 'Esc' will skip
+over the remaining screens.
+
+During a demo:
+
+If you push any button, ToonTalk will pause and display a
+choice of leaving, taking over, or returning to the demo. If the demo was
+created using the time travel feature then you need to
+press Pause after you see the time travel interface to reach this dialog.
+
+Flying, walking, or on the floor:
+
+Push the four arrow keys to move in any of 8 directions. You
+can hold them down to keep moving in that direction. You can move on a diagonal by pushing
+two keys at once.
+
+Push the Pause key to stop ToonTalk and display a choice of
+leaving, coming back later, or returning to ToonTalk. If you enabled
+time travel, then the Pause key brings up the time
+travel interface. Pressing Pause again brings up the choice of leaving, coming
+back later, or returning to ToonTalk.
+
+Push F8 to turn off the power for all the robots and moving pictures in the whole
+city. Pushing F8 again turns it back on.
+
+Push Control-F8 to release the mouse and pushing
+Control-F8 again restores the mouse. This is good for dragging files into
+ToonTalk and for reshaping the ToonTalk window (assuming ToonTalk is running in
+a window).
+
+Push Control-F11 to take a snapshot of the screen.
+You'll find the picture in the \My Documents\ToonTalk\<user name> folder. It is
+named frame123.bmp where 123 is the frame number when you took the snapshot.
+
+Push Control-F12 to take a snapshot of the screen
+and save it in the Windows clipboard.
+
+PageDown to make Marty say the next
+thing.
+
+PageUp to make Marty repeat the last thing.
+
+Pushing F10 will display the following (or hide it
+if it is already being displayed):
+
+Flying and Landing:
+
+Push u or U to fly up (higher). Holding down the
+right mouse button works fine too.
+
+Push d or D to fly down (lower). Holding down the
+left mouse button also works.
+
+Walking outside:
+
+Push F1, h, or H to bring the helicopter to where you
+are.
+
+Walking in a room:
+
+Push any button to sit down.
+
+On the floor or in a thought bubble:
+
+Push Escape (usually labeled Esc) to leave.
+
+Push F1 to call for Marty or if he's
+already around to send him away.
+
+And if your hand is empty.
+
+Push u or U to stand up.
+
+Push p or P to pick up item under finger.
+
+Push f or F to pick up and flip.
+
+Push F9 to hide your hand if it is visible or show it if it
+is invisible. See also the controller for your hand's
+visibility.
+
+And if you are holding anything except a text pad.
+
+Note: The following (d, D, f,
+and F) are disabled for text pads, birds, nests, and robots unless the mouse is disabled. The reason the following
+keyboard commands don't work on some kinds of objects is you need to be able to type any
+text. You need to use the mouse buttons to flip text pads and to drop anything.
+
+Push f or F to flip it over (if possible).
+
+Push d or D to drop it.
+
+Push F11 to drop what is in your hand
+ignoring what is underneath so it won't go into the hole of a box,
+get smashed by Bammer, or get added to a notebook.
+Only works in Beta 20 or version 1.3 or later.
+
+And if you are holding a tool:
+
+Push the space bar to turn the tool on. (The wand "turns itself off" after each use.) Push '.' to
+turn the tool off.
+
+And if you are holding Dusty:
+
+Push s or S to change Dusty so he'll suck up things and turn
+him on. (Suck is the default.)
+
+Push e or E to change him so he'll erase things and turn him
+on. (Erase)
+
+Push r or R to change him to spit things out and turn him
+on. (Restore or Reverse)
+
+Push F2 to call for Dusty. He'll
+start running into your hand. Pushing F2 again will hurry him up.
+
+And if you are holding Pumpy:
+
+Push b or B to change Pumpy to make things bigger and
+turn him on. (Bigger is the default.)
+
+Push t or T to change him to make things taller and
+turn him on.
+
+Push w or W to change him to make things wider and
+turn him on.
+
+Push l or L to change him to make things little and
+turn him on.
+
+Push n or N to change him to make things narrower and
+turn him on.
+
+Push s or S to change him to make things shorter and
+turn him on.
+
+Push g or G to change him to make things go to a
+"good" size.
+
+Push F3 to call him to you and he'll jump into your hand.
+Pushing F3 again will hurry him up.
+
+And if you are holding the Magic Wand:
+
+Push o or O to make a copy of the original of the
+item under the tip of the wand.
+
+Push c or C to make a copy of the item.
+
+Push s or S to make a copy of the wand itself.
+
+Push F5 to make the wand fly into your hand. Pushing F5
+again will hurry it up.
+
+And if you are holding a bomb:
+
+Push any key to set off the bomb.
+
+And if you are holding or pointing to
+a notebook:
+
+Push - or Backspace to flip to previous page (last
+page if on first page).
+
+Push + or space bar to flip to next page.
+
+Type digits (0 to 9) to enter a page number.
+
+Push F4 to make the your main notebook fly to you. Pushing F4 again will hurry it up.
+
+Push F6 to get Tooly the Toolbox to run to you.
+
+And if you are holding a number
+or pointing to a number:
+
+Type digits (0 to 9) to enter a number.
+
+Type Backspace to remove the last digit.
+
+Type +, -, /, *, x, %, ^, & , | or = to enter an
+operation on numbers.
+
+You can also type any syntactically correct
+number, numerical operation, or sequence of operations.
+
+Use the left or right arrow keys to move the
+insertion point.
+
+Type f or F to flip a number over. (Works only if you
+are holding the number.)
+
+And if you are holding or pointing to a text pad:
+
+Just type to add to the text.
+
+You can use the four arrow keys to change the
+insertion point.
+
+And if you are holding or pointing to a
+robot, bird, or
+nest:
+
+Just type to add to the label (or t-shirt for birds).
+
+Typing Backspace to remove the last letter.
+
+And if you are holding or pointing to a
+picture or an animation clip:
+
+Type + to switch to next cycle or color or element.
+
+Type - or Backspace to go back.
+
+Type f or F to flip it over.
+
+Type the space bar to turn a picture on (if robots are on
+the back).
+
+Type '.' to stop robots from running on the back.
+
+Hold down the control button, move
+the mouse, and then click the left mouse button to toss a picture. It will start off with
+the same speed that your hand had when you released the picture. You can also press F12 to
+do this.
+
+And if you are holding or pointing to a sound (or force effect):
+
+Type space to make the sound (or force effect).
+
+Type '.' to stop making the sound (or force effect).
+
+And if you are holding or pointing to a sensor:
+
+Type '.' to freeze or suspend the operation of the sensor.
+
+Type space to resume operation of the sensor.
+
+And if you are holding or pointing to a
+truck:
+
+Type '.' to turn it off so it won't drive off.
+
+Type space to turn it back on.
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+--- help.htm ---
+ToonTalk Help
+
+Besides all the help that Marty
+can provide from inside of ToonTalk, there is a Users Guide. You may
+prefer to see the very latest version of the Users Guide on the Net. Other
+
+--- infodesk.htm ---
+ToonTalk
+Information Desk
+
+-
+Kids ask, "What's
+ToonTalk?"
+
+-
+Adults ask, "What's
+ToonTalk?"
+
+-
+Teachers ask, "What
+about ToonTalk and schools?"
+
+-
+Possible customers ask, "Can I buy ToonTalk?"
+
+-
+Possible customers ask, "Is there a free version?"
+
+-
+Possible customers ask, "What do ToonTalk users say about ToonTalk?"
+
+-
+Possible customers ask, "Is there more than just the English version?"
+
+-
+Cognitive psychologists and educators ask,
+"What cognitive skills can be learned?"
+
+-
+Computer Scientists ask "What's ToonTalk?"
+
+-
+The curious ask, "Where
+did the idea for ToonTalk come from?"
+
+-
+Scholars ask, "Where
+are the papers?"
+
+-
+Lawyers ask, "What
+
+ToonTalk
+2 won the Fall 2001
+Parents'
+Choice Gold Award and is the
+winner of Dr. Toy's 2002 Best
+Vacation Children's Product Award. ToonTalk 3
+contains many improvements and is now available.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+======================================================================
+SECTION: DEMOS, PUZZLES, AND FREE PLAY
+======================================================================
+
+--- demos.htm ---
+ToonTalk Demos
+
+If you click on 'See Demos' after starting ToonTalk you will see a selection
+of eight demos.
+
+-
+Introductory Tour (less than 15 minutes). This is a broad introduction
+to ToonTalk, its objects and tools, and simple programming examples.
+
+-
+Exploding Houses (less than 5 minutes). This is the silliest of the demos and is
+probably the most popular.
+
+-
+Swap if Bigger (less than 3 minutes). This demo illustrates two very basic
+programming techniques: comparison conditionals and exchanging the values in two
+locations.
+
+-
+Build Ping Pong (each part is less than 20 minutes). This demo shows two kids trying
+to build a Ping Pong game. They don't know what they are doing and the demo shows the
+process of exploring, trying things, finding bugs, fixing bugs, getting help, and
+the like.
+
+-
+Fibonacci Numbers (less than 4 minutes). This demo illustrates the kind of
+mathematical exploration that is possible within ToonTalk.
+
+-
+Factorial (less than 6 minutes). This demo shows a programming technique that is
+critical for building large programs in ToonTalk out of pieces that work together. The
+technique is a generalization of defining and calling procedures.
+
+-
+Bank Account (less than 15 minutes). This demo shows how advanced computer
+programming and computer science concepts can be made accessible within ToonTalk. It also
+illustrates another important programming technique needed for large-scale programming
+- concurrent objects with state.
+
+-
+Append Lists (less than 8 minutes). This demo illustrates another advanced
+programming technique (list manipulation) and illustrates a connection between ToonTalk
+and logic programming.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- narrate.htm ---
+Narration for ToonTalk demos
+
+Narrations for the demos are available on
+the CD-ROM versions of ToonTalk. The Introductory Tour Demo with US English
+narration can be played by dragging
+this into ToonTalk. (It is 5MB
+so you may need to be patient.) Or you can save it in the ToonTalk\Demos\US folder
+and
+then this narrated version will be used whenever the Introductory Tour demo is
+run.
+The other narrated demos and the British English, Swedish, and Portuguese versions are only available on CD-ROMs.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- tt_dmo.htm ---
+How to Create Your Own Demos
+using Time Travel
+
+Advanced users:
+
+To create a demo using time travel just run
+ToonTalk with time travel on. This will
+create a file named time_travel.DMO in the user's folder in the ToonTalk folder
+in My Documents. The "dmo" file records everything you do (every mouse movement,
+keyboard click, etc.) Double clicking on the file will start up the demo. You
+will probably want to copy and rename it. time_travel.DMO can be inspected or
+altered by unzipping it with any unzip program.
+
+If your demo includes pictures or sounds that you
+have imported into ToonTalk, they set the
+
+IncludeMediaInTimeTravelArchives
+option to 1 before creating your demo.
+
+Adding subtitles to your demos. When ToonTalk starts
+running a time travel demo named X it looks for a file named X.ust inside the
+time_travel.DMO archive. ("ust" is the default
+extension name for American English subtitles - in general the extension is the two-letter
+country code followed by 't'.) You can override the default for your computer by providing
+an "SubtitlesSuffix" entry in the "FileExtensions" section of the
+ToonTalk.ini file in your Windows directory. A subtitle file is made of entries separated
+by a blank line. Each entry has the time in milliseconds since the beginning of the demo
+followed by the text of the subtitle. It is recommended that any lines of text more than
+60 characters be broken. The "demos" subdirectory of your ToonTalk installation
+has many sample subtitle files. One way to obtain the millisecond timings is to press F9
+while the demo is playing back. This will record the time in your <user name>.txt log
+file in the "users" subdirectory.
+
+Adding narration to your demos. When ToonTalk starts
+running a time travel demo named X it looks for a file named X.spkinside the
+time_travel.DMO archive. ("spk" is the default
+extension name for American English narration files - in general the extension is the
+two-letter country code followed by 'n'.) You can override the default for your computer
+by providing an "SubtitlesSuffix" entry in the "FileExtensions"
+section of the ToonTalk.ini file in your Windows directory. To create a narration file you
+should record segments of the narration (256 is the maximum number) and name them
+"s01.wav", "s02.wav" and so on. These files should be placed on the
+main ToonTalk directory while generating the narration file.
+
+To create the narration file (in the "Demos"
+subdirectory) add '-create_narration 1' or '-create_narration 2' to the command line.
+A value of 1 changes the meaning of F11 to mean start the next narration segment
+(the next s<nn>.wav file). A value of 2 means use the start times from the subtitle
+file. If you want to specify the times when the narration should start but don't want
+subtitles, then create a temporary subtitle file (where the lines of text could be
+anything (e.g. "X") and only the start times are important. You can use
+'-create_narration' together with '-o' or '-I' depending upon whether you want to create
+the demo and narration at the same time, or to add narration to an existing demo.
+
+Coordinating the subtitles and narration. If you wish
+to create both narration and subtitles, you can create the subtitles first and use
+'-create_narration 2' or else you can create the narration first and then run your demo
+with "-print_narration_start_times 1" which will print the start times of each
+segment in your <user name>.log in the "Users" subdirectory. You
+can then use these times while creating your subtitles file.
+
+Tips:
+
+- A demo file works for the same resolution as it was recorded.
+With luck you can record a high-resolution demo and copy it to the low resolution
+subdirectory and it will work. See the subdirectories of "Demos"
+in the ToonTalk installation directory for examples.
+
+- Avoid using keyboard accelerators for tools (e.g. 'e' to make
+Dusty erase things). These accelerators differ from language to language so if you use
+them your demos probably won't work in a different language version of ToonTalk.
+
+- If you are creating a demo on a fast computer and expect the
+demo to be run on slower machines then it is recommended that you add -y 50 (or a similar number) to the command
+line while recording to slow down your machine.
+
+- You can create a video or animation of a demo by creating
+series of screen snapshots.
+
+home | search | purchase
+| manual | news | info
+| faq | support | downloads
+| press | contact us
+
+--- games.htm ---
+Games, fun things, and
+other stuff built in ToonTalk
+
+Here is a list of places where you can find
+games and other fun things built in ToonTalk and bring them into ToonTalk to play with,
+take apart, modify, extend, or whatever you want.
+
+-
+The Game Place. This is
+the Playground research project page where games made by children and researchers are
+available. Warning: some of these games use lots of custom pictures
+and sounds and so they may take a long time to load and start the first time you try them.
+And some of these games are complex and might run slow on a low-end computer.
+
+-
+Playground elements and
+tools. Here
+you'll find lots of tools and pieces of games that you can use to create your own games.
+
+-
+
+WebLabs games. This project is
+mostly about modeling scientific processes but there are some ToonTalk games
+here as well.
+
+-
+Other
+ToonTalk programs. A range of
+programs made by us and ToonTalk users. Contribute what you've made here.
+
+If you have a web site with
+ToonTalk creations on it please let us know so
+we can add a link here.
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- programs.htm ---
+Free ToonTalk Programs for
+Downloading
+
+If you are reading this on your local disk or on
+the ToonTalk CD-ROM and have an Internet connection then click here for the latest version
+of this page.
+
+Here is where you can find programs that others
+have constructed in ToonTalk. These programs are free and can be freely distributed but
+you can't sell them for profit.
+
+If you build something nice in ToonTalk, please
+contribute it to the world by following these instructions.
+
+There are plenty of ToonTalk games you can run in
+ToonTalk version 2.35 or Beta 27 or later
+here.
+
+Here are some more programs.
+
+Generates prime numbers.
+This is a notebook of robots that implement the
+Sieve of Erathosthenes. The best way to watch it to give the robot on page 2 a box with a
+bird in it and press F8 to stop all robots. Then get in the helicopter, press F8 to start
+them up again, and watch as first a house is built with a robot inside that gives a bird a
+2, then 3, 4, 5 and so on. The bird takes it to her nest in a new house that has robots in
+it that passes along only numbers divisible by 2. When a number passes through all the
+existing houses then it is a prime and a new house is built filtering out numbers
+divisible by it.
+Recursive factorial.
+This is a notebook of robots that compute the
+product of numbers from 1 to n in a recursive fashion. One of the built-in demos of
+ToonTalk shows how to build an iterative factorial program. Those robots can be found in
+the Examples notebook on page 6 of your main notebook. This one is fun to watch
+from the outside. (Computer scientists should be able to recognize the stack from the
+helicopter.)
+Doubly recursive factorial.
+This computes the same values as the singly
+recursive version above, but if you watch from the outside you'll see a tree of houses
+grow and shrink. To see the pattern well, the size of the city should be at least twice
+the factorial being computed. So the city should be 20 by 20 for the best viewing of the
+factorial of 10 being computed.
+A spinning person.
+This one a just a picture of a person spinning
+around. On the back is a robot that just repeatedly adds one to a parameter that controls
+which way she is facing.
+Chase movies.
+This uses the behavior notebook below to make 4
+movies. The first one just has 2 characters bouncing off the edges. The second adds
+reversing on collision to the oval. The third one gives the oval the goal of moving to the
+center and also imposes a speed limit on it. The fourth gives the square the behavior of
+chasing the oval. It also gets a speed limit.
+Neat
+behaviors.
+The chase movies were made by placing different
+behaviors on the back of geometric shapes. These behaviors were built in ToonTalk. They
+include drift towards a goal, bounce off edges, obey speed limit, chase another, and more
+and can be found in this notebook. There are plenty more
+behaviors here
+where they are called "anima-gadgets".
+Logic gates.
+This was posted by Tyler
+Breisacher (age 11) who wrote the following. Recently I've been getting interested in
+Digital Electronics. I decided to see if I could train robots to act like a logic gate.
+You'll notice the robots get input from nests give output to birds. This is so that robots
+can deliver data to other robots which is critical in making a logical circuit. As I make
+circuits from these gates I will post some. I also need to make 3 and 4 input And/Or/Ex-Or
+gates. I think this is a good use for birds/nests and for the discussion group. Feel free
+to make logic circuits with these.
+Plays music.
+ToonTalk can send messages to Microsoft Window's
+Media Control Interface (MCI). A cute example is Play Canyon
+that has a picture of a switch. On the back is a robot who will play the file
+"canyon.mid" from the Windows directory when the switch is on and it is on the
+floor. (Note this example expects to find the file
+c:/windows/media/town.mid and will fail
+on Windows 2000 or NT 4, but it is not hard to edit to work.)
+TicTacToe.
+This lets 2 players play TicTacToe. You need to hide
+your hand (using F9) for the game to work. 'e' will erase the game to start again. It was
+contributed by Pierre-André
+Dreyfuss.
+Arithmetic expression evaluator.
+This was contributed
+by Pierre-André Dreyfuss who
+wrote the following. The team wants a box with two holes. An expression in the left one
+and a bird for the answer in the right one. An operation is a box with three holes. In the
+middle one of the operators + - x / on a word pad. Left and right : a number. An
+expression is a three holes box, with an operator in the middle and both sides either a
+number, or an operation, or an expression. The four first robots are computing operation.
+The last three are dealing with expressions, in the left hole, in the right hole and
+both sides, calling themselves recursively using the main book and
+
+the 'oper' label for search.
+This program is recursive. Note that starting with Beta 23 or Release 2.10, there is an easier way
+to express recursion. A robot can now use the magic wand
+to create a copy of himself and his teammates.
+
+There are plenty more examples including lots of games to be
+found at the Playground Project Game Place.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- puzzle1.htm ---
+Basic Hints for ToonTalk Puzzles
+
+When playing ToonTalk's puzzle game, the first
+thing you have to do is move the mouse to enter the rocket by walking into the door. Marty
+will greet you and explain the first problem. You then need to walk back through the
+rocket door and walk over to the door of the house. Once inside click a mouse button to
+sit down. Then build whatever Marty needs using a mouse button to pick up and drop things.
+If you mess up, just pick up the bomb and hit the space bar. If you need help, walk back
+to Marty. Each time you walk into the room or bump into him, you'll get some new hints
+from him. When you do think you have built what Marty needs, pick it up, and stand up by
+pressing the 'Esc' button on the keyboard. Then walk back to the rocket with your solution
+in your pocket.
+
+Good luck!
+
+about ToonTalk.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- robotpuz.htm ---
+Hints for Using Robots in
+ToonTalk Puzzles
+
+A robot in ToonTalk can be
+trained by giving him a box. You'll then enter his thought bubble.
+Whatever you do, the robot will remember. Some robots can only remember a few steps. When
+a robot's memory fills up, you leave his thought bubble. You can leave whenever you want
+by pressing the 'Esc' key. Once a robot is trained you can give him a box. If the box
+matches what's in his thought bubble, then he'll repeat what he was trained to do. If the
+box doesn't match what he's thinking of, then Dusty will appear. You can use Dusty to remove stuff from the robot's thought bubble so he isn't so
+fussy. A good habit is to remove only enough to make the robot happy with what you want to
+give him.
+
+Some robots have a magic wand
+that only they can use. You'll have to train the robot to use the wand for you.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- make_pzl.htm ---
+How to make ToonTalk puzzles
+
+Recommended for advanced users.
+
+You can make your own puzzles to give to others.
+
+A puzzle is described by a file with the following
+parts:
+
+-
+Introductory text. This is the text that
+Marty will speak when you see him.
+
+-
+Wall text. This is the text that you see on
+the wall. If the text includes a string of #s then they are covered by a picture of the
+goal.
+
+-
+Initial stuff on the floor.
+The way to create this is to arrange just the item you want on the floor and
+then press control-c and paste the result into the file. Note that your hand
+should be empty. Also Tooly and his friends Dusty, Pumpy, Maggie, and the main
+notebook will not be included. Copies of them made by the magic wand will,
+however, be saved.
+
+-
+Goal. Create the object that is the solution.
+If it doesn't have to be exact you can vacuum off some of the details. Drop the item on
+the clipboard object on page 30 of your sensor notebook (on page 4 of your main notebook).
+Paste the result.
+
+-
+Robots who decide if answer is good or bad.
+This field is optional (i.e. can be skipped). The robot, or team of robots,
+will be given a box whose first hole contains the player's answer. The second
+hole contains a bird. The robots should give the bird a box with 2 holes. The
+first hole should contain 1 if the answer is OK and 0 if not. The second hole
+can contain a text pad which Marty will say.
+
+-
+Options. The useful options are:
+
+-
+Goal box: 40 44 31 16
+This says show the goal on the wall at 40,44 and its size is 31×16. (Size in percent of
+width or height of screen.) It is usually easier to add ### to the wall text. (See #2
+above.)
+
+-
+NumberTyping = off
+
+Can't type numbers.
+
+-
+TextTyping = off
+
+Can't type text.
+
+-
+Flipping = off
+
+Can't flip things over.
+
+-
+FunctionKeys = off
+
+Can't use function keys to call for tools.
+
+-
+BringInVacuumWhenRobotFails = off Dusty won't
+appear when a robot fails.
+
+-
+GoodSolutionsPosted = off
+Good answer aren't posted in the rocket ship.
+
+-
+give one of these hints. Each hint is separated by a blank line.
+
+Each of these 6 or 7 parts of a puzzle are
+separated by blank lines. By convention the file name extension is PZL. ToonTalk puzzles
+are all named p<some number>.pzl. You can try your puzzles by starting ToonTalk with
+-puzzle <puzzle file name> in the command line. Or you can double click on the
+puzzle (if its extension is named PZL). When a puzzle is solved and the puzzle name ended
+with a number then the system will try to load the next puzzle. E.g. after solving
+puz27.pzl, ToonTalk will look for puz28.pzl. If you make some neat puzzles please send them in to be added to the ToonTalk web site.
+
+home |
+search |
+purchase |
+manual
+|
+news |
+info |
+games
+|
+faq |
+support |
+downloads
+|
+endorsements |
+press |
+contact us
+
+======================================================================
+SECTION: TIME TRAVEL
+======================================================================
+
+--- ttravel.htm ---
+Time Travel in ToonTalk for
+Undo, Instant Replay, and better Demos
+
+Time travel enables you to pause ToonTalk and then
+go back in time either for an instant replay or to take over and do things
+differently (a kind of undo ability).
+
+Time travel can be enabled via the dialog that
+asks you your name.
+
+When time travel is enabled the only difference is what
+controls like those for a VCR appear. Hitting Pause again will bring up
+the usual dialog screen.
+
+The numbers and text underneath show the segment number
+and the date and time it began.
+
+The
+button jumps to the oldest segment.
+
+The
+button jumps back one segment.
+
+The
+button does stops replay.
+
+The
+
+button starts replaying.
+
+The
+
+button jumps forward one segment if you have gone back in time already.
+
+The
+
+button jumps to the newest segment.
+
+The
+button removes the buttons and resumes
+ToonTalk from the current place in time with time recording still on.
+
+When time travel is enabled, ToonTalk
+will start where you last left off. As you resume where you left off you will be
+adding segments to your time travel record.
+
+Also see
+
+IncludeMediaInTimeTravelArchives.
+
+To customize time travel, edit your
+toontalk.ini file to have entries for GenerateLogs and
+SecondsBetweenLogs in
+the Switches section. For example, GenerateLogs=100 and SecondsBetweenLogs=5
+will enable time travel where you can travel in time in 5 second increments and
+the furthest you can travel back in time is 500 seconds (5x100).
+
+Time travel works only in Free Play
+and is turned off in the puzzle game.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- mk_ttdmo.htm ---
+How to Create Your Own Demos
+using Time Travel
+
+Advanced users:
+
+After running ToonTalk with
+time travel enabled, you'll find a file named time_travel.dmo in your
+ToonTalk user directory (typically a directory with your name that is a
+subdirectory of ToonTalk that is a subdirectory of My Documents). Copy and
+rename it but be sure to keep the DMO file extension. This file can be
+distributed to anyone who has the same version of ToonTalk installed. It can be
+linked to from a web page. When clicked upon this file will replay the time
+travel log. The time travel VCR-like controls will
+appear when you move the mouse.
+
+A DMO file is internally a zip archive that
+contains several lognnnnn.dmo files (one for each time travel segment) and a
+0.xml file that contains some extra information. You can
+use any of the
+
+common zip utilities to add subtitles, text-to-speech, or narration to a
+time travel archive by unzipping the DMO file and adding your files. You may find it is easiest to temporarily rename the file to have a ZIP
+file extension while making any of the following enhancements to your demo.
+
+Adding subtitles to your demos.
+
+When ToonTalk starts
+running a time travel demo named X it looks for a file named X.ust. ("ust" is the default
+extension name for American English subtitles - in general the extension is the two-letter
+country code followed by 't'. British English is "ukt".) You can override the default for your computer by providing
+an "SubtitlesSuffix" entry in the "FileExtensions" section of the
+ToonTalk.ini file in your Windows directory. A subtitle file is made of entries separated
+by a blank line. Each entry has the time in milliseconds since the beginning of the demo
+followed by the text of the subtitle. It is recommended that any lines of text more than
+60 characters be broken. The "demos" subdirectory of your ToonTalk installation
+has many sample subtitle files. One way to obtain the millisecond timings is to press F9
+while the demo is playing back. This will record the time in your <user name>.txt log
+file in the "users" subdirectory.
+
+One you have your UST file (or UKT, SET, PTT, JPT,
+...) you should add it to the DMO file (it is a zip archive).
+
+Adding narration to your demos.
+
+The narration needs to be as either a single large
+WAVE file or several smaller files. WAVE files are the Microsoft Windows
+standard audio file and they usually have the WAV extension. Note that currently
+the WAVE file cannot be compressed as an MP3 or Windows Media file.
+
+A single WAVE file will typically be larger than
+several smaller WAVE files since there is no playback of quiet periods. Also
+very large WAVE files may cause some performance problems. Currently ToonTalk
+can only playback a WAVE file from the beginning so if during playback one uses
+the VCR controls to jump into the middle of a narration you won't hear it. Until
+ToonTalk is enhanced to play the sound files from any starting location, the
+best alternative is to break your file into smaller pieces.
+
+You specify when you want a wave file to begin
+playback during a demo by adding to your subtitle file an XML fragment such as:
+
+1412
+
+<?xml version="1.0"?>
+
+<SoundFile>UK\s01.wav</SoundFile>
+
+This indicates that 1.412 seconds into the demo
+that ToonTalk should begin to play the sound file in the DMO archive named
+UK\s01.wav. If you anticipate making different language versions of your demo we
+recommend you use a folder name for each version. Alternatively you can keep all
+the files at the top level of the zip archive and give them names like
+UK_s01.wav. If you only want to have
+narration without subtitles then the above can be the entire contents of your
+subtitles file.
+
+If you wish to have narration generated by the
+same text-to-speech engine that Marty uses, you can add an entry such as
+
+1412
+
+<?xml version="1.0"?>
+
+<TextToSpeech>Welcome to my demo.</TextToSpeech>
+
+An Example:
+
+Here is the beginning of the intro_v2.ust in the
+intro_v2.dmo used in ToonTalk 3:
+
+1412
+
+<?xml version="1.0"?>
+
+<SoundFile>US\s01.wav</SoundFile>
+
+1412
+
+Hello! Welcome to ToonTalk.
+
+I'm Pat and I'll be happy to show you around.
+
+7297
+
+<?xml version="1.0"?>
+
+<SoundFile>US\s02.wav</SoundFile>
+
+7297
+
+If I hold down the right mouse button,
+
+we fly up.
+
+Tips:
+
+- Avoid using keyboard accelerators for tools (e.g. 'e' to make
+Dusty erase things). These accelerators differ from language to language so if you use
+them your demos probably won't work in a different language version of ToonTalk.
+
+- If you are creating a demo on a fast computer and expect the
+demo to be run on slower machines then it is recommended that you add -y 50 (or a similar number) to the command
+line while recording to slow down your machine. We also recommend if you are
+making a demo that will run on slower computers to switch to a lower screen
+resolution before recording it (e.g. 800x600).
+
+- If your demo includes your
+own sounds or pictures then enable
+
+IncludeMediaInTimeTravelArchives so that the media files are included in
+the DMO file.
+
+- If your demo works only in a particular version
+of ToonTalk then if you add the ToonTalk executable (e.g. TT345.exe) to the
+DMO file ToonTalk will use this version when replaying the demo. Note that
+this will not work if the EXE is a later version than was installed and other
+files are needed to run this version.
+
+- If you have a script (e.g. the subtitles)
+before recording the time travel session you can see the subtitles while
+recording. To do so, place a copy of the script in the Demos subdirectory of
+the ToonTalk installation and name it time_travel.ust (or UKT etc.). Record a
+few seconds and exit ToonTalk. Then when you come back you'll see the
+subtitles. To enable this feature add SubtitlesAndNarrationEvenWithoutDemo=1
+to the Switches section of toontalk.ini.
+
+-
+
+If your demo includes Marty speaking then don't have Marty use subtitles
+since then they can't be added to the demo as well. The talk balloon is a good
+alternative (with or without text-to-speech).
+
+- You can create a video or animation of a demo by creating
+series of screen snapshots.
+
+Warning: This
+documentation applies to
+version 3 (internal release 3.45 or Beta 42 or
+later). Older versions can make demos without time travel.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+--- slowtime.htm ---
+ToonTalk can
+temporarily freeze when time travel is on
+
+If you are reading this from a local file
+and wish to see the latest version of the web
+
+Time travel
+in ToonTalk is a great way to undo things, to see things over again, to show
+others what you have done and more. But depending upon how many things are in
+your city and how fast a computer you are using it can cause ToonTalk to
+repeatedly freeze after a certain number
+of seconds. If
+it is freezing often we recommend you save your city, leave ToonTalk, and start again with
+time travel turned off.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+======================================================================
+SECTION: PROGRAMMING CONCEPTS IN TOONTALK TERMS
+======================================================================
+
+--- equiv.htm ---
+ToonTalk Equivalents
+
+ToonTalk provides animated concrete representations of typical textual programming commands and
+constructs.
+
+Computational Abstraction
+
+ToonTalk Concretization
+
+computation
+
+city
+
+actor
+
+process
+
+concurrent object
+
+house
+
+method
+
+clause
+
+robot
+
+guard
+
+method preconditions
+
+contents of thought bubble
+
+method actions
+
+body
+
+actions taught to a robot
+
+message
+
+array
+
+vector
+
+box
+
+comparison test
+
+set of scales
+
+process spawning
+
+loaded truck
+
+process termination
+
+bomb
+
+constants
+
+numbers, text, pictures, etc.
+
+channel transmit capability
+
+message sending
+
+bird
+
+channel receive capability
+
+message receiving
+
+nest
+
+persistent storage
+
+file
+
+notebook
+
+constants
+
+numbers, text, pictures, etc.
+
+channel transmit capability
+
+message sending
+
+bird
+
+channel receive capability
+
+message receiving
+
+nest
+
+persistent storage
+
+file
+
+notebook
+
+home | search | purchase | manual
+| news | info | games
+| faq | support | downloads
+| endorsements | press | contact us
+
+--- concur.htm ---
+Concurrency and ToonTalk
+
+Before I attempt to explain concurrent computation in
+ToonTalk and why it is difficult to extend sequential languages to be concurrent, I'll
+explain the relationship between concurrency, parallelism, and distributed computing.
+Parallel processes are processes that are running within the same computer system. The
+system typically has more than one processor. Distributed processes are processes that
+typically run on different computer systems connected via a network. The distinction
+between parallel and distributed is important because distributed computing is typically
+across trust or organizational boundaries. Hence only distributed computing need be
+concerned with security, hardware failure recovery, and the like. In discussions where the
+distinction is not important, I refer to concurrent processes, i.e. processes that might
+be either parallel or distributed.
+
+ToonTalk is a thoroughly concurrent programming language.
+That is because all sub-computations are expressed as new, independent processes. If a
+robot needs to have some other robots perform some sub-computation, he must be trained to
+load up a truck with those other robots. The new house built by the crew in the truck is a
+new process. Unlike conventional languages (C, Java, Logo, Lisp, Fortran, Cobol, Perl,
+Basic, etc.), there is no way to express a subroutine call in ToonTalk. A call to a
+procedure transfers control to the procedure so that the program after the procedure call
+has to wait until the procedure finishes. When the procedure is done it returns (sometimes
+by returning a value). The calling program can then resume where it was when the procedure
+was called. One can get the equivalent behavior in ToonTalk by training a robot to load up
+a truck with robots and a box with a bird in it. The robot should put the nest of the bird
+in his box and do nothing more. That robot or other members of his team should be
+programmed to look for something in the nest. Consequently this process will suspend until
+the robots that were placed in the truck give the bird something. The robots waiting on
+the nest will see what was delivered and resume computation. In other words, a subroutine
+or procedure call in ToonTalk is just a very special pattern of use of trucks, birds, and
+robots. ToonTalk only provides the programmer with the more general ability to express the
+spawning of new processes.
+
+The lack of subroutines in ToonTalk makes it much more
+feasible to have much larger number of processes than conventional programming languages.
+The reason for this is that everyone implements subroutine calls using a data structure
+called a stack. Stacks are a very effective way of implementing procedural calls,
+including recursive calls. The problem is that each process (even if suspended) needs its
+own stack. This makes processes somewhat costly. A process in ToonTalk only needs 2
+pointers: to the program (the team of robots) and to the data (a box). There is no stack;
+there is nothing else. I've tested ToonTalk with tens of thousands of houses (i.e.
+processes). In contrast, when I used Java, it stopped working when I had just a few
+hundred processes.
+
+Conventional languages have shared state. The same
+variables, data structures, and objects can be accessed from different processes
+(processes that share data are often called threads). Sharing state is necessary in these
+languages in order for threads to work together. This sharing between concurrent
+independent processes is very dangerous, however. It leads to race conditions.
+Consider a variable, A, that is supposed to represent the current balance of a
+savings account. (A might be a global variable or it might be an instance variable
+of an object - both kinds of variables have this problem.) A subroutine has been written
+to withdraw X from A after checking if X is less than or equal to A.
+It withdraws by assigning A to A-X. In other words the subroutine allows a
+withdrawal only if there are sufficient funds in the account. Now let us introduce
+concurrency. Suppose there is an account with 10 dollars in it and one process would like
+to withdraw 9 dollars and another process wants to withdraw 8 dollars. With bad luck both
+withdrawals can occur. And even worse the balance might be 1 dollar, 2 dollars, or -7
+dollars after processing the two withdrawals. How? Consider this scenario:
+
+Process 1 checks that A is less than X and
+computes A-X to be 1 but before assigning A to 1, Process 2 runs and
+sees that A is still 10 so it processes the entire withdrawal and sets A to
+2. Process 1 resumes where it left off and sets A to 1.
+
+So how do conventional languages deal with race conditions?
+They introduce new programming constructs: locks or critical regions. For
+example, the withdrawal procedure could obtain a lock on A so that no other process can
+access it. It can then safely compare it to X, compute A-X, and set A
+to the result. It must then release the lock on A or else no one else can ever
+access A. Not only does this add complexity to the task of making programs, but it
+can lead to new problems: namely, deadlock. Suppose Process 1 locks A and then
+needs to find the value of B that is locked by Process 2. So Process 1 suspends and waits
+for Process 2 to unlock B. But what if Process 2 then needs to access the value of A?
+A is locked, so Process 2 also suspends. This is sometimes called a deadly
+embrace. You might think it would be easy to program in such a way to avoid this kind
+of mutual dependency. But the cycle of dependency might involve hundreds of processes.
+
+So why doesn't ToonTalk suffer from these problems? The
+reason is that ToonTalk has no shared state. A box can only exist in one place. And robots
+in the same house take turns - they never work on the same box at the same time. The lack
+of shared state is how ToonTalk avoids race or deadlock problems. But doesn't this limit
+the expressivity of the language? It would, if it wasn't for birds. The fact that copies
+of the same bird fly to the same nest provides a way for many-to-one communication that
+can be used instead of shared state. As an example, consider the ToonTalk bank account
+demo. Multiple processes can withdraw money from the same account. Each process has a copy
+of a bird whose nest is in the box that is representing the bank account. Robots in
+different houses can give the birds to this account withdrawal requests by giving the
+birds boxes containing the amount of money that to be withdrawn. We don't know which box
+will end up on top of the nest - but all them will be stacked up on the nest. (In other
+words, the requests are queued up on the nest.) The robots working on the box for the
+account will see a box appear on the nest for a withdrawal request. They will process the
+request before starting on the next request. There is no problem, even if the computation
+of the new balance requires a new sub-computation. The robot will load up the truck with
+[...trimmed...]
+
+--- birdnest.htm ---
+An "Algebra" of Birds and Nests
+
+Here is an attempt to describe the
+operations upon birds and nests. In the following diagrams the rule is that if X
+is given to a bird then copies of X appear on every nest reachable from that
+bird by following the directed arcs.
+
+When you take out a nest with an egg
+and drop it you produce a bird/nest pair that can be visualized as
+
+Figure 1 - A single bird and her
+nest (the I pattern)
+
+If the nest N1 is copied
+we obtain
+
+Figure 2 - A single bird and two
+nests (the V pattern)
+
+If instead, B1 is copied
+we obtain
+
+Figure 3 - Two birds and their
+nest (the inverted V pattern)
+
+If both B1 and N1
+are copied we obtain
+
+Figure 4 - Two birds and two nests
+(the X pattern)
+
+If take two instances of Figure 2 and
+combine one nest of each (N2 and N3)
+by dropping one on the other you get
+
+andbecomes
+
+Figure 5 - Two birds and their two nests
+after one nest of each are joined (V+V becomes the W pattern)
+
+If a bird's nest is copied and then
+combined (N1 and N2) you get
+
+becomes
+
+Figure 6- A bird and her two nests
+after the nests are joined (the V pattern becomes the I pattern)
+
+In a
+post to the
+ToonTalk discussion list Jack Waugh suggested that the V pattern become a
+diamond pattern rather than an I pattern as in Figure 6. His idea is that since
+then there would be two paths to N1/2 from B1 that two
+copies of everything B1 receives should arrive on N1/2.
+One would then have to introduce a new kind of entity to these diagrams --
+invisible forwarders of messages. N1 and N2 would become
+forwarders to N1/2 rather than replaced by N1/2 as in
+these diagrams.
+
+Furthermore in the same message, Jack
+suggests that ToonTalk be extended so if a bird is dropped on a bird they are
+joined. Then if birds from an inverted V pattern (Figure 3) are joined the
+sub-graph would either become an I pattern (consistent with Figure 6) or a
+diamond pattern (consistent with Jack's alternative for Figure 6). Again a
+diamond pattern requires new entities (bird forwarders) and results in duplicate
+messages arriving at the apex of the diamond.
+
+Another suggestion Jack makes is that
+it should be possible to combine a bird and nest thereby eliminating both. This
+would be a way of connecting the birds of the annihilated nest to reach the
+nests of the annihilated bird. If the nest was a nest of the bird then it would
+simply be a way of transforming an I pattern to the null graph.
+
+home | search | purchase |
+manual | news | info |
+games | faq | support |
+downloads | endorsements |
+press | contact us
+
+======================================================================
+SECTION: FREQUENTLY ASKED QUESTIONS
+======================================================================
+
+--- faq.htm ---
+Frequently Asked Questions
+
+Question #1: I
+think ToonTalk isn't working right. What can I do?
+
+Question #2: Could
+you please explain to me how to do an equivalent of a DO LOOP with ToonTalk?
+
+Question #3: I want
+to use ToonTalk but I'm visually impaired. Any suggestions?
+
+Question #4: What
+is the difference between erasing a number and removing it completely from the box in a
+robot's thought bubble?
+
+Question #5:
+How can I make a scale to tip to one side in a robot's thought bubble and also
+remove the pads on both sides of the scale so my program will work with numbers
+or text?
+
+Question #6: How do
+I jump to a puzzle I want to work on?
+
+Question #7: I
+don't like the size and location of Tooly, the Toolbox, and his friends. How can I change
+this?
+
+Question #8: How
+can I get help from inside of ToonTalk?
+
+Question #9: I have
+a robot but don't know what he does. How can I find out?
+
+Question #10: I
+want to make lots of changes to the box in a robot's thought bubble but it is too small to
+work on. What can I do?
+
+Question #11:
+ToonTalk always asks me my name when it starts. And it remembers me. What is going on?
+
+Question #12: I
+want everyone in class to start out with a notebook and city that is different from the
+one supplied by ToonTalk. Can I do this?
+
+Question #13: I
+sometimes take things out of a notebook or Tooly by mistake. Do I have to use Dusty to get
+rid of it?
+
+Question #14: Can
+I train a robot to put pictures together?
+
+Question #15: Can
+you personalize birds? It's really difficult to remember which lives where.
+
+Question #16:
+I want a robot to run if something is NOT true, how do I do that?
+
+Question #17: I
+read that I can "post" robots, however I don't know how.
+
+Question #18: It
+seems that sometimes when a robot is finished working, Dusty is made to vacuum up stuff on
+the floor even if this is not part of the robot's training. Could you please help to
+explain it?
+
+Question #19:
+Frank asks, "When I exit to edit a picture the picture comes up in my web
+browser even though I have Microsoft Paint set as the default program for
+opening .png files. Can anyone suggest a way to do this more efficiently?"
+
+Question #20:
+I'm using the Touching Who? sensor so my robots can respond to collisions
+between pictures but when a picture is touching more than one thing only one is
+shown. How can I get it to react to all the things it is touching?
+
+Question #21: Miki in
+London asks, "If
+you have a robot that takes the inputs x and y, can you train it to work on a condition
+like 'x+y>1'?"
+
+Question #22:
+
+There are so many ways of saving things in
+ToonTalk. Which one should I use when?
+
+Question #23: Miki asks, "How
+long is a piece of string? (Or rather; is there any way to get a robot to measure the
+length of a text string?)"
+
+Question #24: Jackie writes,
+"Give a stack of numbers on a nest to a robot to train the robot - in the thought
+bubble, the robot
+
+manipulates the stack of numbers as though it were the top number only - no stack, no
+nest. If the robot takes off the top number, there's nothing underneath. This means that
+you can't train the robot to manipulate any number on a stack other than the top number.
+Happily, the trained robot treats a stack on a nest given to him as a stack, and removes
+one number at a time, (so the demo puzzles work fine) but if you wanted to, say, train a
+robot to do something different with alternating numbers on a stack on a nest, that would
+not be possible."
+
+Question #25: Is there a Mac or
+Linux version of ToonTalk?
+
+Question #26: What is the best way
+to get good screen shots from ToonTalk?
+
+Question #27: Why can't I hear
+Marty after installing ToonTalk on Windows XP? Why doesn't ToonTalk 2 running under
+Windows XP or 2000 remember what I've done in previous sessions? How do I run with 256
+colors in Windows XP?
+
+Question #28: Ryan asks how can I
+make the animation of the explosion (found in the Pictures notebook) start over again?
+
+Question #29: I noticed
+that Marty is able to say numbers even when they have hundreds or thousands of
+digits. How can I see what he is saying?
+
+Question #30: Sometimes
+when I pick up a text pad and type control-c then the text ends up on the
+clipboard. Other times there is an XML encoding with my text inside. What is
+going on?
+
+Question #31: I have a
+team of robots on the back of a picture that have finished working but if they
+set off a bomb they blow up the picture, how can I stop them?
+
+Question #32: I keep
+forgetting which function key does what. Can you help?
+
+Question
+#1: I think ToonTalk isn't working right. What can I do?
+
+for more help.
+
+Question
+#2: Fadia Markar in Switzerland asks "Could you please explain to me how to do an
+equivalent of a DO LOOP with ToonTalk?"
+
+Answer: The DO or FOR loops of ordinary
+programs usually consist of 4 parts: an index variable (let's call ours "i"), an
+increment that describes how much should be added to "i" (or subtracted
+from "i" if the increment is negative), a stop condition (for example, "i <
+100"), and a body that get run repeatedly until the stop condition is true.
+
+In ToonTalk, first I'd create a box with 4 holes:
+
+[i | < | stop | increment]
+
+where i, stop, and increment are numbers and "<" is a scale. I'd give
+the box to a robot and train him to copy "increment" and drop it on
+"i". I'd then train him to do whatever I wanted in the "body" of
+the loop. When finished training the robot I would use Dusty the Vacuum to erase
+"i" (the number in the first hole of the box in the robot's thought bubble).
+
+To do something after the loop terminates I would
+train another robot and drop this robot on the first one so it would end up behind it in
+line. This means the first robot will get a chance to work if the box matches.
+
+See, for example, the factorial example in
+the Examples notebook.
+
+Question
+#3: I want to use ToonTalk but I'm visually impaired.
+
+for tips how to customize ToonTalk in ways that may help.
+
+Question
+#4: What is the difference between erasing a number and removing it completely from
+the box in a robot's thought bubble?
+
+Answer: The general rule for a robot's
+thought bubble is that it should contain the kind of box the robot will be happy with.
+He'll be happy with a box with more detail than he's thinking of. So erasing a number
+means that the robot will be happy with any number pad in that location while removing it
+means that anything (even text pads or other boxes) are fine. Erasing a number is a way of
+expressing what computer programmers call a type test. A good ToonTalk programming style
+is to erase as little as possible to make the robot work in all the situations you want
+him to.
+
+Question
+#5: How can I make a scale to tip to one side in a robot's thought bubble
+and also remove the pads on both sides of the scale so my program will work with
+numbers or text?
+
+Answer: You can pick up the scales
+and type '+' or '-' until it goes to the state you want. The scale will stay in
+that state until it is activated by typing space to it.
+
+Question
+#6: How do I jump to a puzzle I want to work on?
+
+Answer: You can find the puzzle directory of
+ToonTalk installation folder on your hard disk and double click on the puzzle number you want to
+start. If you look at your log file in the users directory in the ToonTalk
+folder in My Documents, you'll see
+what puzzle numbers you did last time. Some puzzles build upon earlier work. If you start
+with one of those puzzles ToonTalk may offer to send you back a few puzzles. You
+can also repeatedly press Pause on the keyboard and keep skipping to the next
+puzzle.
+
+Question
+#7: I don't like the size and location of Tooly, the Toolbox, and his friends. How can
+I change this?
+
+Answer: You can use Pumpy
+to change the size of Tooly, the magic wand,
+Dusty, and your notebook. You can even
+change the size of Pumpy by copying him and using the copy to change his size. This is a
+great way to get more room if you'd rather work with small items. You can also leave your
+tools on the edge of the screen and use the function keys to call them to you. (See keyboard commands, for the details.) When you are done with them
+
+Question
+#8: How can I get help from inside of ToonTalk?
+
+Answer: Marty, the
+Martian, will give a complete description of an item if you call for him (via F1) while
+holding or pointing to an item. This is particularly useful for getting a description of
+what a robot does.
+
+Question
+#9: I have a robot but don't know what he does. How can I find out?
+
+Answer: In addition to getting Marty to describe the robot (see above), you can use the Magic Wand to obtain a copy of the box the robot was originally
+trained to work on. The magic wand's button should show 'O' for original for this to work.
+You can use the wand on the box in a robot's thought bubble and then give the restored
+copy to the robot and watch him work. If there is a team of robots you can watch the team
+work or if you want to focus on a particular robot you can break the team apart by sucking
+them up with Dusty and then spitting them out again.
+
+Question
+#10: I want to make lots of changes to the box in a robot's thought bubble but it is
+too small to work on. What can I do?
+
+Answer: You can use Dusty
+to vacuum out the entire box in a robot's thought bubble and then have him spit it out on
+the floor. It should be much bigger and easier to edit. If not, you can use Pumpy to expand the box. You can make the changes you want and then
+drop the box back into the empty thought bubble. When returning the box be sure
+to drop it over the thought bubble and not the robot because giving it to the
+robot is a signal you want to retrain the robot.
+
+Question
+#11: ToonTalk always asks me my name when it starts. And it remembers me. What is
+going on?
+
+Answer: When you give your name to ToonTalk
+it maintains files in the ToonTalk folder in the My Documents folder. These
+files are there so you don't have to start over again each time you start
+ToonTalk. The files start with the name you gave ToonTalk. Spaces are removed
+from your name. These files include a user model and changes to your notebook.
+The user model (the USR file) contains your customization options, the state of
+your puzzle game play, and what actions you've done so that Marty only suggests
+new things. If you haven't used ToonTalk for a while or want to restart the
+puzzle game then you should either come up with a new name for yourself or
+remove the USR file with your name. Your notebook is stored in a BOK.XML file. If
+you made changes to your notebook that you regret you can remove or rename the
+BOK.XML file with your name. If you have saved things in your notebook and don't
+want to lose them you can save them.
+When you save a city, an XML.CTY file with your name is saved. If you see files
+with ending with a number followed by XML (e.g. Sally.15.xml) then that contains
+the notebook on page 15 of your main notebook.
+
+If you want someone to use ToonTalk, but not
+maintain any files, you can add "-t 1" to the
+command line so that all users are treated as temporary users. If you always want to give the same name to ToonTalk and don't want to
+be asked, you can double click on your USR
+file.
+
+Question
+#12: I want everyone in class to start out with a notebook and city that is different
+from the one supplied by ToonTalk. Can I do this?
+
+Answer: Yes,
+read this.
+
+Question
+#13: I sometimes take things out of a notebook or Tooly by mistake. Do I have to use
+Dusty to get rid of it?
+
+Answer: If you drop something on a stack,
+and it is identical to the items of the stack, it goes back to the stack. For example,
+suppose you take a notebook out of your notebook and then want to put it back. If the
+notebook you took out was on page 1 originally, then you'll have to set it back to page 1
+before dropping it back.
+
+Question #14: Can I train a robot to put pictures
+together?
+
+Answer: For many games and graphics
+applications you need to have robots add pictures to pictures.
+Here's one way to do it. Put into a box a remote control
+for how a picture looks (this will be the background picture) and put in other holes
+pictures that you want to add. Train a robot when given this box to copy a picture and
+flip it over. Take out the remote controls from the new picture's notebook that you'll
+need (for example, the position and size controls). Flip the picture back over and drop it
+on the remote control for the looks of the background picture. Then train the robot to
+change the remote controls you took out as appropriate. For this robot to work in general
+you may need to use Dusty to erase some of the pictures in the box
+in his thought bubble.
+
+Question
+#15: Lulu in London asks "Can you personalize birds? It's really difficult to
+remember which lives where."
+
+Answer: While holding a bird you
+can type its name or short description. If you type to a nest with an egg in it
+then the nest and the bird when it hatches will have the same label. If you want
+to label a bird with a picture then you can use Pumpy to make a bird very large and drop a picture on her T-shirt. If the picture
+extends past her T-shirt, the drop is interpreted as giving her the picture to take to her
+nest. If it fits completely inside her shirt, it is added. It also helps to keep birds and nests in boxes and use labels on boxes to help remember
+which is which.
+
+Question
+#16: I want a robot to run if something is NOT true, how do I do that?
+
+Answer: Since a robot will only
+run if the robots before him have rejected the box, you can make a robot that
+checks the positive version of your condition. This "dummy" robot is trained to
+do nothing. Erase the conditions from your robot and place it behind the dummy
+robot. Then it'll run only if the conditions of the dummy robot are not true.
+Alternative that works when you want a robot to run if two numbers or text pads
+are not equal is to use scales in the thought bubble. After training your robot
+copy it and and edit the thought bubbles so that one copy has the scale tilting
+to the left and the other one tilting to the right.
+
+Question
+#17: Tyler Breisacher asks "I read that I can "post" robots, however I
+don't know how. "
+
+Question
+#18: Ben and Ivan Filippenko ask "It seems that sometimes when a robot is
+finished working, Dusty is made to vacuum up stuff on the floor even if this is not part
+of the robot's training. Could you please help to explain it?"
+
+Answer: Robots do clean up after themselves
+whether trained to or not. Besides keeping things tidy, this enforces a good programming
+practice. When a robot uses the floor, this is like using "local variables" in
+conventional programming languages. And as with such languages there is an automatic
+recycling of the memory used for local variables when exiting that part of the program.
+If a robot was holding Dusty the Vacuum when you
+finished training him he will not automatically clean up. This is a good way to program
+robots to fill new houses with things.
+
+Question
+#19: Frank asks, "When I exit to edit a picture the picture comes up in my
+web browser even though I have Microsoft Paint set as the default program for
+opening .png files. Can anyone suggest a way to do this more efficiently?"
+
+Answer: If you edit
+PictureEditor to have the value "mspaint.exe",
+it should fix this problem. This isn't set as the default because on some
+versions of Windows Microsoft Paint can't edit PNG picture files.
+
+Question 20: I'm
+using the Touching Who? sensor so my robots can respond to collisions between
+pictures but when a picture is touching more than one thing only one is shown.
+How can I get it to react to all the things it is touching?
+
+Answer: The
+Touching Who sensor can be vacuumed by
+Dusty, it will then show the next thing being touched if there is one. You can
+have a robot on the back of your picture that does nothing but wait for a
+picture on the Touching Who sensor and vacuums it off.
+
+Question 21: Miki in London
+asks, "If you
+have a robot that takes the inputs x and y, can you train it to work on a condition like
+'x+y>1'?"
+
+Answer: A single robot can't
+have a complex conditional test like this. You can get a team of robots do to this. The
+first robot copies x and y into a new hole that will hold x+y. Next to that hole is a
+scale and next to that is a '1'. Another robot can match for the scale showing that x+y is
+greater than 1. In general, that robot should then get rid of the extra box or boxes
+created by the first robot.
+
+In the field of concurrent logic
+programming this issue is referred to as "deep guards" vs. "flat
+guards". A guard is equivalent to the contents of the thought bubble of a robot. Deep
+guards can simplify the expression of some programs but are very hard to implement well.
+The problem is that suspended processes (robots waiting for something to arrive on nests
+in ToonTalk) test to see if the guard is true whenever something changes (in ToonTalk
+whenever a bird covers a nest that a robot is waiting on). If the guard is deep this could
+mean a large computation is needlessly recomputed.
+
+In ToonTalk there is another reason to
+avoid deep guards - the expression of conditionals in ToonTalk is visual. A robot accepts
+a box if the box visually matches the box in his thought bubble. More complex conditionals
+would require a more complex notion of conditionals.
+
+Question #22: There
+are so many ways of saving things in ToonTalk. Which one should I use when?
+
+Answer: When you have created
+something, for example, trained a robot then dropping it on an empty page of
+your main notebook will save it so that it'll be there next time you run
+ToonTalk with the same user name. If you have lots of related things then you
+can put them in a box or a blank notebook and put that in the main notebook.
+Note that only things in the main notebook will be there next time you run
+ToonTalk. If you have many things on the floor or many houses that you've
+changed, then save the entire city. If you want to save something to share with
+others (or with yourself under a different user name), then pick it up and press
+the Pause button on your keyboard and choose 'Save to File' in the resulting
+dialog page. Note that if your creation includes pictures or sounds that you've
+made or imported into ToonTalk then be sure the check mark is there so the
+result includes your media files. Your creation is saved as a TT file that can
+be sent to others and brought into ToonTalk by double clicking on it or dragging
+it into ToonTalk. If you have something that doesn't include media files and you
+want to send it by email then you can type control-c and then when in your mail
+program type control-v. This is also good if you want to see how ToonTalk
+encodes your object.
+
+Question #23:
+Miki asks, "How long is a piece of string? (Or rather; is there any way to get a
+robot to measure the length of a text string?)"
+
+Answer: If you drop a text pad on an erased
+box, then the box changes so that there is one letter in each hole. If you then drop that
+box on an erased number, the number will change to the number of holes in the box. This is a
+bit wasteful since you shouldn't have to make ToonTalk create the box but this will work.
+
+Question #24:
+Jackie writes, "Give a stack of numbers on a nest to a robot to train the robot - in
+the thought bubble, the robot
+manipulates the stack of numbers as though it were the top number only - no stack, no
+nest. If the robot takes off the top number, there's nothing underneath. This means
+that you can't train the robot to manipulate any number on a stack other than the top
+number. Happily, the trained robot treats a stack on a nest given to him as a stack, and
+removes one number at a time, (so the demo puzzles work fine) but if you wanted to, say,
+train a robot to do something different with alternating numbers on a stack on a nest,
+that would not be possible."
+
+Answer: This is a
+deliberate design choice. Consider what would happen if when training the robot you could
+[...trimmed...]
+
+======================================================================
+SECTION: MARTY'S OWN HELP LINES (from the engine)
+======================================================================
+These are hints the game itself can give, in Marty's voice:
+- You can put a rectangular thing in her nest by dropping it there.
+- I use birds and nests when I want robots in different houses to work together.
+- If you want me to repeat all I know about nests, then press F1 twice while pointing to a nest.
+- I'll tell you more about birds if you press F1 twice while pointing to a bird.
+- If you give the bird something rectangular, she'll take it to her nest.
+- If you want her to carry other things, put them in a box and give her the box.
+- If you want me to repeat all I know about birds, then press F1 twice while pointing to a bird.
+- I'll tell you more about nests if you press F1 twice while pointing to a nest.
+- When holding a bomb inside a house, you can blow up the house by clicking on
+- You and your tools will make it out OK, and Dusty will suck up everything left on the floor.
+- You can train this robot to blow up the house he's in by clicking on
+- When training a robot that has picked up a bomb, you can have him blow up the house he's in by clicking on
+- I always put a robot trained to use a bomb into the notebook before testing it.
+- If you want me to repeat all I've told you about bombs, just push F1 twice.
+- he tried to put something in a box that can't be put in boxes
+- If a robot has a blank box in his thought bubble, then he'll be happy to work on any box no matter how many holes it has.
+- You can put something in an empty hole of a box by letting go of it over the hole.
+- You can combine two boxes by dropping one on the side of another.
+- You can change the number of holes by pressing a number from 0 to 9.
+- If you want a box with more than 9 holes drop one on the side of another.
+- If you press '-' (minus) the hole on the right will be removed.
+- You can use the keyboard to change the number of holes while you are holding a box.
+- You can add a label to a hole by pointing just below it and typing.
+- If you want me to repeat all I've told you about boxes, then press F1 twice while pointing to a box.
+- You can sit down by clicking any mouse button. You can get up again by pressing the 'Escape' button (labeled 'Esc' in the upper corner of your keyboard).
+- You can sit down by clicking any mouse button. You can get up again by pressing the 'Escape' button.
+- I'll stay around to help you. If I bother you, just push the F1 button and I'll go.
+- Did you know that you can get up from the floor by pushing the 'Escape' button?
+- When you are done, just press the 'Escape' key to return to the floor.
+- Did you know that animations in progress will finish if you press F7?
+- If you ever want to pause ToonTalk, just push the Pause button.
+- If you want me to tell you all I can about something, then get rid of me by pressing F1, point to or grab what you want, and push F1 again.
+- something which will OR the bits of the number underneath with
+- something which will AND the bits of the number underneath with
+- something which will EXCLUSIVE OR the bits of the number underneath with
+- You can use blank number pads inside of thought bubbles, so the robot will be happy with any number on a pad.
+- To get the remainder (and ignore the dividend) use the % key (shift 5).
+- You can treat a number like a bunch of bits that are either 0 or 1.
+- Don't worry if you don't know what these are. Just try them.
+- If you want me to tell you again all I know about numbers, then press F1 twice while pointing to a number.
+- the detector which shows a simple cartoon of either a collision or a miss. You can turn a collision into a miss by pointing to the detector and pressing +
+- the number of milliseconds (one thousandths of a second) since last frame
+- how long I say something before changing what's in my talk balloon (100 is normal)
+- the number of milliseconds, if possible, each animation frame should take
+- whether the right and middle button have special meanings when on the floor
+- You can flip to the next page by pushing the '+' or space button.
+- You can flip to the previous page by pushing the '-' (minus) button.
+- Just drop something on a blank page and it'll turn into a huge stack of copies.
+- Anything you add to a notebook will be there even if you restart the computer.
+- If you remove a page by mistake, Dusty can spit it out and you can put it back.
+- I usually use the left pages for text or pictures that describe the right side.
+- You can quickly find a page by dropping the same text or picture later.
+- You can flip to a page with text on it by dropping a pad with the same text on the notebook.
+- If you drop text, you usually don't need to type the whole thing.
+- You can also flip to a page by dropping a number pad on a page with something on it.
+- If you want me to repeat all I know about notebooks, then press F1 twice while pointing to a notebook.
+- This notebook lives in the tool box. Any changes you make to it will remain even if you turn off the computer
+- The robot with a blank picture in his thought bubble will be happy with any picture in the same hole in his box.
+- Did you know that you can combine two pictures by dropping one picture on another?
+- You can remove a picture from a picture by using Dusty the Vacuum.
+- by pressing the '+' or '-' (minus) button when selected or held.
+- Just drop them on the back. And boxes for them to work on too.
+- The robots will start working when you flip the picture back over and drop it.
+- pictures that can bounce, explode, grow, or whatever I program them to do.
+- You can remove things from the back of a picture with your hand or with Dusty.
+- If you want me to repeat all I've told you about pictures, then press F1 twice while pointing to a picture.
+- Otherwise, he'll give the box to the robot behind him in line.
+- The robot with a blank text pad in his thought bubble will be happy with any text on a pad in the same hole in his box.
+- You can make the text go on another line by pressing the 'Enter' key.
+- If you drop a number on this, it'll be added to the last letter.
+- If you drop a number on a text pad, it'll be added to the last letter.
+- If you want me to tell you again all I know about text pads, then press F1 twice while pointing to a text pad.
+- the number is bigger than the number of letters on the text pad
+- Pumpy can make things big or small, tall or short, and wide or thin.
+- I'll tell you all I've told you about Pumpy over again if you press F1 twice while holding Pumpy.
+- If you want me to tell you all about Dusty over again, just press F1 twice.
+- If you want me to repeat all I've told you about wands, just push F1 twice.
+- After you load up a truck with a robot and box for him to work on, the truck's crew will drive off and build a new house.
+- If you drop a robot or a team of robots on the truck, they'll be put on the floor of the new house.
+- If you drop a box on the truck, it'll be put on the floor of the new house.
+- If you drop a picture of a house on the truck, then the truck's crew will build a house that looks like that. You can find pictures of houses in the notebook on page 2 of the main notebook.
+- If you drop an Avenue number or Street number on the truck, the truck's crew will build a house as close to that address as they can. If you don't give them an address they'll build it as near by as possible.
+- You can find the address of the house you're in, in the notebook on page 4 of your notebook. An address will change if you drop a number on it.
+- If you drop a robot or line of robots on the truck, the crew will put the robots on the floor of the new house and give them the box from the truck.
+- You can take stuff out of a truck by hand or with Dusty's help.
+- If you want me to repeat all I've told you about trucks, then press F1 twice while pointing to a truck.
+- To try it out connect three boxes together. Then put a scale in the middle hole.
+- Drop numbers in the holes next to the scale and watch how the scale tilts.
+- If a scale is tottering, you can change which way the scale tilts by pressing the space button.
+- I start by giving him the kind of box I want him to work on.
+- The robot will then imagine a world with just that box and Tooly the Toolbox and friends in it.
+- I then make the robot do whatever I want him to do. Like change the box or load up a truck.
+- When I'm done, I press the 'Escape' button and the robot can now repeat what I taught him.
+- You can make him less fussy by using Dusty to remove things from his thought bubble.
+- Anything in his thoughts has to be in the box before he'll work on it.
+- But if his thought bubble is missing anything, then he'll be happy with anything in the same place in the box.
+- If you want to stop him, just grab him. Or to stop all robots press F8.
+- After I've tested a robot, I usually save him by dropping him in a notebook.
+- It would get too messy to have them all running around on the floor.
+- So I send them off to brand new houses by dropping them in trucks.
+- If I drop a robot on another robot, he'll get in line behind the other.
+- If a robot doesn't like a box he's been given, then he'll give it to the robot behind him.
+- And when he's done, he'll give it back to the first robot in line. He'll give it to himself if he's working alone.
+- If you look in your notebook on page 6, you'll find a notebook full of robot teams I've trained.
+- That's pretty much all that I can think of to tell you about robots.
+- If you want me to repeat all I know about robots, press F1 twice while pointing to a robot.
+- a robot on the back of a picture. He is waiting for the picture to be flipped back over
+- Ignored dropping a box into box since there is already a box inside a box inside a box inside a box and so on.
+- robot thought he would have a box to add to another box but has something else instead
+- If you drop a number or text on a blank box, the box will expand the text to have one letter per hole.
+- You can break a box into two pieces by dropping it on a number. One piece will have the number of holes of the number and the other what is left over.
+- something wrong with ToonTalk. It is trying to figure out size of something in a box hole that is empty
+- something is wrong. ToonTalk was looking for a hole that a box doesn't have
+- something is wrong with ToonTalk because it tried to remove something from a box that isn't in a box
+- A box label in a notebook cannot be longer than 255 characters.
+- ToonTalk problem. ToonTalk just tried to add something to a background that it was already part of.
+- Problem with ToonTalk since it tried to remove the last part of something that didn't have any parts left.
+- ToonTalk had troubles reading a notebook file. A robot in the notebook has lost his training.
+- ... Ah, sorry but I'm having troubles figuring out what this robot does.
+- use the magic wand, while holding the control button down, on
+- was trained to give a bird something and now the bird isn't where he expected. He'll try to keep going anyway.
+- thought he would find a robot in the truck and there wasn't one there.
+- was going to put something into something but it has been vacuumed.
+- was going to put something into something but it is not in the room any more.
+- To test the robot, just give him a box like the one in his thought bubble.
+- the right button while holding down the control button (labeled 'Ctrl')
+- any mouse button while holding down the control button (labeled 'Ctrl')
+- You managed to destroy all the houses, so I built some more.
+- Command line problem. Expecting an even number of items, not
+- Despite these troubles getting started do you want to continue?
+- ToonTalk has been running so long, it is resetting its internal clock.
+- Memory low. Recycling 20% of memory used to speed things up.
+- Memory low. Recycling last part of memory used to speed things up.
+- If you ever want to stop all the robots just push F8 to cut off the power.
+- the number underneath the box is larger than the number of holes
+- you can only drop numbers on numbers, text pads, or notebooks
+- the number underneath is about to be smashed by another mouse
+- If you drop something on a blank number, it will be converted to a number if possible.
+- If you type '=' and then drop this on another number, it'll become
+- The '+' button while pointing to it will switch it on and off.
+- This changes what the middle and right mouse buttons do when you are on the floor.
+- You can make the right mouse button be a shortcut for shift and click.
+- And you can make the middle button be a shortcut for control and click.
+- You can turn a collision into a miss by pointing to the detector and pressing +.
+- Sorry, but you can't train a robot to change the main notebook.
+- Since you are a temporary user, you can't save this in the main notebook.
+- Sorry, but trying to load a notebook that was created with a later version of ToonTalk!
+- Warning: ToonTalk is having troubles re-making something that had been saved. Sorry.
+- Something wrong with ToonTalk or else a file containing a picture is bad.
+- You can change the appearance of a blank picture by dropping another picture on top.
+- A notebook full of remote controls for the picture will fly out.
+- Ignored drop on picture since there are too many pictures with pictures.
+- the backside of a picture can't be added to the front side of a picture
+- First connect three boxes together. Put some words in the first and third holes.
+- First connect three boxes together. Put some numbers in the first and third holes.
+- the remote control for how something looks can't accept that item
+- the picture underneath is already waiting for Bammer the Mouse
+- Sorry, this won't take effect until next time you start ToonTalk.
+- ToonTalk confused and lost track of what the programmer is doing.
+- You just turned off the power and stopped all robots. Pressing F8 again will start them up again.
+- Your hand is now hidden. To see it again just press F9 again.
+- Couldn't find a HyperBot controller connected to the computer's serial port.
+- a robot stopped because the power is off. F8 will turn on the power and start him up again
+- Something wrong with file storing a robot in a notebook. Maybe the robot is lost. Sorry.
+- Sorry, but I'm having troubles figuring out what these robots do.
+- Ah, sorry but robots are really fussy. They only take boxes.
+- ToonTalk can't keep track of so many things on the screen and it's lost track of some. Sorry.
+- ToonTalk has lost track of some things so they aren't displayed. Sorry.
+- Oh nuts! ToonTalk is broken. It is trying to destroy something twice.
+- Something is wrong with ToonTalk. It tried to use something after destroying it.
+- Something is wrong with ToonTalk. It tried to destroy something that is still on the floor.
+- ToonTalk has something wrong with it. It tried to destroy a part of something.
+- ToonTalk got mixed up and tried to pick an animation loop that didn't exist.
+- ToonTalk is confused and trying to free some cache memory that it shouldn't.
+- ToonTalk is confused because it cached something needlessly.
+- Nuts, ToonTalk is broken and trying to destroy a picture twice.
+- Memory is low, so sounds are being reloaded rather than cached. ToonTalk may run slower.
+- ToonTalk is mixed up and thought something had parts and then couldn't find them.
+- You can make something into text by dropping it on a blank text pad.
+- If you want Dusty to spit out stuff he's sucked up, then press 'R'.
+- The magic wand is in Dusty the Vacuum. Dusty can spit it out.
+- then it will copy and restore erased things to the way they were before.
+- all you can put in a truck is a box, robots, an address, a notebook, a text pad, or a picture of a house
+- something was dropped into the truck that wasn't a robot, box, address, notebook, text pad, or picture of a house
+- ToonTalk will probably run much better if you run it in full-screen mode or if you change Windows to run with 256 colors.
+- Something went wrong trying to create a dialog box to ask your name.
+- There are lots of things about ToonTalk that you can change.
+- To change things just try the things in the notebook of options on page 10 of your notebook.
+- This robot will work once. Then he'll stop because you are training him to put his box in the truck. After the truck drives off he'll never see it again.
+- This is the result of saving a ToonTalk object. You can include
+- this in files, email, or whatever. To decode it just use any program
+- that can copy this to the Windows clipboard. For example, you can use
+- and then use the Copy command in the Edit menu. Then it will appear
+- in the ToonTalk remote control for the clipboard. You can find the
+- clipboard remote control on page 30 of the Sensor notebook. Just use
+- Dusty to vacuum it off the clipboard. Control-v is a shortcut for pasting.
+- It is time to get a new version of ToonTalk. (Visit www.toontalk.com.)
+- This is a sensor which shows which avenue (runs north to south) that this house is on.
+- If you drop one of these into a truck, then the crew in the truck will build a house on the nearest free lot on this avenue.
+- This is a sensor which shows which street (runs east to west) that this house is on.
+- If you drop one of these into a truck then the crew in the truck will build a house on the nearest free lot on this street.
+- Robots can keep track of only so many things. This one has gotten confused since there are too many things.
+- The smallest number you can give for the city size is -255. This makes a 255 by 255 city and because it is negative the city is randomly filled with houses.
+- Just drop the name of a WAVE or MIDI file on it and it'll play until finished or vacuumed up.
+- Remember that if you send this to someone on another computer, you should also send them the file
+- Sorry, but you can't change a picture's notebook. It is just for remote controls and sensors.
+- copy things, and if they are blank, restore them to the way they used to be
+- to do something different if you press the '+' or '-' (minus) button.
+- If you want me to repeat all I know about buttons, then press F1 twice while pointing to a button.
+- You can change Pumpy so he makes things smaller, or taller, or fatter by pushing the button on his chest.
+- 'B' for big, 'T' for tall, 'W' for wide, 'L' for little, 'S' for short, 'N' for narrow, and 'G' for a good size.
+- You can turn him on and off while holding him by pressing the space bar.
+- You can turn it on and off while holding it by pressing the space bar.
+- You can change Dusty so he spits things out or just sucks things off the top of things by pushing the button on his nose.
+- You can change Dusty by pressing 'S' for sucking, 'E' for erasing, and 'R' for reverse (spitting out).
+- You can change the Magic Wand so it copies itself or copies things and restores them by pushing the button on its tip.
+- You can change the Magic Wand by pressing 'C' for copy, 'O' for copy and restore original, and 'S' for copy self.
+- You can get me to say the next thing by pressing the 'PageDown' button.
+- And pressing PageUp will get me to repeat the last thing I said.
+- Animation by Greg Savoia, Kim Tempest, and Brian Anderson. Voices by Jane Barrier and David Kahn.
+- Everything else by Ken Kahn. Special thanks to Markus, David, and Mary.
+- Do you want to play a game, see movies, or build something with ToonTalk?
+- It is better to take sounds from the sounds notebook. If you type the name of a sound and you send this to someone in another country it might not work.
+- If something is on the clipboard of Windows, then you'll see it here. You can use Dusty to vacuum it off and spit it out again.
+- If the clipboard is empty, then the remote control will look black. You can drop something on the remote control to put it on the clipboard.
+- cum kaka kike rape dago fag nad fuc fuk god sod nig jap wog fok kum jew tit wop git sex sux fux lez pube dike puke
+- If you press the Pause button while holding a robot, a picture, or a truck and then select
+- Hi. It has been a while since you last ran ToonTalk. Is it OK if Marty suggests things you have already done, but might have forgotten about?
+- ToonTalk's sounds can be found on page 8 of your notebook. There are sensors on page 4 of your notebook for making your own sounds.
+- You can find out how many holes a box has by dropping it on a blank number pad. You can make a number pad blank by using Dusty the Vacuum.
+- Sorry, something went wrong replaying a demo log. Please report this problem to Support@ToonTalk.com.
+- bombs only work inside of houses or on the back of a picture
+- trucks drive away only if they are inside of a house or on the back of a picture
+- birds only start flying from inside of a house or on the back of a picture
+- robots only start working when inside of a house or on the back of a picture
+- has a box that doesn't match his thought bubble and there is no robot he can give it to.
+- The last time ToonTalk ran it did not exit properly. Would you like some advice on what to do?
+- The last time ToonTalk ran it did not exit properly. Would you like some advice?
+- ToonTalk ran very slowly. Would like some advice about how to get it to run faster?
+- You can set options so that ToonTalk will run with sharper images. Want to learn more about it?
+- Windows is telling me that the mouse has moved more than is possible. This happens when running ToonTalk on a Mac that is running Windows. Sorry. Try using the arrow keys instead.
+- The demo couldn't complete as it was supposed to. Do you want to learn how to fix this?
+- was going to put something into something but it's been vacuumed away
+- Sorry. Something went wrong trying to launch a web browser like Netscape Navigator or Microsoft Internet Explorer.
+- A bird took something to Windows, but Windows didn't know what to do with it.
+- You should give the bird a box with 2 holes. The first hole should be the name of a ToonTalk extension. The second hole should contain a bird who will be given a box with a new bird.
+- File messages should be boxes with 3 holes whose third hole contains a bird who receives replies. For reading, the first hole should contain
+- Messages for this bird should be boxes with 3 holes. The first hole should contain
+- In the second hole there should be a file name. The third hole should contain a bird. This bird will receive another bird for reading and writing from the file.
+- A bird took something to the ToonTalk file extension, but it wasn't a proper message.
+- A bird took something to a Windows file, but it wasn't a proper message.
+- Sorry, but a box can't have too many holes. See www.toontalk.com/English/ttini.htm to learn how to change this.
+- Sorry, but you can't train robots to give boxes to other robots. Put the robot and box in a truck instead.
+- Something is wrong with a part of a city file describing what's on the floor of a house.
+- Something is wrong with a part of a city file describing what's on the wall inside a house.
+- There are more than 1000 items on a nest that is being saved. Some items will be lost.
+- Too many nests being saved in notebook. Can't save more than 255 at one time -- sorry.
+- Text-to-speech engine failed to start properly. Do you want to know what you can do to fix this?
+- A robot has lost track of things. It didn't expect to have to keep track of this many things.
+- What picture am I stuck on top of, and what picture is that stuck on, and so on?
+- Puzzle contained a non-robot after the goal. Section ignored.
+- If you give me something, I'll talk about it whenever I'm talking about
+- The demo file will only run in later versions of ToonTalk. Please upgrade your system. Visit www.toontalk.com.
+- You can find more force effects in the notebook near the end of the sensor notebook.
+- Do you want ToonTalk to stop trying to find files on the Internet?
+- Tooly won't come since he is in Dusty the Vacuum. Use Dusty to spit him out.
+- ToonTalk no longer using the mouse - Press Control-F8 to start using it again.
+- A robot is typing space to a picture that wasn't stopped. Space no longer changes a picture. Should I change such robots so they type '+' instead?
+- A robot is typing space to a remote control that wasn't stopped. Space no longer changes it. Should I change such robots so they type '+' instead?
+- Robots will be updated the first time they run. You'll need to save the updated robots to avoid being asked again about this in your next session.
+- Sorry but an internal error occurred while starting ToonTalk. Strange things may happen.
+- Sorry but an internal error has occurred. Strange things may happen.
+- Sorry but an internal error occurred while loading a city. Strange things may happen.
+- Sorry but an internal error occurred while loading a page of a notebook. It is probably lost.
+- Sorry but an internal error occurred while loading something. It is probably lost.
+- ToonTalk is loading a nest that works over a network. But this version of ToonTalk can't deal with the network. Network stuff ignored. Visit www.toontalk.com for information on how to upgrade.
+- Sorry something went wrong while saving a city. City not saved.
+- Sorry, an error occurred while saving things for time travel. Time travel might not work right for this user name.
+- Sorry, this version of ToonTalk can't run this demo. Try versions earlier than 2.0.
+- Can't drop the remote control for the looks of a flipped picture on a blank picture.
+- Warning. Strange things may happen when you put something on the back of the remote control for its looks.
+- Loading a networked nest that was created on a computer with a different Internet address. Saved birds won't be able to find this nest.
+- ToonTalk can't find an IP address for this machine. Long-distance birds won't work unless you quit, connect to the Internet, and try again.
+- ToonTalk is loading a foreign bird that uses an extension to ToonTalk (a DLL).
+- A robot is about to use a foreign bird that uses an extension to ToonTalk (a DLL).
+- Do you want to update it to run instead the version you are running now?
+- Working with big numbers can be so slow that ToonTalk freezes for a few seconds or minutes. Do you want to read more about this?
+- Time travel seems to be making ToonTalk freeze now and then. Do you want to read about how you can avoid this?
+- A DLL from an unknown or untrusted source might do damage and so might a robot from an untrusted source using a trusted DLL.
+- You can provide a different directory by setting MediaDir in the Directories section of the toontalk.ini file.
+- ToonTalk will attempt to continue but it probably will not be able to save your work.
+- ToonTalk will attempt to continue but some things (pictures or sounds) may be missing.
+- Perhaps the folder is full and you need to delete some files or maybe you don't have permission to write to that file or folder.
+- The number itself should be fine. ToonTalk can display it in a base that is a power of 2.
+- Unable to display this number because it has too many digits.
+- When you press the F4 button, your notebook will fly to you.
+- a place to drop a file name or URL to turn it into a ToonTalk object or picture
+- can't flip this over. You can vacuum out the object and flip it over
+- can't flip this over. All you can do is drop a file name on it.
+- Just drop a file name or URL and then vacuum up and spit out the result.
+- Please wait. ToonTalk is setting up network connections for a long-distance bird.
+- computing a number requires more than 10% of the computer's free memory.
+- Sorry, this is a version of ToonTalk only for running programs. New programs can only be created in the full version.
+- Neat! Your birthday is coming really soon. Hope you have a good one.
+- You can start over again by picking up the bomb and pressing the space bar.
+- My sensors aren't showing a new house built by the crew in the truck. Sorry.
+- Great. The computer and clock are working now. Thanks. I think I can finish the rest on my own.
+- You'll find a little present at the end of the notebook on page 4 of your notebook (in
+- New puzzles might have been added to the ToonTalk web page. See www.toontalk.com.
+- Oh boy! I can't make the next puzzle since it needs stuff from earlier puzzles. Is it OK if I send you back
+- This can't be a correct time. The time can't include a number like
+- You have done all the available puzzles. Want to start over again?
+- When you left last time there was more I wanted to tell you.
+- Sorry to be fussy, but the order of things in the holes has to be just right.
+- Zizzle Island was a nice place before disaster struck. It's starting to sink!
+- Marty the Martian just happens to be flying by. He rescues everyone.
+- He moves almost all of the houses off the island but then he gets engine trouble and crashes.
+- Marty the rescuer needs to be rescued. You volunteer to parachute down to help him.
+- Sorry about repeating myself but I don't know what else to say.
+- I wish I knew how to help you. All I can think of is what I said last time.
+- Walk through the door of the other house and then press a mouse button.
+- You can pick something up by clicking the mouse button while pointing to it.
+- Would you like to see some hints for how to deal with robots in puzzles?
+- Translating Martian to Earth languages isn't always so easy. My translation machine sometimes makes me sound kind of funny. I hope you can understand me anyway.
+
+======================================================================
+SECTION: THIS BROWSER VERSION (THE WASM PORT)
+======================================================================
+This ToonTalk is the original Windows program compiled to WebAssembly, running
+entirely in the web browser. Practical differences a player may ask about:
+
+- Full screen: use the on-screen full-screen button. The game captures the mouse
+  (pointer lock) while you play; press Esc to release the mouse or leave full
+  screen. Esc inside the game also makes the character stand up / asks about
+  quitting, as in the original.
+- Time travel: press the Pause/Break key to open the time-travel controls (a row
+  of tape-recorder style buttons: back to start, back one stop, play, forward
+  one stop, to the end, and record to take over). The on-screen controls fade
+  out after a few seconds of no input and come back when the mouse moves. A
+  session can be downloaded as a .dmo file and replayed later.
+- Demos: the opening screen offers the original narrated demos; a demo can also
+  be started directly with a web address ending in ?demo=<name>.
+- Saving: cities and notebooks are saved inside the browser's own storage on
+  this computer (not as files). Downloading/uploading specific files is limited
+  compared to the Windows original.
+- Marty speaks with the browser's text-to-speech voices; how he talks (speech,
+  word balloons, or both) is still set the original way.
+- Importing your own pictures (PNG) and sounds works; the Windows-only
+  "file to sound" / MCI remote controls are retired in this version.
+- The clipboard sensor works with the browser clipboard.
+- Not available in the browser version: translating programs to Java applets,
+  installable extensions, long-distance birds between computers, joysticks and
+  force-feedback devices, printing.
+- Works best in a desktop browser (Chrome or Edge recommended) with a keyboard;
+  several features use function keys (F1 help, F2 calls Dusty, etc.).

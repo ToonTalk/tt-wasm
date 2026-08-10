@@ -1,0 +1,82 @@
+/* Marty AI — only ever loaded by the generated tt-ai.html, never by the faithful tt.html. */
+
+#aibtn {
+  font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+  border-radius: 6px; padding: 4px 10px; cursor: pointer;
+}
+#aibtn:hover { background: #34344a; }
+
+/* ---- chat panel (lives inside #fsbox so it shows in fullscreen too) ---- */
+#mai-panel[hidden] { display: none; }   /* our display:flex would beat the UA [hidden] rule */
+#mai-panel {
+  position: fixed; right: 14px; bottom: 14px; z-index: 40;
+  width: min(360px, 92vw); max-height: min(520px, 78vh);
+  display: flex; flex-direction: column;
+  color: #e6e6f0; background: #191924f2; border: 1px solid #3a3a52;
+  border-radius: 12px; box-shadow: 0 8px 30px #000a;
+  font: 14px/1.45 system-ui, sans-serif;
+}
+#mai-head {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-bottom: 1px solid #2c2c3c; cursor: default; user-select: none;
+}
+#mai-head b { flex: 1; font-weight: 600; }
+#mai-head button {
+  font: inherit; color: #b9b9cc; background: none; border: none; cursor: pointer;
+  padding: 2px 6px; border-radius: 5px;
+}
+#mai-head button:hover { background: #2c2c3e; color: #fff; }
+#mai-log {
+  overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  min-height: 120px; scrollbar-width: thin;
+}
+.mai-msg { max-width: 88%; padding: 7px 10px; border-radius: 10px; white-space: pre-wrap; }
+.mai-user  { align-self: flex-end; background: #2e4a2e; border: 1px solid #3f663f; }
+.mai-marty { align-self: flex-start; background: #24243a; border: 1px solid #3a3a58; }
+.mai-err   { align-self: center; background: #40232a; border: 1px solid #6a3644;
+             color: #f0c0c8; font-size: 13px; }
+.mai-think { align-self: flex-start; color: #9a9ab2; font-style: italic; }
+#mai-row { display: flex; gap: 6px; padding: 8px; border-top: 1px solid #2c2c3c; }
+#mai-in {
+  flex: 1; font: inherit; color: #ececf4; background: #10101a;
+  border: 1px solid #3a3a52; border-radius: 8px; padding: 7px 9px; outline: none;
+}
+#mai-in:focus { border-color: #5a5a80; }
+#mai-row button {
+  font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+  border-radius: 8px; padding: 0 11px; cursor: pointer;
+}
+#mai-row button:hover { background: #34344a; }
+#mai-mic.rec { background: #5a2330; border-color: #8a3448; color: #ffb9c6; }
+
+/* ---- settings dialog ---- */
+#mai-dlg {
+  color: #e6e6f0; background: #191924; border: 1px solid #3a3a52; border-radius: 12px;
+  padding: 0; width: min(430px, 94vw); font: 14px/1.5 system-ui, sans-serif;
+}
+#mai-dlg::backdrop { background: #000a; }
+#mai-dlg form { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+#mai-dlg h3 { margin: 0 0 2px; font-size: 16px; }
+#mai-dlg label { display: flex; align-items: center; gap: 7px; }
+.mai-prov { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mai-prov label {
+  border: 1px solid #33334a; border-radius: 8px; padding: 7px 9px; cursor: pointer;
+  background: #1f1f2d;
+}
+.mai-prov label:has(input:checked) { border-color: #6a6a97; background: #26263a; }
+.mai-prov label.mai-off { opacity: .45; cursor: not-allowed; }
+#mai-dlg input[type=text], #mai-dlg input[type=password] {
+  flex: 1; font: inherit; color: #ececf4; background: #10101a;
+  border: 1px solid #3a3a52; border-radius: 7px; padding: 6px 9px;
+}
+#mai-dlg .mai-note { color: #9a9ab2; font-size: 12.5px; margin: -4px 0 0; }
+#mai-dlg .mai-status { min-height: 1.2em; font-size: 13px; color: #9ac89a; }
+#mai-dlg .mai-status.err { color: #f0a8b4; }
+#mai-btns { display: flex; gap: 8px; justify-content: flex-end; }
+#mai-btns button {
+  font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+  border-radius: 7px; padding: 5px 13px; cursor: pointer;
+}
+#mai-btns button:hover { background: #34344a; }
+#mai-btns .mai-primary { background: #2e4a2e; border-color: #3f663f; }
+#mai-btns .mai-primary:hover { background: #385838; }

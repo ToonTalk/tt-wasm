@@ -113,6 +113,16 @@ fi
 STAMP=$(date +%s)
 sed -e "s|src=\"tt.js\"|src=\"tt.js?v=$STAMP\"|" -e "s|TTBUILDSTAMP|$STAMP|" web/tt.html > build/tt.html
 
+# tt-ai.html — the ENHANCED page: identical to tt.html (generated from the same
+# source so the two can never drift) plus the Marty AI include. The faithful
+# tt.html never references marty-ai/; only this generated page does.
+mkdir -p build/marty-ai
+cp -f web/marty-ai/marty-ai.js web/marty-ai/marty-ai.css \
+      web/marty-ai/knowledge-full.txt web/marty-ai/knowledge-nano.txt build/marty-ai/
+sed -e "s|src=\"tt.js\"|src=\"tt.js?v=$STAMP\"|" -e "s|TTBUILDSTAMP|$STAMP|" \
+    -e "s|</body>|<link rel=\"stylesheet\" href=\"marty-ai/marty-ai.css?v=$STAMP\">\n<script defer src=\"marty-ai/marty-ai.js?v=$STAMP\"></script>\n</body>|" \
+    web/tt.html > build/tt-ai.html
+
 # The opening screen's artwork -- the original's own files (doc/hairhead.jpg, playpzl.jpg, the
 # 80x60 demo thumbnails and the rest), taken from an installed ToonTalk rather than reconstructed.
 mkdir -p build/launcher
