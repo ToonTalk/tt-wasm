@@ -367,7 +367,12 @@
                         : 'Built into Chrome — the first question downloads the model once (large, may take a while).')
                     : 'Free text — or press List models to fetch what your key can use.';
     modelInput.disabled = (id === 'nano');
-    if (!modelInput.value || modelInput.disabled) modelInput.value = p.defModel;
+    // Replace the model name unless the user typed a custom one (i.e. the box
+    // holds some provider's default, like Nano's "(on this computer)").
+    var isDefault = !modelInput.value || Object.keys(PROVIDERS).some(function (k) {
+      return PROVIDERS[k].defModel === modelInput.value;
+    });
+    if (isDefault) modelInput.value = p.defModel;
     modelList.textContent = '';
   }
 
@@ -491,6 +496,18 @@
     });
     var controls = document.getElementById('controls');
     if (controls) controls.appendChild(btn); else document.body.appendChild(btn);
+    // The opening screen is where people will look for this first (the game's
+    // control row only appears once you are playing). The chat panel cannot
+    // render on the launcher, so this button always opens the settings dialog
+    // (a <dialog> lives in the top layer, so it shows over fullscreen too).
+    // If a provider is saved here, the panel greets you once the game starts.
+    var lrowBtn = document.getElementById('lplayground');
+    if (lrowBtn && lrowBtn.parentNode) {
+      var lbtn = el('button', { type: 'button', text: '🛸 Marty AI…' });
+      lbtn.title = 'Give Marty an AI: Claude, OpenAI, Gemini, or Chrome built-in';
+      lbtn.addEventListener('click', function () { dlg.showModal(); });
+      lrowBtn.parentNode.appendChild(lbtn);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
