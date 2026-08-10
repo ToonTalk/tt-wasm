@@ -148,6 +148,20 @@
     nano: {
       label: 'Chrome built-in (Gemini Nano)', needsKey: false, defModel: '(on this computer)',
       keyHint: 'no key needed — runs on this computer',
+      // Some machines give Nano a much smaller per-session input quota than others
+      // (Ken's laptop rejected the ~4KB briefing as "input too large"). So the
+      // briefings come in shrinking tiers and we walk down until one fits.
+      microSystem:
+        'You are Marty the Martian, the friendly helper in ToonTalk, the animated ' +
+        'world where children build real programs: robots are programs you train by ' +
+        'demonstration, boxes hold things, birds carry messages to their nests, ' +
+        'scales compare, trucks build houses, bombs recycle them, notebooks store ' +
+        'things, sensors connect to the real world. Dusty the vacuum (F2) erases and ' +
+        'moves things; erasing in a robot\'s thought bubble makes him accept more ' +
+        'boxes. Pumpy (F3) resizes, the magic wand (F5) copies, Tooly the toolbox ' +
+        '(F6) has fresh parts, F4 calls your notebook, F1 calls me. The Pause key ' +
+        'opens time travel. Answer in one to three short friendly spoken sentences, ' +
+        'concrete about what to do, about ToonTalk only.',
       // availability(cb): cb(status string or null when usable)
       availability: function () {
         if (typeof LanguageModel !== 'undefined' && LanguageModel.availability) {
@@ -168,29 +182,63 @@
       },
       chat: function (cfg, sys, history, onStatus) {
         var last = history[history.length - 1].content;
-        function fresh() {
+        var self = this;
+        // tier 0: full nano briefing; tier 1: one-paragraph micro briefing.
+        var tiers = [sys, self.microSystem];
+        function quotaish(e) {
+          return /too.large|quota|exceed/i.test(String(e && (e.message || e.name)));
+        }
+        function create(sysText) {
           if (state.nano.api === 'new') {
             return LanguageModel.create({
-              initialPrompts: [{ role: 'system', content: sys }],
+              initialPrompts: [{ role: 'system', content: sysText }],
               monitor: function (m) {           // first use may download the model
                 m.addEventListener('downloadprogress', function (e) {
                   if (onStatus) onStatus('Marty is downloading his little brain… ' +
                                          Math.round((e.loaded || 0) * 100) + '%');
                 });
               }
+            }).then(function (s) {
+              try {                              // console diagnostic for quota mysteries
+                if (s.inputQuota) console.log('[marty-ai] nano inputQuota=' + s.inputQuota);
+                if (s.measureInputUsage) s.measureInputUsage(sysText).then(function (n) {
+                  console.log('[marty-ai] nano briefing tokens=' + n);
+                });
+              } catch (e) {}
+              return s;
             });
           }
-          return window.ai.languageModel.create({ systemPrompt: sys });
+          return window.ai.languageModel.create({ systemPrompt: sysText });
         }
-        var p = state.nano.session ? Promise.resolve(state.nano.session)
-                                   : fresh().then(function (s) { state.nano.session = s; return s; });
-        return p.then(function (s) { return s.prompt(last); })
-                .catch(function (e) {           // stale session: one retry on a fresh one
-                  state.nano.session = null;
-                  return fresh().then(function (s) {
-                    state.nano.session = s; return s.prompt(last);
+        function dropSession() {
+          if (state.nano.session) { try { state.nano.session.destroy(); } catch (e) {} }
+          state.nano.session = null;
+        }
+        // reuse the session when we can; on failure retry fresh at the same tier
+        // (session context full / stale), and on "too large" walk down a tier.
+        function attempt(i, forceFresh) {
+          var reusing = !forceFresh && state.nano.session && state.nano.tier === i;
+          var p;
+          if (reusing) p = Promise.resolve(state.nano.session);
+          else {
+            dropSession();
+            p = create(tiers[i]).then(function (s) {
+              state.nano.session = s; state.nano.tier = i; return s;
+            });
+          }
+          return p.then(function (s) { return s.prompt(last); })
+                  .catch(function (e) {
+                    if (reusing) return attempt(i, true);
+                    if (quotaish(e) && i + 1 < tiers.length) {
+                      console.log('[marty-ai] nano tier ' + i + ' too large, trying smaller briefing');
+                      if (onStatus) onStatus('Trying a smaller briefing for the little brain…');
+                      return attempt(i + 1, true);
+                    }
+                    dropSession();
+                    throw e;
                   });
-                });
+        }
+        return attempt(state.nano.tier || 0, false);
       }
     }
   };
@@ -392,7 +440,11 @@
     }).catch(function (e) {
       thinking.remove();
       state.history.pop();                       // failed turn: don't poison history
-      addMsg('err', e.message);
+      var msg = e.message;
+      // Chrome only starts the one-time Nano download from a real click.
+      if (/user gesture/i.test(msg))
+        msg = 'Chrome wants a real click before it downloads the little brain — press the Send button once.';
+      addMsg('err', msg);
     }).finally(function () { state.busy = false; input.focus(); });
   }
 
