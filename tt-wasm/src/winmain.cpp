@@ -1568,22 +1568,6 @@ boolean Main::MessageLoopOnce() {
 #endif
 		if (tt_time_travel == TIME_TRAVEL_JUST_PAUSED) {
 			tt_time_travel = TIME_TRAVEL_PAUSED; // when paused run only one cycle
-#ifdef __EMSCRIPTEN__
-			// Ken: "still first frame not rendered well... could we fix this by going back to -1
-			// and then run forward 1 frame?" -- and this branch is exactly where that has to
-			// happen. A jump leaves tt_time_travel at JUST_PAUSED (every jumpseg line in his
-			// consoles reads time_travel=2), so the next iteration lands here and REPAINTS
-			// without recomposing -- the restored world never reaches the screen and the user
-			// sees the pre-jump camera framing (bare grass, no streets, no houses).
-			// Running one cycle composes it through the ordinary sequence, which also lays the
-			// time-travel buttons out from the view they are about to be clicked against.
-			// 661c10b instead called update_display()/display() straight from the jump, moving
-			// the camera OUTSIDE that sequence -- the button rects (log.cpp ~5095 derives them
-			// from tt_screen's current view) were left stale and clicks landed inside=0 on all
-			// six. This is Ken's suggestion and it is also what the code did before 170603, per
-			// the note just below.
-			one_tt_cycle();
-#endif
 			// prior to 170603 the following was to run one_tt_cycle instead
 			// moved on 180703
 			//tt_screen->propagate_changes(); // needed??
