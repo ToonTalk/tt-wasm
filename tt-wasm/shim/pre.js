@@ -247,7 +247,14 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // fine only because nobody moves the mouse in a headless pane. Panel clicks are unaffected:
     // mousedown carries its own coordinates in the message. Live tracking resumes the moment
     // the engine stops replaying (TT_engineReplaying, published from the main cycle).
-    if (globalThis.TT_engineReplaying) return;
+    // ...but NOT while the time-travel panel is up. Freezing the feed also freezes the cursor the
+    // ENGINE draws, so Ken saw two arrows: the white OS one he was aiming with, and a green one
+    // stranded wherever it was when he pressed Play -- "when the white arrow was moved to the
+    // leftmost button the click did nothing". The user has to be able to aim at the panel while a
+    // segment plays. Note the divergence this guard was added for is now known to have been the
+    // mouse MODE (053a3f6/870aeee), not live cursor movement, so this may be safe to drop
+    // entirely -- narrowing it first, since the panel case is the one that demonstrably hurts.
+    if (globalThis.TT_engineReplaying && !globalThis.TT_timeTravelActive) return;
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
