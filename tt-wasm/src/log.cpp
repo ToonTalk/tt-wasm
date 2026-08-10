@@ -5507,8 +5507,25 @@ void save_city_since_end_of_logging() {
  * from a DOM handler: those run between requestAnimationFrame ticks, never inside a cycle. */
 extern "C" EMSCRIPTEN_KEEPALIVE const char *tt_finish_time_travel_archive() {
 	if (!time_travel_enabled() || tt_log_out_archive == NULL) return(NULL);
-	close_log_and_open_next();
-	save_city_since_end_of_logging();
+	// ...but ONLY when we are still at the newest point of the recording. close_log_and_open_next()
+	// opens THE NEXT segment, and after the user has jumped back "the next" is a segment that already
+	// exists on disk -- so it gets written over. That is how Ken lost session 9's segment 2, the one
+	// where he grabbed a robot and dropped a box on it: city00002.cty went 13181 -> 5389 bytes and
+	// log00002.dmo 6183 -> 951, restamped with segment 1's Time=876 FrameNumber=41. Session 8 died the
+	// same way. Sessions 10 and 11 survived only because the save happened to land while he was sitting
+	// on the newest segment, which is exactly the condition below.
+	// update_versions() (utils.cpp:7884) keeps tt_youngest_log_segment >= tt_current_log_segment while
+	// recording, so during ordinary live play these are equal and the flush happens as before; they
+	// diverge only once a jump has moved us back, which is precisely when advancing would destroy data.
+	// Nothing is being recorded while browsing anyway (logging=0 in the beat probe), so there is no
+	// in-progress segment to flush in that case -- what is already in the archive is complete.
+	if (tt_current_log_segment == tt_youngest_log_segment) {
+		close_log_and_open_next();
+		save_city_since_end_of_logging();
+	} else {
+		printf("[tt] ttsave: NOT advancing the log -- jumped back (cur_seg=%d youngest=%d time_travel=%d)\n",
+		       (int) tt_current_log_segment,(int) tt_youngest_log_segment,(int) tt_time_travel);
+	};
 	printf("[tt] ttsave: archive '%s' segments up to %d\n",tt_log_out_archive,(int)tt_current_log_segment);
 	fflush(stdout);
 	return(tt_log_out_archive);
