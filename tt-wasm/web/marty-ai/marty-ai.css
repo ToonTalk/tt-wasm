@@ -6,6 +6,16 @@
 }
 #aibtn:hover { background: #34344a; }
 
+/* ---- floating opener: the control row is outside #fsbox and so invisible in
+   fullscreen; this button lives inside it and only shows there ---- */
+#mai-fab {
+  position: fixed; top: 10px; right: 10px; z-index: 39; display: none;
+  width: 42px; height: 42px; border-radius: 50%; font-size: 20px; line-height: 1;
+  color: #d7d7e4; background: #2a2a3add; border: 1px solid #44445a; cursor: pointer;
+}
+#mai-fab:hover { background: #34344a; }
+#fsbox:fullscreen #mai-fab { display: block; }
+
 /* ---- chat panel (lives inside #fsbox so it shows in fullscreen too) ---- */
 #mai-panel[hidden] { display: none; }   /* our display:flex would beat the UA [hidden] rule */
 #mai-panel {

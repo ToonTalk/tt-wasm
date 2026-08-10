@@ -402,7 +402,32 @@
       el('div', { id: 'mai-row' }, [input, micBtn, sendBtn])
     ]);
     // Inside #fsbox so the panel still renders when the game is fullscreen.
-    (document.getElementById('fsbox') || document.body).appendChild(panel);
+    var fsbox = document.getElementById('fsbox') || document.body;
+    fsbox.appendChild(panel);
+
+    // In fullscreen the control row (outside #fsbox) is not rendered, so hang a
+    // small opener inside the fullscreen element (CSS shows it only there).
+    var fab = el('button', { id: 'mai-fab', type: 'button', text: '🛸',
+                             title: 'Talk to Marty (Ctrl+M)' });
+    fab.addEventListener('click', toggleOpen);
+    fsbox.appendChild(fab);
+
+    // Ctrl+M works even while the game holds pointer lock (no cursor to click
+    // with): release the lock and open the chat. Capture phase + stopPropagation
+    // keeps the keystroke away from the game's own window-level key handlers.
+    window.addEventListener('keydown', function (e) {
+      if (!e.ctrlKey || e.altKey || e.metaKey) return;
+      if ((e.key || '').toLowerCase() !== 'm') return;
+      e.preventDefault(); e.stopPropagation();
+      toggleOpen();
+    }, true);
+  }
+  function toggleOpen() {
+    if (!state.provider) { dlg.showModal(); return; }
+    if (panel.hidden) {
+      if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) {} }
+      openPanel();
+    } else panel.hidden = true;
   }
   function openPanel() { panel.hidden = false; input.focus(); }
 
@@ -488,12 +513,8 @@
     buildPanel();       // panel first: dialog Save reveals it
     buildDialog();
     var btn = el('button', { id: 'aibtn', type: 'button', text: '🛸 Ask Marty' });
-    btn.title = 'Give Marty an AI and ask him questions';
-    btn.addEventListener('click', function () {
-      if (!state.provider) dlg.showModal();
-      else if (panel.hidden) openPanel();
-      else panel.hidden = true;
-    });
+    btn.title = 'Give Marty an AI and ask him questions (Ctrl+M)';
+    btn.addEventListener('click', toggleOpen);
     var controls = document.getElementById('controls');
     if (controls) controls.appendChild(btn); else document.body.appendChild(btn);
     // The opening screen is where people will look for this first (the game's
