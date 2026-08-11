@@ -363,7 +363,9 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
      * centring floated the bar to mid-cell (striking through the numerator) and slid
      * digit ink down enough that stacked numerator/denominator overlapped (Ken's 3/2
      * screenshots). Full-height glyphs move barely at all, so pad digits stay put. */
-    var base = cell_h * 0.8;
+    var base = cell_h * 0.9;   /* Arial's real ascent is 0.905em: 0.8 sat the ink ~10% high
+                                  in every cell, shaving the fraction's top margin (Ken's
+                                  side-by-side with the retail original) */
     if (base < asc) base = asc;
     if (base + desc > cell_h) base = cell_h - desc;
     var originX = 0;
@@ -491,7 +493,7 @@ BOOL GetTextMetricsA(HDC hdc, LPTEXTMETRICA tm) {
     GdiDC *dc = (GdiDC *)hdc;
     FontPick p = pick_font(dc);              /* report what TextOut actually draws */
     if (tm) { memset(tm, 0, sizeof(*tm));
-        tm->tmHeight = p.ch; tm->tmAscent = (p.ch * 4) / 5;
+        tm->tmHeight = p.ch; tm->tmAscent = (p.ch * 9) / 10;   /* Arial: ascent 0.905em */
         tm->tmDescent = p.ch - tm->tmAscent;
         tm->tmAveCharWidth = p.cw; tm->tmMaxCharWidth = p.cw; }
     return 1;
