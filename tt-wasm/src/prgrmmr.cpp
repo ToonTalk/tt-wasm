@@ -2394,11 +2394,20 @@ void Programmer::em_enter_bootstrap_house() {
       //                          pad's right edge unless the pad sat at the app's left edge.
       boolean big = EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('fracbig=1') >= 0) ? 1 : 0; }) != 0;
       char frac_text[128];
-      strcpy(frac_text, big
-         ? "480806636890455259752144365965422032752148167664920/186267320948425049060001810561404811705533607443750"
-         : "2/3");
+      strcpy(frac_text,"2/3");
       boolean ok = num->set_value_as_string(frac_text,(int)strlen(frac_text));
-      num->set_shrinking_decimal_notation(FALSE);   // display as a fraction, not a decimal
+      num->set_current_style(FALSE,FALSE,FALSE);    // pure num/den display: no integer part,
+                                                    // no decimal even when 2^k divides 10^k
+      if (big) {
+         // Ken's exact case, built the way his was: a fraction pad whose value becomes
+         // (3/2)^100 -- keeping the pad's FRACTION display format (a parsed long string
+         // reformats itself as a shrinking decimal instead, which is a different path).
+         NumberValue *v = num->pointer_to_value();
+         rational_pointer rv;
+         v->rational_value(rv);
+         mpz_ui_pow_ui(mpq_numref(rv),3,100);
+         mpz_ui_pow_ui(mpq_denref(rv),2,100);
+      };
       num->update_text_and_widths(TRUE);
       num->set_to_good_size(tt_toolbox);
       floor->add_item(num, TRUE, TRUE);

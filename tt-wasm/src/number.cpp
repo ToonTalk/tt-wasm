@@ -1422,13 +1422,23 @@ void Number::display_shrinking_growing_integer(wide_string wide_text, int wide_t
 //			set_character_width((city_coordinate) (character_width*growth)); // new on 081104
 		};
 		city_coordinate true_height = height_or_region_height/2; // maybe need extra for the line itself
-		start_y += character_height; 
+		start_y += character_height;
 		//(city_coordinate) (character_height*digit_height_to_character_height); // since start_y was computed assuming just one line
 //		original_start_y = start_y;
-		tt_screen->get_extent_size(wide_text1,wide_text_length1,1, 
+		tt_screen->get_extent_size(wide_text1,wide_text_length1,1,
 											character_width,character_height,
 											ignore_longest_line,full_size_width,full_size_height,
 											TRUE,TRUE,FALSE);
+#ifdef __EMSCRIPTEN__
+		{ static int fracw_log = 0;
+		  if (fracw_log < 8) { fracw_log++;   /* which width is lying? (task #65) */
+		    printf("[tt] fracw: padW=%ld totW=%ld tw1=%.0f tw2=%.0f off1=%ld off2=%ld len1=%d len2=%d chW=%ld fsW1=%ld constrained=%d shrink1=%.3f\n",
+		           (long)width,(long)total_width,total_width1,total_width2,
+		           (long)center_x_offset1,(long)center_x_offset2,
+		           (int)wide_text_length1,(int)wide_text_length2,
+		           (long)character_width,(long)full_size_width,
+		           (int)size_constrained(),part1_shrinkage); fflush(stdout); } }
+#endif
 		if (full_size_width <= total_width || !size_constrained()) { // size_constrained new on 081105
 			// || part1_shrinkage <= 0.0) { // negative shrinkage means no shrinkage
 			tt_screen->text_out((string) wide_text1,wide_text_length1,
