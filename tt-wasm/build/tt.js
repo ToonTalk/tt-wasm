@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpw3ho1hjt.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpwqqvwlne.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpw3ho1hjt.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpzx1w6_r3.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpwqqvwlne.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgasa14ez.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpzx1w6_r3.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpgasa14ez.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -470,6 +470,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // mouse MODE (053a3f6/870aeee), not live cursor movement, so this may be safe to drop
     // entirely -- narrowing it first, since the panel case is the one that demonstrably hurts.
     if (globalThis.TT_engineReplaying && !globalThis.TT_timeTravelActive) return;
+    // While the Marty chat is open the cursor belongs to the CHAT: in absolute mode the
+    // hand follows the cursor, so reaching for the panel dragged the hand to the wall
+    // beside it (Ken: "the hand moves off to a wall"). Freeze the position feed; the
+    // mode sync above stays live so lock changes remain honest.
+    if (globalThis.TT_chatFreeze) return;
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
@@ -644,11 +649,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         // Esc in those cases fed the engine a key the user never pressed -- pressing Pause built
         // the time-travel panel and this instantly buried it under the "ToonTalk has been
         // stopped" chooser (Ken: "it is no longer clear how to get the time travel interface").
-        !globalThis.TT_timeTravelActive && !globalThis.TT_pauseOverlay) {
+        // ...and not when the Marty chat released it on purpose (Ctrl+M): forwarding the
+        // synthetic Esc made the persona STAND UP whenever the chat opened windowed (Ken).
+        !globalThis.TT_timeTravelActive && !globalThis.TT_pauseOverlay &&
+        !globalThis.TT_chatUnlock) {
       post(0x0100, 27, 0);        // WM_KEYDOWN VK_ESCAPE
       post(0x0102, 27, 0);        // WM_CHAR, for the engine paths that read characters
       showLockHint(true);
     }
+    if (!locked) globalThis.TT_chatUnlock = false;   // one unlock consumed the exemption
     if (locked) showLockHint(false);
     hadLock = locked;
   });
@@ -1669,13 +1678,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjap2_91k.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1lx9ltws.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjap2_91k.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp1lx9ltws.js
 
 
 var programArgs = [];

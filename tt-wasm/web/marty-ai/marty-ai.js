@@ -303,7 +303,9 @@
       PROVIDERS[id].listModels({ key: keyInput.value.trim() }).then(function (ids) {
         modelList.textContent = '';
         ids.forEach(function (m) { modelList.appendChild(el('option', { value: m })); });
-        dlgStatus.textContent = ids.length + ' models — key works. Pick one in the model box.';
+        modelInput.value = '';              // empty box => the datalist drops the FULL list
+        try { modelInput.focus(); } catch (e) {}
+        dlgStatus.textContent = ids.length + ' models — key works. Click the model box to choose, or leave it empty for the default.';
       }).catch(function (e) {
         dlgStatus.className = 'mai-status err'; dlgStatus.textContent = e.message;
       });
@@ -374,12 +376,14 @@
                         : 'Built into Chrome — the first question downloads the model once (large, may take a while).')
                     : 'Free text — or press List models to fetch what your key can use.';
     modelInput.disabled = (id === 'nano');
-    // Replace the model name unless the user typed a custom one (i.e. the box
-    // holds some provider's default, like Nano's "(on this computer)").
-    var isDefault = !modelInput.value || Object.keys(PROVIDERS).some(function (k) {
-      return PROVIDERS[k].defModel === modelInput.value;
-    });
-    if (isDefault) modelInput.value = p.defModel;
+    // EMPTY box + the default in the placeholder. Two reports fixed at once (Ken):
+    // a model chosen for one provider no longer survives switching to another (only
+    // the SAVED model of the SAVED provider is kept), and a filled box no longer
+    // filters the datalist down to nothing ("the box doesn't show the options until
+    // the name is erased" -- a datalist only drops entries matching the current
+    // text). Save treats an empty box as the default.
+    modelInput.value = (state.provider === id && state.model) ? state.model : '';
+    modelInput.placeholder = p.defModel + (id === 'nano' ? '' : ' — the default');
     modelList.textContent = '';
   }
 
@@ -439,11 +443,11 @@
       if (panel.hidden) return;
       if (state.resumeChooser !== null && globalThis.TT_pauseAnswer) {
         state.resumeChooser = null;
-        panel.hidden = true;
+        hidePanel();
         e.stopImmediatePropagation(); e.preventDefault();   // resume-click only, not a game click
         globalThis.TT_pauseAnswer(1);
       } else {
-        panel.hidden = true;      // plain Ctrl+M chat: game was live; the click acts in-game too
+        hidePanel();              // plain Ctrl+M chat: game was live; the click acts in-game too
       }
     }, true);
   }
@@ -456,18 +460,31 @@
         state.resumeChooser = (globalThis.TT_pauseKind === undefined) ? 0 : globalThis.TT_pauseKind;
         globalThis.TT_pauseHide();
       }
-      if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) {} }
+      if (document.pointerLockElement) {
+        globalThis.TT_chatUnlock = true;   // deliberate: keep pre.js from forwarding a synthetic Esc
+        try { document.exitPointerLock(); } catch (e) {}
+      }
       openPanel();
     } else closePanel();
   }
-  function closePanel() {
+  function hidePanel() {
     panel.hidden = true;
+    globalThis.TT_chatFreeze = false;      // hand follows the cursor again
+  }
+  function closePanel() {
+    hidePanel();
     if (state.resumeChooser !== null && globalThis.TT_demoPause) {
       var kind = state.resumeChooser; state.resumeChooser = null;
       globalThis.TT_demoPause(kind);
     }
   }
-  function openPanel() { panel.hidden = false; input.focus(); }
+  function openPanel() {
+    panel.hidden = false;
+    // The cursor now belongs to the chat: freeze the game's position feed so the hand
+    // doesn't chase the pointer to the wall beside the panel (pre.js honours the flag).
+    globalThis.TT_chatFreeze = true;
+    input.focus();
+  }
 
   function addMsg(kind, text) {
     var cls = kind === 'user' ? 'mai-user' : kind === 'err' ? 'mai-err'

@@ -255,6 +255,11 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // mouse MODE (053a3f6/870aeee), not live cursor movement, so this may be safe to drop
     // entirely -- narrowing it first, since the panel case is the one that demonstrably hurts.
     if (globalThis.TT_engineReplaying && !globalThis.TT_timeTravelActive) return;
+    // While the Marty chat is open the cursor belongs to the CHAT: in absolute mode the
+    // hand follows the cursor, so reaching for the panel dragged the hand to the wall
+    // beside it (Ken: "the hand moves off to a wall"). Freeze the position feed; the
+    // mode sync above stays live so lock changes remain honest.
+    if (globalThis.TT_chatFreeze) return;
     var r = c.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var scale = Math.min(r.width / c.width, r.height / c.height);
@@ -429,11 +434,15 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         // Esc in those cases fed the engine a key the user never pressed -- pressing Pause built
         // the time-travel panel and this instantly buried it under the "ToonTalk has been
         // stopped" chooser (Ken: "it is no longer clear how to get the time travel interface").
-        !globalThis.TT_timeTravelActive && !globalThis.TT_pauseOverlay) {
+        // ...and not when the Marty chat released it on purpose (Ctrl+M): forwarding the
+        // synthetic Esc made the persona STAND UP whenever the chat opened windowed (Ken).
+        !globalThis.TT_timeTravelActive && !globalThis.TT_pauseOverlay &&
+        !globalThis.TT_chatUnlock) {
       post(0x0100, 27, 0);        // WM_KEYDOWN VK_ESCAPE
       post(0x0102, 27, 0);        // WM_CHAR, for the engine paths that read characters
       showLockHint(true);
     }
+    if (!locked) globalThis.TT_chatUnlock = false;   // one unlock consumed the exemption
     if (locked) showLockHint(false);
     hadLock = locked;
   });
