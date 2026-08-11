@@ -155,6 +155,18 @@ def main():
         "are built by demonstration inside a city: robots are programs, boxes are data\n"
         "structures, birds carry messages to their nests, and tools like Dusty the\n"
         "vacuum, Pumpy the bike pump, and the magic wand edit the world.\n")
+    # The practical sections go FIRST: models (small ones especially) weight early
+    # context more, and "how do I land?" must hit the controls before 40k tokens of
+    # manual. clarifications.txt is the red-pen file: author-confirmed rulings that
+    # override anything a model might half-remember from the manual prose.
+    notes = HERE / "port-notes.txt"
+    if notes.is_file():
+        out.append(f"\n{'='*70}\nSECTION: THIS BROWSER VERSION AND THE CONTROLS\n{'='*70}\n"
+                   + notes.read_text(encoding="utf-8").strip())
+    clar = HERE / "clarifications.txt"
+    if clar.is_file():
+        out.append(f"\n{'='*70}\nSECTION: AUTHOR'S RULINGS (THESE OVERRIDE EVERYTHING ELSE)\n{'='*70}\n"
+                   + clar.read_text(encoding="utf-8").strip())
     for title, pages in SECTIONS:
         out.append(f"\n{'='*70}\nSECTION: {title}\n{'='*70}")
         for pg in pages:
@@ -177,10 +189,6 @@ def main():
             print(f"  MISSING {rc}", file=sys.stderr); continue
         for h in rc_hints(f):
             out.append(f"- {h}"); n_hints += 1
-    notes = HERE / "port-notes.txt"
-    if notes.is_file():
-        out.append(f"\n{'='*70}\nSECTION: THIS BROWSER VERSION (THE WASM PORT)\n{'='*70}\n"
-                   + notes.read_text(encoding="utf-8").strip())
     full = "\n".join(out) + "\n"
     (HERE / "knowledge-full.txt").write_text(full, encoding="utf-8")
     print(f"knowledge-full.txt: {len(full):,} chars (~{len(full)//4:,} tokens), "

@@ -594,20 +594,30 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // browser's own exit) and none of the original's three choices mentions full screen. Offer
     // it explicitly. Clearing TT_fullScreenIntent matters: answer(1) would otherwise honour the
     // stored intent and put full screen straight back.
+    var fsRow = document.createElement('div');
+    fsRow.style.cssText = 'padding:0 12px 14px;text-align:center';
+    var fsBtn = document.createElement('button');
+    fsBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
     if (document.fullscreenElement) {
-      var fsRow = document.createElement('div');
-      fsRow.style.cssText = 'padding:0 12px 14px;text-align:center';
-      var fsBtn = document.createElement('button');
       fsBtn.textContent = 'Back to ToonTalk in a window';
-      fsBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
       fsBtn.onclick = function () {
         globalThis.TT_fullScreenIntent = false;
         try { if (document.exitFullscreen) document.exitFullscreen(); } catch (e) {}
         answer(1);
       };
-      fsRow.appendChild(fsBtn);
-      panel.appendChild(fsRow);
+    } else {
+      // ...and the mirror image (Ken): paused in a WINDOW, the page's own Full screen
+      // button sits under this modal's backdrop, so full screen was unreachable from
+      // here. Setting the intent is enough -- answer(1) honours it via
+      // TT_enterFullScreen(), inside this click, which is the gesture the browser needs.
+      fsBtn.textContent = 'Back to ToonTalk in full screen';
+      fsBtn.onclick = function () {
+        globalThis.TT_fullScreenIntent = true;
+        answer(1);
+      };
     }
+    fsRow.appendChild(fsBtn);
+    panel.appendChild(fsRow);
     // "Save Everything" -- its own full-width row in the original, and it does NOT dismiss:
     // ask_continue_or_quit's case 4 saves, reports, and leaves you still paused.
     if (!duringDemo) {

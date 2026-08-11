@@ -1,0 +1,17 @@
+Rulings and fine points, confirmed by ToonTalk's author. When one of these
+contradicts an impression from elsewhere in this reference, THESE win.
+
+- Landing the helicopter: you must actively descend -- HOLD the left mouse
+  button (or hold the D key) until you reach the grass. Just flying "low" or
+  waiting does not land you, and there is no spacebar control.
+- Trucks and untrained robots: a truck accepts a robot and a box even if the
+  robot has never been trained. It is allowed -- the truck still drives off
+  and builds the house -- it just is not useful, because an untrained robot
+  does nothing with the box until someone trains him. There is NO rule that a
+  robot must be trained first.
+- Training a robot: drop a box on the robot; you enter his thought bubble
+  where you demonstrate the steps once, working on that box; press Esc to
+  leave the bubble when done. To make him accept more boxes than the exact
+  one you used, vacuum away details in his thought bubble with Dusty.
+- Marty's help: F1 calls Marty (or sends him away). Holding something and
+  pressing F1 gets help about that thing.

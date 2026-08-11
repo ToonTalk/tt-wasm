@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5y5_t1vn.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpw3ho1hjt.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp5y5_t1vn.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpl2m6ujyu.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpw3ho1hjt.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpzx1w6_r3.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpl2m6ujyu.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpzx1w6_r3.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -809,20 +809,30 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // browser's own exit) and none of the original's three choices mentions full screen. Offer
     // it explicitly. Clearing TT_fullScreenIntent matters: answer(1) would otherwise honour the
     // stored intent and put full screen straight back.
+    var fsRow = document.createElement('div');
+    fsRow.style.cssText = 'padding:0 12px 14px;text-align:center';
+    var fsBtn = document.createElement('button');
+    fsBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
     if (document.fullscreenElement) {
-      var fsRow = document.createElement('div');
-      fsRow.style.cssText = 'padding:0 12px 14px;text-align:center';
-      var fsBtn = document.createElement('button');
       fsBtn.textContent = 'Back to ToonTalk in a window';
-      fsBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
       fsBtn.onclick = function () {
         globalThis.TT_fullScreenIntent = false;
         try { if (document.exitFullscreen) document.exitFullscreen(); } catch (e) {}
         answer(1);
       };
-      fsRow.appendChild(fsBtn);
-      panel.appendChild(fsRow);
+    } else {
+      // ...and the mirror image (Ken): paused in a WINDOW, the page's own Full screen
+      // button sits under this modal's backdrop, so full screen was unreachable from
+      // here. Setting the intent is enough -- answer(1) honours it via
+      // TT_enterFullScreen(), inside this click, which is the gesture the browser needs.
+      fsBtn.textContent = 'Back to ToonTalk in full screen';
+      fsBtn.onclick = function () {
+        globalThis.TT_fullScreenIntent = true;
+        answer(1);
+      };
     }
+    fsRow.appendChild(fsBtn);
+    panel.appendChild(fsRow);
     // "Save Everything" -- its own full-width row in the original, and it does NOT dismiss:
     // ask_continue_or_quit's case 4 saves, reports, and leaves you still paused.
     if (!duringDemo) {
@@ -1659,13 +1669,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpkj564hsw.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjap2_91k.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpkj564hsw.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpjap2_91k.js
 
 
 var programArgs = [];
