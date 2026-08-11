@@ -1,0 +1,828 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ToonTalk's own robot, from the images in the ToonTalk repository, padded square.
+     Inline so the page stays self-contained. -->
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>ToonTalk — WASM</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 800px at 50% 0%, #23233a, #101018 70%);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box;
+    font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; color: #d7d7e4;
+  }
+  #stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  /* 800x600 pixel art scaled up to fill the window, 4:3 preserved. */
+  #ttcanvas {
+    image-rendering: pixelated; background: #000;
+    width: min(92vw, 74vh); height: auto; aspect-ratio: 4 / 3;
+    border: 1px solid #3a3a4c; border-radius: 6px;
+    box-shadow: 0 10px 50px rgba(0,0,0,.55);
+  }
+  /* the canvas is focusable (tabIndex for keys) — suppress the white UA focus ring */
+  #ttcanvas:focus { outline: none; }
+  #ttcanvas:focus-visible { outline: none; }
+  /* fsbox is a transparent wrapper so overlays can render in fullscreen (a fullscreened CANVAS
+     cannot contain HTML). Windowed it imposes nothing on layout. */
+  #fsbox { display: flex; }
+  /* fullscreen: fill the screen, keep 4:3 (letterboxed); pre.js maps the mouse to the
+     content rect, so the black bars are dead space rather than misaimed clicks */
+  #fsbox:fullscreen { background: #000; align-items: center; justify-content: center; }
+  #fsbox:fullscreen #ttcanvas {
+    width: 100vw; height: 100vh; aspect-ratio: auto;
+    object-fit: contain; border: none; border-radius: 0; background: #000;
+  }
+  #controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  /* Ken: "the controls should after a while slowly disappear off the bottom if there are no mouse
+     events". Slide down and fade rather than vanish, so it reads as getting out of the way; any
+     mouse movement or key brings them straight back. pointer-events go with the opacity so a
+     hidden bar cannot swallow a click aimed at the page. */
+  #controls, #status, #help {
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  body.ttidle #controls, body.ttidle #status, body.ttidle #help {
+    opacity: 0; transform: translateY(22px); pointer-events: none;
+  }
+  #vol { display: flex; align-items: center; gap: 6px; color: #a9a9bd; font-size: 13px; }
+  #volslider { width: 90px; accent-color: #AB0519; }
+  #lfslabel, #lvolrow {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: #9d9db4; font-size: 13px; cursor: pointer;
+  }
+  #lvol { width: 110px; accent-color: #AB0519; }
+  #fsbtn, #savebtn, #openbtn {
+    font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+    border-radius: 6px; padding: 4px 14px; cursor: pointer;
+  }
+  #fsbtn:hover, #savebtn:hover, #openbtn:hover { background: #34344a; }
+  #help {
+    max-width: 620px; text-align: center; color: #a9a9bd;
+    background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
+    border-radius: 8px; padding: 10px 16px;
+  }
+  #help b { color: #ececf4; }
+  kbd {
+    font: inherit; background: #2a2a3a; border: 1px solid #44445a; border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 6px; color: #e6e6f2;
+  }
+  #status { color: #6d6d80; font-size: 12px; letter-spacing: .02em; }
+
+  /* ---- The opening screen: Starttt.exe's job -------------------------------------------
+     The original launcher was a separate program whose UI was HTML shown in an IE dialog
+     (Starttt.cpp: [Executables] HTMLStartTT), and whose buttons did nothing but hand a
+     COMMAND LINE back to be passed to ToonTalk.exe. That is why this belongs in the page
+     rather than the engine: it is the same split, and it sidesteps the fact that nothing may
+     block the browser's main thread waiting for a click. The command strings, labels and
+     artwork below are the original's own, from the English doc folder of an installed
+     ToonTalk (doc/English/starttt.htm, pickdemo.htm, askname.htm). */
+  #launcher {
+    position: fixed; inset: 0; z-index: 40; overflow: auto;
+    background: radial-gradient(1200px 800px at 50% 0%, #23233a, #0d0d14 70%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #launcher[hidden] { display: none; }
+  .lpanel { width: min(980px, 96vw); }
+  .lpanel[hidden] { display: none; }
+  .lpanel h1 { font-size: 22px; font-weight: 600; color: #ececf4; text-align: center; margin: 0 0 20px; }
+  .lcols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; align-items: stretch; }
+  @media (max-width: 760px) { .lcols { grid-template-columns: 1fr; } }
+  .lcard {
+    font: inherit; color: #d7d7e4; text-align: center; background: #21212f;
+    border: 1px solid #3a3a4c; border-radius: 10px; padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+  }
+  button.lcard { cursor: pointer; }
+  button.lcard:hover { background: #2c2c3e; border-color: #55556e; }
+  .lcard b { font-size: 17px; color: #ececf4; }
+  .lcard span { color: #9d9db4; font-size: 13px; }
+  .lgroup { width: 100%; text-align: left; margin-top: 4px; }
+  .lgroup h2 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+    color: #7b7b93; margin: 10px 0 5px;
+  }
+  .ldemo {
+    font: inherit; display: flex; align-items: center; gap: 9px; width: 100%;
+    text-align: left; cursor: pointer;
+    color: #d7d7e4; background: #191924; border: 1px solid #33334a;
+    border-radius: 6px; padding: 4px 8px; margin-bottom: 4px;
+  }
+  /* the original's own 80x60 demo thumbnails */
+  .ldemo img { width: 56px; height: 42px; object-fit: cover; border-radius: 3px; flex: none; }
+  .ldemo span { color: #d7d7e4; font-size: 13px; }
+  /* playpzl.jpg / freeplay.jpg, the two big choices either side of the demo list */
+  .lbig { width: 100%; max-width: 256px; height: auto; border-radius: 6px; display: block; }
+  button.lcard:disabled { cursor: not-allowed; }
+  button.lcard:disabled .lbig { filter: grayscale(1) brightness(.6); }
+  .ldemo:hover { background: #2f2f44; border-color: #55556e; }
+  /* The original's own opening screen (pics/opening.bmp), shown while ToonTalk loads. The two
+     text blocks are the lines the engine draws over it -- resource strings 1653 + 929 at the top
+     and 5544 bottom-left -- positioned and sized as fractions of the 640x480 art so they stay put
+     when it scales. The engine draws this same screen once it is running, so the handover is
+     invisible rather than a cut. */
+  #lsplash { position: relative; width: min(640px, 92vw); margin: 0 auto; line-height: 1.2; }
+  #lsplash img {
+    display: block; width: 100%; height: auto; border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+  }
+  #lsplashtop {
+    position: absolute; left: 0; right: 0; top: 1.2%;
+    text-align: center; color: #000; font-weight: 700;
+    font-size: clamp(11px, 3.35vw, 22px);
+  }
+  #lsplashwait {
+    position: absolute; left: 1%; bottom: 1%;
+    color: #000; font-size: clamp(9px, 1.9vw, 13px);
+  }
+  .lrow { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .lrow button, #lback {
+    font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
+    border-radius: 6px; padding: 5px 16px; cursor: pointer;
+  }
+  .lrow button:hover, #lback:hover { background: #34344a; }
+  /* the name + head dialog (askname.htm) */
+  #lname { max-width: 640px; text-align: center; }
+  #luser {
+    font: 20px/1.4 system-ui, sans-serif; width: min(420px, 84vw); text-align: center;
+    color: #ececf4; background: #191924; border: 1px solid #44445a;
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
+  }
+  .lheads { display: flex; gap: 16px; justify-content: center; margin: 10px 0 4px; }
+  .lhead {
+    font: inherit; cursor: pointer; color: #d7d7e4; background: #21212f;
+    border: 1px solid #3a3a4c; border-radius: 10px; padding: 10px 14px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 104px;
+  }
+  .lhead:hover { background: #2c2c3e; border-color: #55556e; }
+  /* the three JPEGs are 61, 65 and 54 tall, so give them a common box and centre them —
+     otherwise the labels sit at three different heights */
+  .lhead img { border-radius: 4px; display: block; margin: auto; }
+  .lhead .lbox { height: 66px; display: flex; align-items: center; justify-content: center; }
+  .lhead span { font-size: 13px; color: #9d9db4; }
+  #ltt { display: block; margin: 14px auto 0; max-width: 520px; color: #9d9db4;
+         font-size: 13px; text-align: left; }
+  #ltt input { accent-color: #AB0519; margin-right: 6px; }
+</style>
+</head>
+<body>
+<!-- Starttt.exe's opening screen. Structure and command strings from the original
+     starttt.htm / pickdemo.htm / askname.htm; demo names are this build's own .dmo files. -->
+<div id="launcher" hidden>
+  <!-- Shown in place of the choices once a choice is made, so the opening screen stays up instead
+       of cutting to a black canvas while the notebook loads (Ken: "loading the notebook is still
+       black and then the second opening screen shows after about 10s"). -->
+  <div class="lpanel" id="lloading" hidden>
+    <div id="lsplash">
+      <img src="launcher/opening.png" alt="ToonTalk — Marty's Animated Programming World">
+      <div id="lsplashtop">ToonTalk 3 (version 3.191)<br>(c) 1992-2007. Ken Kahn. All rights reserved.</div>
+      <div id="lsplashwait">Loading, please wait.</div>
+    </div>
+  </div>
+  <div class="lpanel" id="lmain">
+    <h1>What do you want to do with ToonTalk?</h1>
+    <div class="lcols">
+      <button class="lcard" type="button" data-cmd="-next_puzzle 1" id="lmissions">
+        <img class="lbig" src="launcher/playpzl.jpg" alt="Play Puzzle Game">
+        <b>Play Puzzle Game</b>
+        <span id="lmissnote"></span>
+      </button>
+      <div class="lcard">
+        <b>Show Demos</b>
+        <div class="lgroup">
+          <h2>Basics</h2>
+          <button class="ldemo" type="button" data-demo="intro_v2">
+            <img src="launcher/intro8.gif" alt=""><span>Introductory Tour</span></button>
+          <button class="ldemo" type="button" data-demo="explode2">
+            <img src="launcher/explode8.gif" alt=""><span>Exploding Houses</span></button>
+          <button class="ldemo" type="button" data-demo="swap2">
+            <img src="launcher/swap8.gif" alt=""><span>Swap Numbers</span></button>
+          <h2>Ping Pong Game</h2>
+          <button class="ldemo" type="button" data-demo="pongact1_v2">
+            <img src="launcher/pong1_8.gif" alt=""><span>Part 1</span></button>
+          <button class="ldemo" type="button" data-demo="pongact2_v2">
+            <img src="launcher/pong2_8.gif" alt=""><span>Part 2</span></button>
+          <button class="ldemo" type="button" data-demo="pongact3_v2">
+            <img src="launcher/pong3_8.gif" alt=""><span>Part 3</span></button>
+          <h2>Computer Science Examples</h2>
+          <button class="ldemo" type="button" data-demo="fibs2">
+            <img src="launcher/fibs8.gif" alt=""><span>Fibonacci</span></button>
+          <button class="ldemo" type="button" data-demo="fact2">
+            <img src="launcher/fact8.gif" alt=""><span>Factorial</span></button>
+          <button class="ldemo" type="button" data-demo="account2">
+            <img src="launcher/account8.gif" alt=""><span>Bank Account</span></button>
+          <button class="ldemo" type="button" data-demo="append2">
+            <img src="launcher/append8.gif" alt=""><span>Appending Lists</span></button>
+        </div>
+      </div>
+      <button class="lcard" type="button" data-cmd="-next_puzzle 0">
+        <img class="lbig" src="launcher/freeplay.jpg" alt="Free Play">
+        <b>Free Play</b>
+      </button>
+    </div>
+    <div class="lrow">
+      <!-- The Playground material that shipped with the retail product, staged by link.sh and
+           loaded via ?user=: PlaygroundBookX is the notebook, Playground2001X the full 9MB city.
+           The city used to wedge the tab (159k elements at ~6ms each); since the GetFocus fix it
+           walks in ~12s, so it is offered here too. -->
+      <span id="lwait" style="color:#7b7b93;font-size:12px;align-self:center">loading ToonTalk…</span>
+      <button type="button" id="lplayground">Playground Notebook</button>
+      <button type="button" id="lplaycity">Playground City</button>
+      <button type="button" id="lopen">Open a .dmo…</button>
+      <button type="button" id="labout">About ToonTalk</button>
+    </div>
+  </div>
+
+  <!-- askname.htm, in its own words -->
+  <div class="lpanel" id="lname" hidden>
+    <h1>Hi. Please type your name.</h1>
+    <input id="luser" type="text" value="No Name" spellcheck="false" autocomplete="off">
+    <div class="lheads">
+      <button class="lhead" type="button" data-head="1">
+        <span class="lbox"><img src="launcher/hairhead.jpg" width="64" height="61" alt="Long Hair"></span><span>Long Hair</span>
+      </button>
+      <button class="lhead" type="button" data-head="2">
+        <span class="lbox"><img src="launcher/hathead.jpg" width="58" height="65" alt="Hat"></span><span>Hat</span>
+      </button>
+      <button class="lhead" type="button" data-head="0">
+        <span class="lbox"><img src="launcher/baldhead.jpg" width="64" height="54" alt="Bald"></span><span>Bald</span>
+      </button>
+    </div>
+    <label id="ltt">
+      <!-- Checked by default, as the original was: globals.cpp:594 has tt_time_travel_enabled =
+           TRUE, and winmain.cpp:10098 turns time travel on for free play unless the command line
+           says otherwise. Shipping it unchecked made time travel something you had to opt into
+           before starting, so during ordinary play it was simply absent. -->
+      <input type="checkbox" id="lttbox" checked><span id="lttnote">I want to be able to travel in time to
+      undo mistakes or replay what I just did. (Sometimes ToonTalk runs slowly when this is
+      checked.)</span>
+    </label>
+    <!-- Full screen and volume are also on the toolbar under the canvas, but once play starts in
+         full screen that toolbar is off-screen, so the choice has to be available here -- before
+         the session begins. The head click that starts play is the user gesture the fullscreen
+         request needs, so the checkbox is read there rather than acted on now. -->
+    <label id="lfslabel"><input type="checkbox" id="lfs"> Start in full screen</label>
+    <label id="lvolrow" title="Volume">
+      <input type="checkbox" id="lmute"> Mute
+      <input id="lvol" type="range" min="0" max="100" value="100" aria-label="Volume">
+    </label>
+    <div class="lrow"><button type="button" id="lback">BACK</button></div>
+  </div>
+</div>
+
+<div id="stage">
+  <!-- fsbox exists so FULLSCREEN has an element that can contain HTML: only descendants of the
+       fullscreened element render, and a fullscreened <canvas> can have none — which made the
+       demo-pause chooser invisible in fullscreen (Ken: Esc twice showed only a black screen and
+       take-control was unreachable). Fullscreen goes on this wrapper; overlays append into it. -->
+  <div id="fsbox"><canvas id="ttcanvas" width="800" height="600"></canvas></div>
+  <!-- The controls used to be summarised here. Ken would rather point at the real documentation
+       than maintain a second, shorter description of the same thing. -->
+  <div id="help">
+    <b>Welcome to ToonTalk.</b>
+    <a href="https://toontalk.com/English/doc.htm" target="_blank" rel="noopener">How to play →</a>
+  </div>
+  <div id="status">loading engine…</div>
+  <div id="controls">
+    <button id="fsbtn" type="button">Full screen</button>
+    <label id="vol" title="Volume">
+      <span aria-hidden="true">🔊</span>
+      <input id="volslider" type="range" min="0" max="100" value="100" aria-label="Volume">
+    </label>
+    <button id="openbtn" type="button">Open a .dmo…</button>
+    <input id="openfile" type="file" accept=".dmo" hidden>
+    <!-- only shown when ?timetravel=1 is recording the session -->
+    <button id="savebtn" type="button" hidden>Save this session</button>
+  </div>
+</div>
+<script>
+  var statusEl = document.getElementById('status');
+  var Module = {
+    // 1786381015 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
+    locateFile: function (f) { return f + '?v=1786381015'; },
+    // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
+    // resets on navigation and resurrects stale lines, so automation reads this instead.
+    print: function (t) {
+      if (t && t.indexOf('[tt]') === 0) {
+        var l = (window.TT_log = window.TT_log || []);
+        // Parallel ms timestamps (TT_logT[i] belongs to TT_log[i]). Startup finishes before any
+        // console can be attached, so timing it after the fact is impossible -- stamping as the
+        // lines arrive is what showed that 20 of the 21 seconds before the first frame were PNG
+        // decoding. ttNote below stamps too, so the two arrays stay index-aligned.
+        var ts = (window.TT_logT = window.TT_logT || []);
+        l.push(t); ts.push(Math.round(performance.now()));
+        if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
+      }
+      console.log(t);
+    },
+    printErr: function (t) { console.warn(t); },
+    onRuntimeInitialized: function () {
+      statusEl.textContent = /[?&]demo=/.test(location.search)
+        ? 'demo playing — click once for sound; after that, a click pauses and resumes'
+        : 'engine running — click the picture to begin';
+    }
+  };
+  window.onerror = function (m) { statusEl.textContent = 'error: ' + m; };
+  // The engine gave up (cleanup.cpp tt_exit_failure). Natively that is a MessageBox; here it used
+  // to be a black canvas with the status line still saying "engine running".
+  window.TT_engineFailed = function (reason, reason2) {
+    var msg = [reason, reason2].filter(Boolean).join(' ').trim() || 'ToonTalk stopped.';
+    // Otherwise the "Getting ToonTalk ready..." screen hides the reason it will never be ready.
+    if (window.TT_hideLoadingScreen) window.TT_hideLoadingScreen();
+    statusEl.style.color = '#ff8a8a';
+    statusEl.textContent = 'ToonTalk stopped: ' + msg;
+    ttNote('engine failed: ' + msg);
+  };
+  // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like
+  // "input dead after re-entering full screen" comes with the exact event trail.
+  function ttNote(s) {
+    var l = (window.TT_log = window.TT_log || []);
+    var ts = (window.TT_logT = window.TT_logT || []);   // keep the two arrays index-aligned
+    l.push('[tt] ui: ' + s); ts.push(Math.round(performance.now()));
+    if (l.length > 3000) { l.splice(0, 500); ts.splice(0, 500); }
+  }
+  // Chrome refuses a pointer-lock request made too soon after the user ESCAPED the previous
+  // lock (an anti-abuse latch, ~1.5s). The .catch below sees that rejection and retries once
+  // the latch expires — otherwise re-entering full screen silently comes up WITHOUT the lock
+  // and the mouse doesn't drive the game (Ken: "after returning to full screen it ignored
+  // mouse... actions").
+  function ttRequestLock(c, retried) {
+    var p;
+    try { p = c.requestPointerLock({ unadjustedMovement: false }); } catch (e) { p = null; }
+    if (p && p.catch) {
+      p.then(function () { ttNote('pointer lock OK'); }).catch(function (err) {
+        ttNote('pointer lock REJECTED: ' + err.name + (retried ? ' (retry failed)' : ' — retrying in 1.6s'));
+        if (!retried) setTimeout(function () {
+          if (document.fullscreenElement && document.pointerLockElement !== c) ttRequestLock(c, true);
+        }, 1600);
+      });
+    }
+  }
+  // Volume. Sits outside fullscreen deliberately: in fullscreen the canvas fills the screen and
+  // the mouse belongs to the game (pointer lock), so there is nowhere to put a slider.
+  // There are two sets of these controls -- the toolbar under the canvas, and the copy on the
+  // name dialog (the toolbar is off-screen once play starts in full screen). They are two views
+  // of one setting, so both drive the same applier and both are refreshed from it. Mute is kept
+  // separate from the level so unmuting returns to where the slider was, rather than to full.
+  (function () {
+    var sliders = [document.getElementById('volslider'), document.getElementById('lvol')];
+    var mutes = [document.getElementById('lmute')];
+    var level = 1, muted = false;
+    try {
+      var saved = localStorage.getItem('TT_volume');
+      if (saved !== null) level = Number(saved);
+      muted = localStorage.getItem('TT_muted') === '1';
+    } catch (e) {}
+    if (!isFinite(level) || level < 0) level = 1;
+    var apply = function () {
+      var v = muted ? 0 : level;
+      if (window.TT_setVolume) window.TT_setVolume(v);
+      else window.TT_volume = v;                 // before the module is up
+      try {
+        localStorage.setItem('TT_volume', String(level));
+        localStorage.setItem('TT_muted', muted ? '1' : '0');
+      } catch (e) {}
+      sliders.forEach(function (s) { if (s) { s.value = String(Math.round(level * 100)); s.disabled = muted; } });
+      mutes.forEach(function (m) { if (m) m.checked = muted; });
+    };
+    sliders.forEach(function (s) {
+      if (!s) return;
+      s.addEventListener('input', function () { level = Number(s.value) / 100; muted = false; apply(); });
+    });
+    mutes.forEach(function (m) {
+      if (!m) return;
+      m.addEventListener('change', function () { muted = m.checked; apply(); });
+    });
+    apply();
+  })();
+
+  // Open a .dmo the user has on their own machine — a session saved from this page, or a demo
+  // from a ToonTalk installation. ?demo=<name> can only name a file the SERVER has.
+  (function () {
+    var btn = document.getElementById('openbtn'), input = document.getElementById('openfile');
+    btn.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () {
+      if (input.files && input.files[0]) {
+        statusEl.textContent = 'Opening ' + input.files[0].name + '…';
+        window.TT_playLocalDemo(input.files[0]);
+      }
+    });
+  })();
+
+  // ?timetravel=1 records free play. Reveal the save control only then — offering it otherwise
+  // would promise a file that does not exist.
+  if (/[?&]timetravel=1/.test(location.search) && !/[?&]demo=/.test(location.search)) {
+    var saveBtn = document.getElementById('savebtn');
+    saveBtn.hidden = false;
+    saveBtn.addEventListener('click', function () {
+      var ok = window.TT_saveDemo && window.TT_saveDemo();
+      statusEl.textContent = ok ? 'Saved this session as toontalk-session.dmo'
+                                : 'Nothing recorded yet — play for a few seconds first';
+    });
+  }
+  // Going full screen is more than requesting full screen, and there are two ways in -- this
+  // button and the name dialog's "Start in full screen" -- so they share one path. The checkbox
+  // used to call requestFullscreen on its own and got neither of the two things below: no pointer
+  // lock, so the game stayed in ABSOLUTE mode and you moved a cursor to point at where to go
+  // instead of the helicopter tracking the mouse (Ken), and no keyboard lock, so Escape dropped
+  // straight out of full screen instead of reaching the engine.
+  window.TT_enterFullScreen = function () {
+    var c = document.getElementById('ttcanvas');
+    var box = document.getElementById('fsbox');
+    if (!box || !box.requestFullscreen || document.fullscreenElement) return;
+    // Remember that full screen was ASKED for. Escape can drop out of it as a side effect of
+    // pausing, and the pause chooser needs to tell "the user left full screen on purpose" from
+    // "the browser took it away", so that Back to ToonTalk returns them to what they chose.
+    window.TT_fullScreenIntent = true;
+    box.requestFullscreen().then(function () {
+      // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
+      // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
+      // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
+      // (press-AND-HOLD Esc remains the browser's own exit).
+      ttRequestLock(c, false);
+      if (navigator.keyboard && navigator.keyboard.lock) {
+        navigator.keyboard.lock(['Escape']).then(function () { ttNote('keyboard lock OK'); })
+                                           .catch(function (e) { ttNote('keyboard lock FAILED: ' + e.name); });
+      }
+    }).catch(function (e) { ttNote('requestFullscreen FAILED: ' + e.name); });
+  };
+  document.getElementById('fsbtn').addEventListener('click', function () {
+    var c = document.getElementById('ttcanvas');
+    var box = document.getElementById('fsbox');   // fullscreen the WRAPPER: overlays must render
+    if (document.fullscreenElement) {
+      ttNote('fsbtn: exiting');
+      window.TT_fullScreenIntent = false;   // left on purpose: do not put them back
+      document.exitFullscreen();
+    }
+    else if (box.requestFullscreen) {
+      // Fullscreen = the original's full-screen scheme: everything TRACKS the mouse
+      // (relative mode via pointer lock), no point and click. Keyboard Lock makes the
+      // browser DELIVER Escape to us instead of instantly dropping lock+fullscreen
+      // (press-AND-HOLD Esc remains the browser's own exit).
+      ttNote('fsbtn: entering');
+      window.TT_enterFullScreen();
+    }
+    c.focus();   // keys keep flowing to the game either way
+  });
+  document.addEventListener('fullscreenchange', function () {
+    ttNote('fullscreenchange: ' + (document.fullscreenElement ? 'IN' : 'OUT'));
+    document.getElementById('fsbtn').textContent =
+      document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+    if (!document.fullscreenElement) {
+      if (navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock();
+      if (document.exitPointerLock) document.exitPointerLock();
+    }
+  });
+  document.addEventListener('pointerlockchange', function () {
+    var locked = document.pointerLockElement === document.getElementById('ttcanvas');
+    ttNote('pointerlockchange: ' + (locked ? 'LOCKED' : 'unlocked'));
+    if (Module && Module._em_set_mouse_mode) {
+      // 0 = relative everywhere (original fullscreen), 1 = absolute everywhere (windowed web)
+      Module._em_set_mouse_mode(locked ? 0 : 1);
+    }
+    if (locked) { window.TT_mouse_x = 400; window.TT_mouse_y = 300; }
+  });
+  document.addEventListener('pointerlockerror', function () { ttNote('pointerlockerror'); });
+  // Escape in full screen (Ken's spec = the ORIGINAL behavior): on the floor Escape STANDS
+  // YOU UP — the engine handles that itself (At_Floor::react, case VK_ESCAPE -> get_up());
+  // walking or flying it leaves full screen, showing the options + Full screen button.
+  // Chrome normally exits pointer lock AND full screen itself on one Esc press — Keyboard
+  // Lock (above) suppresses that and lets the keydown through. On the floor we only
+  // preventDefault (NOT stopPropagation: pre.js's own keydown listener must still post
+  // VK_ESCAPE + the ESC character to the engine, which does the standing up); off the
+  // floor we leave full screen ourselves.
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !document.fullscreenElement) return;
+    e.preventDefault();
+    var onFloor = (typeof Module !== 'undefined') && Module._em_on_floor && Module._em_on_floor();
+    ttNote('Esc in fullscreen: on_floor=' + (onFloor ? 1 : 0) +
+           (onFloor ? ' -> engine stands up' : ' -> exiting fullscreen'));
+    if (onFloor) {
+      var c = document.getElementById('ttcanvas');
+      if (document.pointerLockElement !== c) ttRequestLock(c, false);
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }, true);
+  // ---- The opening screen (Starttt.exe) ------------------------------------------------
+  // pre.js holds main() back with a run dependency and calls this; we call `done` with the
+  // command line the engine should start with, exactly as Starttt.exe passed one to
+  // ToonTalk.exe. A DEMO instead reloads with ?demo=<name>, because the whole tested path for
+  // fetching a .dmo and staging it into the filesystem already hangs off that parameter — and
+  // because the engine does not ask a name when replaying (utils.cpp:10707,
+  // "name isn't asked if double click on demo").
+  // The opening screen is plain HTML and can paint at once, but it used to be revealed only when
+  // pre.js called this from Module.preRun -- i.e. after tt.wasm (2.9MB) AND tt.data (48.5MB) had
+  // downloaded and mounted, leaving the user staring at a black canvas for ~10s (Ken). The
+  // original's Starttt.exe appeared immediately. So build the screen NOW and let the engine load
+  // behind it: TT_showLauncher merely delivers the callback when the runtime is finally ready,
+  // and a choice made before then is held and applied the moment it arrives.
+  var ttPendingDone = null, ttPendingCmd = null, ttRuntimeReady = false;
+  window.TT_showLauncher = function (done) {
+    ttPendingDone = done;
+    ttRuntimeReady = true;
+    var wait = document.getElementById('lwait');
+    if (wait) wait.hidden = true;
+    if (ttPendingCmd !== null) { var c = ttPendingCmd; ttPendingCmd = null; done(c); }
+  };
+  // When the page already knows what to run, buildLauncher below shows nothing -- which left the
+  // user staring at a black canvas for the whole load (Ken: "I still see a black screen while
+  // playground city is loading"; that city walks in ~12s since the GetFocus fix). Keep the opening
+  // screen up with a wait message instead of cutting to black.
+  //
+  // Taken down on the FIRST PRESENTED FRAME, not a timer: that is the exact moment there is real
+  // artwork to show, it self-corrects as loads get faster or slower, and it cannot leave the
+  // overlay stranded over a running engine -- which is precisely what went wrong before, when this
+  // screen sat there saying "loading ToonTalk..." forever on top of a fully loaded Playground.
+  // The 60s backstop covers the one case a frame never arrives at all (engine died before drawing);
+  // TT_engineFailed clears it immediately when the engine reports the failure itself.
+  // Name and picture the thing being loaded, so the wait screen shows what you just clicked
+  // (Ken: "the message can at least say loading Playground city or notebook as appropriate").
+  // The launcher's own buttons are already in the page, just hidden -- so the demo artwork and
+  // labels are read back off them rather than kept in a second table that could drift out of step.
+  function ttLoadingSubject() {
+    var q = location.search, m;
+    if ((m = /[?&]demo=([A-Za-z0-9_.-]+)/.exec(q))) {
+      var b = document.querySelector('.ldemo[data-demo="' + m[1] + '"]');
+      if (b) {
+        var lbl = (b.querySelector('span') || {}).textContent || '';
+        var grp = b.closest ? b.closest('.lgroup') : null;
+        // All three headings (Basics / Ping Pong Game / Computer Science Examples) live in ONE
+        // .lgroup, so querySelector('h2') would always answer "Basics" -- pongact2_v2 came out as
+        // "Basics — Part 2". Take the last heading that precedes this button instead.
+        var h2 = null;
+        if (grp) {
+          var hs = grp.querySelectorAll('h2');
+          for (var i = 0; i < hs.length; i++) {
+            if (hs[i].compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) h2 = hs[i];
+          }
+        }
+        // "Part 2" alone is meaningless once the list is gone, so it gets its heading: "Ping Pong
+        // Game -- Part 2". Names that already say what they are ("Exploding Houses") do not --
+        // "Basics -- Exploding Houses" is just longer.
+        if (h2 && /^part\b/i.test(lbl)) lbl = h2.textContent.trim() + ' — ' + lbl;
+        return {what: lbl || 'the demo'};
+      }
+      return {what: 'the demo'};
+    }
+    if ((m = /[?&]user=([^&]+)/.exec(q))) {
+      var u = decodeURIComponent(m[1]);
+      return {what: u === 'Playground2001X' ? 'the Playground city'
+                  : u === 'PlaygroundBookX' ? 'the Playground notebook'
+                  : u + '’s notebook'};
+    }
+    if (/[?&]puzzle=/.test(q)) return {what: 'the puzzle game'};
+    return {what: null};   // nothing specific to say -- the plain "Loading, please wait." stands
+  }
+  function ttShowLoadingScreen() {
+    var box = document.getElementById('launcher');
+    var panel = document.getElementById('lloading');
+    if (!box || !panel) return;
+    var main = document.getElementById('lmain'), name = document.getElementById('lname');
+    if (main) main.hidden = true;
+    if (name) name.hidden = true;
+    // Name what is loading inside the original's own wait line rather than adding a second
+    // message beside it: "Loading the Playground city, please wait."
+    var subj = ttLoadingSubject();
+    var wait = document.getElementById('lsplashwait');
+    if (wait && subj.what) wait.textContent = 'Loading ' + subj.what + ', please wait.';
+    panel.hidden = false;
+    box.hidden = false;
+    var before = globalThis.TT_presents || 0, waited = 0;
+    var timer = setInterval(function () {
+      waited += 100;
+      if ((globalThis.TT_presents || 0) > before || waited >= 60000) {
+        clearInterval(timer);
+        box.hidden = true;
+        if (waited >= 60000) ttNote('loading screen: no frame after 60s -- removed anyway');
+      }
+    }, 100);
+    window.TT_hideLoadingScreen = function () { clearInterval(timer); box.hidden = true; };
+  }
+  (function buildLauncher() {
+    // Only when the page does NOT already know what to run. pre.js's gateOnLauncher skips
+    // ?demo=/?puzzle=/?user=/?launcher=0 and therefore never calls TT_showLauncher for them --
+    // so revealing the screen here regardless left it covering a perfectly good engine, showing
+    // "loading ToonTalk..." forever (Ken, with ?user=PlaygroundBookX: the console showed the
+    // Playground fully loaded and running behind it). Same conditions as gateOnLauncher, plus
+    // ?floor=1 which goes straight to the bootstrap floor.
+    if (/[?&](demo|puzzle|user)=/.test(location.search) ||
+        /[?&]launcher=0/.test(location.search) ||
+        /[?&]floor=1/.test(location.search)) { ttShowLoadingScreen(); return; }
+    var box = document.getElementById('launcher');
+    var main = document.getElementById('lmain'), name = document.getElementById('lname');
+    var stage = document.getElementById('stage');
+    var user = document.getElementById('luser'), ttbox = document.getElementById('lttbox');
+    var pending = '';                                  // '-next_puzzle 0' or '-next_puzzle 1'
+    stage.style.display = 'none';
+    box.hidden = false;
+
+    try {                                              // the original prefills the previous name
+      var prev = localStorage.getItem('TT_userName');  // ([User] PreviousName in the ini)
+      if (prev) user.value = prev;
+    } catch (e) {}
+
+    var show = function (which) {
+      main.hidden = (which !== 'main');
+      name.hidden = (which !== 'name');
+      if (which === 'name') { user.focus(); user.select(); }
+    };
+    var finish = function (cmd) {
+      // Keep the opening screen up -- swapped to the wait message -- rather than blanking to a
+      // black canvas for the ~10s the notebook takes to load. Dropped on the FIRST RENDERED FRAME
+      // rather than a timer, so it self-corrects however long the load takes. TT_presents is the
+      // signal deliberately: Module.calledRun is never set in this build, so gating on it would
+      // leave this covering a perfectly good engine -- the failure the buildLauncher comment above
+      // records. The timeout is only a backstop against that same outcome.
+      var wait = document.getElementById('lwait');
+      main.hidden = true; name.hidden = true;
+      if (wait) wait.hidden = false;
+      stage.style.display = '';
+      var started = window.TT_presents || 0, waited = 0;
+      var poll = setInterval(function () {
+        waited += 100;
+        if ((window.TT_presents || 0) > started || waited >= 45000) {
+          clearInterval(poll);
+          box.hidden = true;
+          if (wait) wait.hidden = true;
+        }
+      }, 100);
+      ttNote('launcher: ' + cmd);
+      // If the engine is still loading, hold the choice rather than dropping it -- the click must
+      // not be silently ignored just because it landed early.
+      if (ttPendingDone) { ttPendingDone(cmd); } else { ttPendingCmd = cmd; }
+    };
+
+    // Free play / missions: ask the name and head first, like the original.
+    Array.prototype.forEach.call(document.querySelectorAll('.lcard[data-cmd]'), function (b) {
+      b.addEventListener('click', function () {
+        pending = b.getAttribute('data-cmd');
+        // The mission game cannot time travel, and askname.htm says so rather than silently
+        // ignoring the box: ask_what_name passes time_travel_enabled = -1 when tt_system_mode is
+        // PUZZLE (winmain.cpp), and the page disables the checkbox and explains why.
+        var missions = (pending === '-next_puzzle 1');
+        ttbox.disabled = missions;
+        if (missions) ttbox.checked = false;
+        document.getElementById('lttnote').textContent = missions
+          ? 'The time machine does not work while you are doing the missions.'
+          : 'I want to be able to travel in time to undo mistakes or replay what I just did. ' +
+            '(Sometimes ToonTalk runs slowly when this is checked.)';
+        show('name');
+      });
+    });
+    // A demo needs its .dmo fetched and staged, which ?demo= already does end to end.
+    Array.prototype.forEach.call(document.querySelectorAll('.ldemo'), function (b) {
+      b.addEventListener('click', function () {
+        location.search = '?demo=' + b.getAttribute('data-demo');
+      });
+    });
+    document.getElementById('lback').addEventListener('click', function () { show('main'); });
+    document.getElementById('lplayground').addEventListener('click', function () {
+      location.search = '?user=PlaygroundBookX';
+    });
+    document.getElementById('lplaycity').addEventListener('click', function () {
+      location.search = '?user=Playground2001X';
+    });
+
+    // The mission game needs its puzzle files. Without p1.pzl the engine aborts before drawing
+    // anything, so the card must not be offered — a dead black canvas is the worst possible answer
+    // to a click. The packaged data mounts asynchronously, so poll rather than check once.
+    (function gateMissions() {
+      var card = document.getElementById('lmissions'), note = document.getElementById('lmissnote');
+      var tries = 0;
+      // Poll for the FILE and nothing else. Taking "the Puzzles directory exists" as proof that
+      // the data had finished mounting was wrong: the packager creates directories before it
+      // writes their contents, so that fired between the two and latched the card off even
+      // though p1.pzl arrived moments later.
+      var check = function () {
+        if (window.TT_hasFile && window.TT_hasFile('/toontalk/Puzzles/US/p1.pzl')) {
+          card.disabled = false; card.style.opacity = ''; card.style.cursor = '';
+          note.textContent = '';
+          return;
+        }
+        if (++tries > 60) {                    // 60 x 250ms = 15s; the data is long since up
+          card.disabled = true;
+          card.style.opacity = '.45';
+          card.style.cursor = 'not-allowed';
+          note.textContent = 'not installed — needs Puzzles/US/p1.pzl';
+          return;
+        }
+        setTimeout(check, 250);
+      };
+      card.disabled = true; card.style.opacity = '.45';   // until we know
+      note.textContent = 'checking…';
+      check();
+    })();
+    document.getElementById('lopen').addEventListener('click', function () {
+      document.getElementById('openfile').click();     // same picker as the in-page button
+    });
+    document.getElementById('labout').addEventListener('click', function () {
+      window.open('https://toontalk.com', '_blank');
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.lhead'), function (b) {
+      b.addEventListener('click', function () {
+        var who = (user.value || '').trim() || 'No Name';
+        try { localStorage.setItem('TT_userName', who); } catch (e) {}
+        // Full screen is requested further down, AFTER finish() reveals #stage -- not here. Asking
+        // while #stage is still display:none fullscreens an #fsbox that has no layout, so the
+        // canvas comes up with a zero-size bounding rect and the mousemove handler bails on
+        // `if (!r.width || !r.height) return` -- Ken: "if I select to start in full screen mode
+        // the mouse movement isn't tracked", cured by Esc and re-entering, which is simply the
+        // same request made once the stage has a size. It still rides this click, so it is still
+        // inside the user gesture the browser requires.
+        var wantFullScreen = (function () {
+          var fs = document.getElementById('lfs');
+          return !!(fs && fs.checked);
+        })();
+        // askname.htm's own return value, in its own order: "order matters if old user name
+        // and changing head appearance".
+        var cmd = '-n ' + who + ' -h ' + b.getAttribute('data-head') +
+                  ' -time_travel_enabled ' + (ttbox.checked ? '1' : '0');
+        if (pending === '-next_puzzle 1') cmd += ' ' + pending;
+        if (ttbox.checked) {                           // recording, so offer the save control
+          window.TT_recording = true;
+          var sb = document.getElementById('savebtn');
+          if (sb) {
+            sb.hidden = false;
+            sb.addEventListener('click', function () {
+              var ok = window.TT_saveDemo && window.TT_saveDemo();
+              statusEl.textContent = ok ? 'Saved this session as toontalk-session.dmo'
+                                        : 'Nothing recorded yet — play for a few seconds first';
+            });
+          }
+        }
+        finish(cmd);                                   // reveals #stage, so #fsbox now has layout
+        // Same path the Full screen button takes -- pointer lock and keyboard lock included, not
+        // just the full-screen request. Still inside this click, which is the gesture both need.
+        if (wantFullScreen && window.TT_enterFullScreen) {
+          try { window.TT_enterFullScreen(); } catch (e) {}
+        }
+      });
+    });
+    user.addEventListener('keydown', function (e) {    // Enter = keep the head you had last time
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var last = 1;
+      try { last = Number(localStorage.getItem('TT_userHead') || 1); } catch (e2) {}
+      var btn = document.querySelector('.lhead[data-head="' + last + '"]');
+      if (btn) btn.click();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.lhead'), function (b) {
+      b.addEventListener('click', function () {
+        try { localStorage.setItem('TT_userHead', b.getAttribute('data-head')); } catch (e) {}
+      });
+    });
+    show('main');
+  })();
+
+  // Idle: slide the page furniture out of the way after a few quiet seconds so the canvas is all
+  // that is left, and bring it back on the first sign of life. Deliberately driven by real input
+  // events rather than by the engine's own activity -- a demo replaying on its own should be
+  // allowed to go clean, and the engine draws continuously in any case, so engine frames would
+  // never let it settle. The launcher is exempt: hiding the controls under an unstarted session
+  // would just look broken.
+  (function () {
+    var IDLE_MS = 6000, timer = null, hidden = false;
+    var wake = function () {
+      if (hidden) { document.body.classList.remove('ttidle'); hidden = false; }
+      if (timer) clearTimeout(timer);
+      var box = document.getElementById('launcher');
+      if (box && !box.hidden) return;              // still on the opening screen
+      timer = setTimeout(function () {
+        document.body.classList.add('ttidle');
+        hidden = true;
+      }, IDLE_MS);
+    };
+    ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, wake, { passive: true });
+    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) wake(); });
+    wake();
+  })();
+
+  // ?fps=1 — frame-pacing overlay: rendered frames/sec and the worst gap in the last second.
+  // For diagnosing "jerky" reports: low fps or big gaps = pacing; 60fps + steady = look at art.
+  if (/[?&]fps=1/.test(location.search)) {
+    var fpsEl = document.createElement('div');
+    fpsEl.style.cssText = 'position:fixed;top:6px;left:8px;z-index:99;font:13px monospace;' +
+      'color:#0f0;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:4px;pointer-events:none;';
+    document.body.appendChild(fpsEl);
+    setInterval(function () {
+      var t = window.TT_present_times || [];
+      var now = performance.now();
+      var recent = t.filter(function (x) { return now - x < 1000; });
+      var worst = 0;
+      for (var i = 1; i < recent.length; i++) worst = Math.max(worst, recent[i] - recent[i - 1]);
+      fpsEl.textContent = recent.length + ' fps, worst gap ' + Math.round(worst) + 'ms';
+    }, 500);
+  }
+</script>
+<script src="tt.js?v=1786381015"></script>
+<link rel="stylesheet" href="marty-ai/marty-ai.css?v=1786381015">
+<script defer src="marty-ai/marty-ai.js?v=1786381015"></script>
+</body>
+</html>
