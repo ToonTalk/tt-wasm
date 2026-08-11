@@ -15,7 +15,8 @@
     history: [],            // [{role:'user'|'assistant', content}]
     corpus: { full: null, nano: null },
     nano: { session: null, api: null },   // api: 'new' | 'legacy'
-    busy: false
+    busy: false,
+    resumeChooser: null     // pause-chooser kind to re-show when the chat closes
   };
 
   // ------------------------------------------------------------ persona
@@ -160,7 +161,9 @@
         'moves things; erasing in a robot\'s thought bubble makes him accept more ' +
         'boxes. Pumpy (F3) resizes, the magic wand (F5) copies, Tooly the toolbox ' +
         '(F6) has fresh parts, F4 calls your notebook, F1 calls me. The Pause key ' +
-        'opens time travel. Answer in one to three short friendly spoken sentences, ' +
+        'opens time travel. Fly the helicopter by pointing where to go; hold the ' +
+        'left mouse button (or D) to fly lower and land, U to rise - no spacebar. ' +
+        'Answer in one to three short friendly spoken sentences, ' +
         'concrete about what to do, about ToonTalk only.',
       // availability(cb): cb(status string or null when usable)
       availability: function () {
@@ -394,7 +397,7 @@
     var gear = el('button', { type: 'button', text: '⚙', title: 'AI settings' });
     gear.addEventListener('click', function () { dlg.showModal(); });
     var close = el('button', { type: 'button', text: '×', title: 'Close' });
-    close.addEventListener('click', function () { panel.hidden = true; });
+    close.addEventListener('click', closePanel);
 
     panel = el('div', { id: 'mai-panel', hidden: true }, [
       el('div', { id: 'mai-head' }, [el('b', { text: '🛸 Marty' }), gear, close]),
@@ -425,9 +428,22 @@
   function toggleOpen() {
     if (!state.provider) { dlg.showModal(); return; }
     if (panel.hidden) {
+      // Opening from the pause chooser (its own Ask Marty button, or Ctrl+M while it is
+      // up): hide the chooser but leave the engine paused; closing the chat re-shows it.
+      if (globalThis.TT_pauseOverlay && globalThis.TT_pauseHide) {
+        state.resumeChooser = (globalThis.TT_pauseKind === undefined) ? 0 : globalThis.TT_pauseKind;
+        globalThis.TT_pauseHide();
+      }
       if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) {} }
       openPanel();
-    } else panel.hidden = true;
+    } else closePanel();
+  }
+  function closePanel() {
+    panel.hidden = true;
+    if (state.resumeChooser !== null && globalThis.TT_demoPause) {
+      var kind = state.resumeChooser; state.resumeChooser = null;
+      globalThis.TT_demoPause(kind);
+    }
   }
   function openPanel() { panel.hidden = false; input.focus(); }
 
@@ -528,6 +544,27 @@
       lbtn.title = 'Give Marty an AI: Claude, OpenAI, Gemini, or Chrome built-in';
       lbtn.addEventListener('click', function () { dlg.showModal(); });
       lrowBtn.parentNode.appendChild(lbtn);
+    }
+    // The pause chooser sits at the very top z-index, so the chat cannot be used while it
+    // is up (and in fullscreen it is the one reliably reachable surface — Esc opens it).
+    // Add an Ask Marty choice to it: hides the chooser, keeps the engine paused, chats,
+    // and the chooser returns when the chat closes.
+    if (typeof globalThis.TT_demoPause === 'function') {
+      var origPause = globalThis.TT_demoPause;
+      globalThis.TT_demoPause = function (d) {
+        origPause(d);
+        var boxEl = document.getElementById('ttpause');
+        if (!state.provider || !boxEl || boxEl.querySelector('.mai-pausebtn')) return;
+        var r = document.createElement('div');
+        r.style.cssText = 'padding:0 12px 14px;text-align:center';
+        var b = document.createElement('button');
+        b.className = 'mai-pausebtn';
+        b.textContent = '🛸 Ask Marty (stays paused)';
+        b.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+        b.addEventListener('click', toggleOpen);
+        r.appendChild(b);
+        boxEl.firstChild.appendChild(r);
+      };
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

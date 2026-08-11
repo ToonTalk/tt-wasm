@@ -535,11 +535,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     }
     if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
   };
+  // Hide the chooser WITHOUT answering the engine (it stays paused). Used by the enhanced
+  // page's Marty chat so a player can ask a question mid-pause and come back to this dialog;
+  // call TT_demoPause(TT_pauseKind) afterwards to put the chooser back up.
+  globalThis.TT_pauseHide = function () {
+    if (!box) return;
+    if (box.parentNode) box.parentNode.removeChild(box);
+    box = null;
+    globalThis.TT_pauseOverlay = false;
+  };
   globalThis.TT_demoPause = function (duringDemo) {
     if (box) return;                        // a second Esc must not stack a second chooser
     duringDemo = (duringDemo === undefined) ? 1 : duringDemo;
+    globalThis.TT_pauseKind = duringDemo;
     globalThis.TT_pauseOverlay = true;
     box = document.createElement('div');
+    box.id = 'ttpause';
     box.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;' +
       'background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;' +
       'font:13px "MS Sans Serif",Tahoma,sans-serif';
@@ -570,6 +581,24 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
       if (i === 0) setTimeout(function () { try { el.focus(); } catch (e) {} }, 0);  // DEFPUSHBUTTON
     });
     panel.appendChild(caption); panel.appendChild(text); panel.appendChild(row);
+    // Ken: once in full screen you couldn't LEAVE it -- Esc lands here (keyboard lock eats the
+    // browser's own exit) and none of the original's three choices mentions full screen. Offer
+    // it explicitly. Clearing TT_fullScreenIntent matters: answer(1) would otherwise honour the
+    // stored intent and put full screen straight back.
+    if (document.fullscreenElement) {
+      var fsRow = document.createElement('div');
+      fsRow.style.cssText = 'padding:0 12px 14px;text-align:center';
+      var fsBtn = document.createElement('button');
+      fsBtn.textContent = 'Back to ToonTalk in a window';
+      fsBtn.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+      fsBtn.onclick = function () {
+        globalThis.TT_fullScreenIntent = false;
+        try { if (document.exitFullscreen) document.exitFullscreen(); } catch (e) {}
+        answer(1);
+      };
+      fsRow.appendChild(fsBtn);
+      panel.appendChild(fsRow);
+    }
     // "Save Everything" -- its own full-width row in the original, and it does NOT dismiss:
     // ask_continue_or_quit's case 4 saves, reports, and leaves you still paused.
     if (!duringDemo) {

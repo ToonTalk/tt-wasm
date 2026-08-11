@@ -10,6 +10,13 @@ THE WORLD
   bomb recycles a house. Outside you walk or fly; inside you sit on the floor
   to build things. Esc makes your character stand up.
 
+GETTING AROUND
+- Flying: the helicopter steers toward where you point or tap the mouse. Hold
+  the left mouse button (or the D key) to fly lower; U flies higher. Get low
+  over the grass to land. There is no spacebar control.
+- Walking: point where to go and the person walks there (arrow keys work too).
+  Walk into a house's door to go inside. Press H to call the helicopter back.
+
 OBJECTS
 - Number pads: exact arithmetic of any size. Drop one number on another to
   combine them; the operation on the falling number can be + - * / ^.

@@ -4268,6 +4268,13 @@ SECTION: THIS BROWSER VERSION (THE WASM PORT)
 This ToonTalk is the original Windows program compiled to WebAssembly, running
 entirely in the web browser. Practical differences a player may ask about:
 
+- Getting around: while flying, the helicopter steers toward where you point or
+  tap the mouse. Hold the LEFT mouse button (or the D key) to fly lower; press
+  U to fly higher. Get low over the grass to land. After landing, point where
+  you want to walk and the person walks there (arrow keys work too); walk into
+  a house's door to go inside. Press H while walking to call the helicopter
+  back. There is no spacebar flying control.
+
 - Full screen: use the on-screen full-screen button. The game captures the mouse
   (pointer lock) while you play; press Esc to release the mouse or leave full
   screen. Esc inside the game also makes the character stand up / asks about
