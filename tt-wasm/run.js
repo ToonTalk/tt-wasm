@@ -13,6 +13,10 @@ if (process.env.TT_PADLONG) globalThis.location = { search: "?floor=1&textpad=1&
 process.on('exit', function () {
   try { if (globalThis.TT_dumpErr) globalThis.TT_dumpErr(); } catch (e) {}
 });
+// TT_CTX=1: print the Marty-AI situation line every 5s (verifies tt_marty_context end to end)
+if (process.env.TT_CTX) setInterval(function () {
+  try { if (globalThis.TT_martyContext) console.log('[ctx] ' + globalThis.TT_martyContext()); } catch (e) {}
+}, 5000);
 // TT_MAXSEC=N: self-terminate after N seconds (Windows `timeout` hard-kills node, losing exit hooks)
 if (process.env.TT_MAXSEC) setTimeout(function () {
   console.log('[harness] TT_MAXSEC reached — exiting');
@@ -207,6 +211,7 @@ globalThis.requestAnimationFrame = (cb) => setTimeout(() => {
     }
   }
   cb(Date.now() - t0);
+  globalThis.TT_loop_alive = Date.now();   // pre.js helpers (TT_martyContext) gate on this
 }, 16);
 globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
 // emscripten resolves tt.data relative to cwd, so run from build/

@@ -152,7 +152,7 @@ globalThis.TT_setMouseModeForUser = function () {
   setTimeout(function () {
     try {
       if (Module['_em_set_mouse_mode']) {
-        Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
+        Module['_em_set_mouse_mode']((typeof document !== 'undefined' && document.pointerLockElement) ? 0 : 1);
       }
     } catch (e) {}
   }, 0);
@@ -168,7 +168,7 @@ Module['postRun'].push(function () {
   // that alone and let TT_setMouseModeForUser() below switch to absolute when the replay ends.
   if (Module['_em_set_mouse_mode'] &&
       !(globalThis.TT_cmdline && globalThis.TT_cmdline.indexOf('-I ') === 0)) {
-    Module['_em_set_mouse_mode'](document.pointerLockElement ? 0 : 1);
+    Module['_em_set_mouse_mode']((typeof document !== 'undefined' && document.pointerLockElement) ? 0 : 1);
   }
   // Take the "what to run" parameters back out of the address bar once startup has read them.
   // The opening screen reloads with ?demo=<name> (or ?puzzle=N) because the engine needs its
@@ -486,7 +486,12 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         (e.keyCode >= 112 && e.keyCode <= 123)) e.preventDefault();
   });
   window.addEventListener('keyup', function (e) {
-    if (editableTarget(e)) return;
+    // No editableTarget guard on the UP. A keyDOWN aimed at a text box (the Marty chat, the
+    // launcher's name field) is rightly kept from the game -- but swallowing the matching UP
+    // strands the key DOWN engine-side: Ctrl+M focuses the chat input, the Ctrl release then
+    // landed in the input and was skipped, and with Ctrl stuck held the game seemed to ignore
+    // the mouse until Alt-Tab's blur handler cleared everything (Ken). An up for a key whose
+    // down the engine never saw is harmless.
     delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0);
   });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
@@ -535,6 +540,10 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     }
     if (typeof Module !== 'undefined' && Module['_tt_demo_pause_choice']) Module['_tt_demo_pause_choice'](n);
   };
+  // The enhanced page's Marty chat: after "Ask Marty (stays paused)" hid the chooser, a click
+  // on the game means "back to playing" -- let that click answer the hidden chooser directly
+  // (it is also the user gesture the pointer-lock retake inside answer() needs).
+  globalThis.TT_pauseAnswer = answer;
   // Hide the chooser WITHOUT answering the engine (it stays paused). Used by the enhanced
   // page's Marty chat so a player can ask a question mid-pause and come back to this dialog;
   // call TT_demoPause(TT_pauseKind) afterwards to put the chooser back up.
@@ -1115,6 +1124,18 @@ Module['preRun'].push(function () {
   };
   try {
     if (typeof IDBFS === 'undefined') { console.warn('[tt] persist: IDBFS not linked; user data will not survive a reload'); return; }
+    // The node harness has no indexedDB: IDBFS's syncfs ABORTS the whole runtime there
+    // (Aborted() poisons every later wasm call — boot died right after "persist:" and the
+    // harness sat pumping a dead module). Skip persistence, keep the boot.
+    if (typeof indexedDB === 'undefined') {
+      console.warn('[tt] persist: no indexedDB (node harness) — skipping persistence');
+      overlayCache();
+      globalThis.TT_persistLoaded = true;
+      (globalThis.TT_afterPersist || []).forEach(function (f) { try { f(); } catch (e) {} });
+      globalThis.TT_afterPersist = [];
+      globalThis.TT_persistReady = true;
+      return;
+    }
     FS.mkdirTree(ROOT);
     FS.mount(IDBFS, {}, ROOT);
     addRunDependency('tt-persist-load');
@@ -1392,6 +1413,18 @@ Module['preRun'].push(function () {
   // Harness helper: heap accessor for run.js-side samplers (HEAPU8 lives in module scope,
   // invisible to the requiring script in Node).
   globalThis.TT_HEAPU8 = function () { return HEAPU8; };
+  // The player's situation (location, hand, pocket) as UTF-8 text — the Marty AI page and
+  // the node harness both read it through this accessor since Module/UTF8ToString live in
+  // module scope. Empty string until the runtime is up.
+  globalThis.TT_martyContext = function () {
+    try {
+      // TT_loop_alive is stamped by the running main loop — a reliable "runtime is up"
+      // signal in both the browser and the node harness (Module['calledRun'] is not:
+      // it stays unset under node's require()).
+      if (!globalThis.TT_loop_alive || !Module['_tt_marty_context']) return '';
+      return UTF8ToString(Module['_tt_marty_context']()) || '';
+    } catch (e) { return ''; }
+  };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
   globalThis.TT_dumpErr = function () {

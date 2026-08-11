@@ -29,7 +29,10 @@
     '- Be concrete: name the exact key, tool, or character (F2 calls Dusty...).\n' +
     '- Plain spoken sentences only: no markdown, no lists, no code blocks.\n' +
     '- If asked something unrelated to ToonTalk, answer kindly in one sentence ' +
-    'and steer back to ToonTalk.\n\n' +
+    'and steer back to ToonTalk.\n' +
+    '- Some questions end with a bracketed "[Game engine report: ...]" describing ' +
+    'where the player is and what is in their hand or pocket RIGHT NOW; trust it ' +
+    'as ground truth and use it to answer questions like "what am I holding?".\n\n' +
     'REFERENCE MATERIAL ABOUT TOONTALK:\n';
 
   function systemPrompt(tier) {
@@ -321,7 +324,8 @@
       state.remember = remember.checked; state.speak = speak.checked;
       state.nano.session = null;          // provider change invalidates any Nano session
       saveCfg(); dlg.close(); openPanel();
-      addMsg('marty', 'New brain installed! Ask me anything about ToonTalk.');
+      addMsg('marty', 'New brain installed! Ask me anything about ToonTalk. ' +
+                      'Ctrl+M opens or closes this chat any time — even while playing.');
     });
 
     dlg = el('dialog', { id: 'mai-dlg' }, [
@@ -424,6 +428,24 @@
       e.preventDefault(); e.stopPropagation();
       toggleOpen();
     }, true);
+
+    // Clicking the game while the chat is open means "back to playing": close the chat.
+    // If we got here from the pause chooser (engine paused, chooser hidden), this click
+    // answers it directly -- and doubles as the user gesture the pointer-lock retake
+    // inside the answer needs. Ken: "I tried to return to the main app and it seemed to
+    // ignore all mouse movements and events."
+    var canvas = document.getElementById('ttcanvas');
+    if (canvas) canvas.addEventListener('mousedown', function (e) {
+      if (panel.hidden) return;
+      if (state.resumeChooser !== null && globalThis.TT_pauseAnswer) {
+        state.resumeChooser = null;
+        panel.hidden = true;
+        e.stopImmediatePropagation(); e.preventDefault();   // resume-click only, not a game click
+        globalThis.TT_pauseAnswer(1);
+      } else {
+        panel.hidden = true;      // plain Ctrl+M chat: game was live; the click acts in-game too
+      }
+    }, true);
   }
   function toggleOpen() {
     if (!state.provider) { dlg.showModal(); return; }
@@ -455,6 +477,16 @@
     return d;
   }
 
+  // What the engine says about the player right now (location, hand, pocket) — an
+  // EMSCRIPTEN_KEEPALIVE export built on the game's own describe() machinery, so the
+  // AI can answer "what's in my pocket?" without the player pressing F1.
+  function situation() {
+    try {
+      if (globalThis.TT_martyContext) return globalThis.TT_martyContext();
+    } catch (e) {}
+    return '';
+  }
+
   function send() {
     var text = input.value.trim();
     if (!text || state.busy) return;
@@ -467,7 +499,11 @@
     }
     input.value = '';
     addMsg('user', text);
-    state.history.push({ role: 'user', content: text });
+    // The situation rides on the USER turn, not the system prompt: the big system
+    // block is prompt-cached, and editing it would miss the cache on every message.
+    var ctx = situation();
+    state.history.push({ role: 'user',
+                         content: ctx ? text + '\n\n[Game engine report: ' + ctx + ']' : text });
     while (state.history.length > 12) state.history.shift();
     if (state.history[0] && state.history[0].role !== 'user') state.history.shift();
     state.busy = true;
@@ -491,7 +527,10 @@
       if (/user gesture/i.test(msg))
         msg = 'Chrome wants a real click before it downloads the little brain — press the Send button once.';
       addMsg('err', msg);
-    }).finally(function () { state.busy = false; input.focus(); });
+    }).finally(function () {
+      state.busy = false;
+      if (!panel.hidden) input.focus();   // not into a hidden input if the chat closed meanwhile
+    });
   }
 
   // ------------------------------------------------------------ speech in/out

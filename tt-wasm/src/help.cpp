@@ -1261,3 +1261,67 @@ void print_the(output_stream &text_out, boolean capitalize_first,
    }; 
 };
 */
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+// Marty AI (the generated tt-ai.html only): one short line describing the player's
+// situation right now, assembled with the same describe() machinery the engine's own
+// help uses -- so whatever an item calls itself in Marty's balloons is exactly what
+// the AI hears. Ken's ask (2026-08-11): the AI should know what is in the pocket and
+// hand without the player pressing F1. The returned static buffer is overwritten on
+// every call.
+extern "C" EMSCRIPTEN_KEEPALIVE const char *tt_marty_context() {
+	static char buffer[768];
+	buffer[0] = '\0';
+	output_string_stream message(buffer,sizeof(buffer)-1);
+	if (tt_programmer == NULL) {
+		message << "The game is still starting up.";
+	} else {
+		int kind = tt_programmer->kind_of();
+		switch (kind) {
+			case PROGRAMMER_TITLES:
+				message << "The player is watching the opening titles.";
+				break;
+			case PROGRAMMER_CITY_FLYING:
+			case PROGRAMMER_CITY_LANDING:
+				message << "The player is flying the helicopter over the city.";
+				break;
+			case PROGRAMMER_CITY_WALKING:
+				message << "The player is walking outside in the city.";
+				break;
+			case PROGRAMMER_ROOM_WALKING:
+				message << "The player is standing inside a house.";
+				break;
+			case PROGRAMMER_AT_FLOOR:
+				if (tt_screen != NULL && tt_screen->inside_rule_body()) {
+					message << "The player is inside a robot's thought bubble, training the robot.";
+				} else {
+					message << "The player is sitting at the floor of a house, where things are built.";
+				};
+				break;
+			default:
+				message << "The player is in the city.";
+				break;
+		};
+		Sprite *held = tt_programmer->pointer_to_tool_in_hand();
+		if (held != NULL) {
+			// While walking or flying the held item is carried in the POCKET (the stand-up
+			// animation pockets it -- MAN_STAND_AND_POCKET); at the floor it is in the hand.
+			boolean pocketed = (kind == PROGRAMMER_CITY_FLYING || kind == PROGRAMMER_CITY_LANDING ||
+									  kind == PROGRAMMER_CITY_WALKING || kind == PROGRAMMER_ROOM_WALKING);
+			if (pocketed) {
+				message << " In the player's pocket: ";
+			} else {
+				message << " In the player's hand: ";
+			};
+			held->describe(message,INDEFINITE_ARTICLE);
+			message << ".";
+		} else {
+			message << " The player's hand is empty and nothing is in the pocket.";
+		};
+	};
+	message.put('\0');
+	buffer[sizeof(buffer)-1] = '\0';
+	return(buffer);
+};
+#endif
