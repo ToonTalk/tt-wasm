@@ -51,7 +51,7 @@ TOOLS AND CHARACTERS (calling keys)
 - Bammer the Mouse smashes when you drop something on something; press F11 to
   drop gently so nothing is smashed or swallowed.
 - F8 switches the power off/on for all robots and animations. F9 hides or
-  shows your hand. Arrow keys move; the Pause key opens time travel.
+  shows your hand. Arrow keys move; the Pause key (or Ctrl+Z) opens time travel.
 - PageDown makes Marty say the next thing, PageUp repeats his last words.
 
 PROGRAMMING IDEAS IN TOONTALK WORDS

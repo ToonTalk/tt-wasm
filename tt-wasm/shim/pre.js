@@ -504,6 +504,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0);
   });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
+  // The Pause/Break key is the original's door into time travel -- and many laptop
+  // keyboards no longer have one. Synthesize it: the page's Time travel button and
+  // Ctrl+Z (time travel IS ToonTalk's undo) both come through here.
+  globalThis.TT_pressPause = function () {
+    post(0x0100, 19, 0);   // WM_KEYDOWN VK_PAUSE
+    post(0x0101, 19, 0);   // WM_KEYUP
+  };
+  window.addEventListener('keydown', function (e) {
+    if (!e.ctrlKey || e.altKey || e.metaKey) return;
+    if ((e.key || '').toLowerCase() !== 'z') return;
+    if (editableTarget(e)) return;   // Ctrl+Z in a text box stays text undo
+    // Capture phase + stopImmediatePropagation: the game's own handlers must not also
+    // see a 'z' (it would type into a held pad), and the browser has no default to run.
+    e.preventDefault(); e.stopImmediatePropagation();
+    globalThis.TT_pressPause();
+  }, true);
 })();
 
 // ------------------------------------------------------------- demo pause chooser

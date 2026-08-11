@@ -23,7 +23,8 @@ entirely in the web browser. Practical differences a player may ask about:
   (pointer lock) while you play; press Esc to release the mouse or leave full
   screen. Esc inside the game also makes the character stand up / asks about
   quitting, as in the original.
-- Time travel: press the Pause/Break key to open the time-travel controls (a row
+- Time travel: press the Pause/Break key -- or Ctrl+Z, or the page's "Time
+  travel" button, for keyboards without Pause -- to open the controls (a row
   of tape-recorder style buttons: back to start, back one stop, play, forward
   one stop, to the end, and record to take over). The on-screen controls fade
   out after a few seconds of no input and come back when the mouse moves. A

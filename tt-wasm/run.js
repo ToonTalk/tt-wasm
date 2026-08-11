@@ -14,6 +14,20 @@ if (process.env.TT_PADLONG) globalThis.location = { search: "?floor=1&textpad=1&
 process.on('exit', function () {
   try { if (globalThis.TT_dumpErr) globalThis.TT_dumpErr(); } catch (e) {}
 });
+// TT_PAUSEKEY=N: synthesize the Pause key N seconds in (the Ctrl+Z / Time-travel-button path).
+// TT_pressPause lives in pre.js's browser-only input block, so headless falls back to posting
+// the same messages straight into the queue.
+if (process.env.TT_PAUSEKEY) setTimeout(function () {
+  try {
+    if (globalThis.TT_pressPause) globalThis.TT_pressPause();
+    else {
+      globalThis.TT_msgq = globalThis.TT_msgq || [];
+      globalThis.TT_msgq.push({ message: 0x0100, wParam: 19, lParam: 0 },
+                              { message: 0x0101, wParam: 19, lParam: 0 });
+    }
+    console.log('[harness] pause key synthesized');
+  } catch (e) { console.log('[harness] pause key failed: ' + e); }
+}, parseInt(process.env.TT_PAUSEKEY) * 1000);
 // TT_CTX=1: print the Marty-AI situation line every 5s (verifies tt_marty_context end to end)
 if (process.env.TT_CTX) setInterval(function () {
   try { if (globalThis.TT_martyContext) console.log('[ctx] ' + globalThis.TT_martyContext()); } catch (e) {}

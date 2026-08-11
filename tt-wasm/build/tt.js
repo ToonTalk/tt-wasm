@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp9jj8vqtr.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8wc4dzvc.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,14 +204,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp9jj8vqtr.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvzc082e9.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp8wc4dzvc.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnq7zv8oq.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpvzc082e9.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpnq7zv8oq.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -719,6 +719,22 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     delete globalThis.TT_keys[e.keyCode]; post(0x0101, e.keyCode, 0);
   });
   window.addEventListener('blur', function () { globalThis.TT_keys = {}; });   // don't strand held keys
+  // The Pause/Break key is the original's door into time travel -- and many laptop
+  // keyboards no longer have one. Synthesize it: the page's Time travel button and
+  // Ctrl+Z (time travel IS ToonTalk's undo) both come through here.
+  globalThis.TT_pressPause = function () {
+    post(0x0100, 19, 0);   // WM_KEYDOWN VK_PAUSE
+    post(0x0101, 19, 0);   // WM_KEYUP
+  };
+  window.addEventListener('keydown', function (e) {
+    if (!e.ctrlKey || e.altKey || e.metaKey) return;
+    if ((e.key || '').toLowerCase() !== 'z') return;
+    if (editableTarget(e)) return;   // Ctrl+Z in a text box stays text undo
+    // Capture phase + stopImmediatePropagation: the game's own handlers must not also
+    // see a 'z' (it would type into a held pad), and the browser has no default to run.
+    e.preventDefault(); e.stopImmediatePropagation();
+    globalThis.TT_pressPause();
+  }, true);
 })();
 
 // ------------------------------------------------------------- demo pause chooser
@@ -1678,13 +1694,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxsxltayd.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7vuoxrfp.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxsxltayd.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp7vuoxrfp.js
 
 
 var programArgs = [];

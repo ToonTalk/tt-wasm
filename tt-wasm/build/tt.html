@@ -54,11 +54,11 @@
     color: #9d9db4; font-size: 13px; cursor: pointer;
   }
   #lvol { width: 110px; accent-color: #AB0519; }
-  #fsbtn, #savebtn, #openbtn {
+  #fsbtn, #savebtn, #openbtn, #ttbtn {
     font: inherit; color: #d7d7e4; background: #2a2a3a; border: 1px solid #44445a;
     border-radius: 6px; padding: 4px 14px; cursor: pointer;
   }
-  #fsbtn:hover, #savebtn:hover, #openbtn:hover { background: #34344a; }
+  #fsbtn:hover, #savebtn:hover, #openbtn:hover, #ttbtn:hover { background: #34344a; }
   #help {
     max-width: 620px; text-align: center; color: #a9a9bd;
     background: rgba(255,255,255,.04); border: 1px solid #2c2c3c;
@@ -295,14 +295,18 @@
     <input id="openfile" type="file" accept=".dmo" hidden>
     <!-- only shown when ?timetravel=1 is recording the session -->
     <button id="savebtn" type="button" hidden>Save this session</button>
+    <!-- The original opens time travel with the Pause/Break key, which many laptop
+         keyboards no longer have. Ctrl+Z does the same (time travel IS ToonTalk's
+         undo), and this button is the discoverable route. -->
+    <button id="ttbtn" type="button" title="Rewind and replay what just happened (Pause/Break or Ctrl+Z)">⏱ Time travel</button>
   </div>
 </div>
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786453069 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786459511 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786453069'; },
+    locateFile: function (f) { return f + '?v=1786459511'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -466,6 +470,10 @@
       window.TT_enterFullScreen();
     }
     c.focus();   // keys keep flowing to the game either way
+  });
+  document.getElementById('ttbtn').addEventListener('click', function () {
+    ttNote('ttbtn: pause key synthesized');
+    if (window.TT_pressPause) window.TT_pressPause();
   });
   document.addEventListener('fullscreenchange', function () {
     ttNote('fullscreenchange: ' + (document.fullscreenElement ? 'IN' : 'OUT'));
@@ -821,6 +829,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786453069"></script>
+<script src="tt.js?v=1786459511"></script>
 </body>
 </html>

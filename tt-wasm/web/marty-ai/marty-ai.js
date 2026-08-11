@@ -164,7 +164,7 @@
         'moves things; erasing in a robot\'s thought bubble makes him accept more ' +
         'boxes. Pumpy (F3) resizes, the magic wand (F5) copies, Tooly the toolbox ' +
         '(F6) has fresh parts, F4 calls your notebook, F1 calls me. The Pause key ' +
-        'opens time travel. Fly the helicopter by pointing where to go; hold the ' +
+        'opens time travel (Ctrl+Z works too). Fly the helicopter by pointing where to go; hold the ' +
         'left mouse button (or D) to fly lower and land, U to rise - no spacebar. ' +
         'Answer in one to three short friendly spoken sentences, ' +
         'concrete about what to do, about ToonTalk only.',
