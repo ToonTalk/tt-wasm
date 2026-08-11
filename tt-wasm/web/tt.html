@@ -230,6 +230,9 @@
       <span id="lwait" style="color:#7b7b93;font-size:12px;align-self:center">loading ToonTalk…</span>
       <button type="button" id="lplayground">Playground Notebook</button>
       <button type="button" id="lplaycity">Playground City</button>
+      <!-- The WebLabs cardinality activity sequence (Kahn, Sendova, Sacristán & Noss 2011):
+           eight worksheets beside a live ToonTalk, with each activity's robots a click away. -->
+      <button type="button" id="linfinity">Exploring Infinity ♾️</button>
       <button type="button" id="lopen">Open a .dmo…</button>
       <button type="button" id="labout">About ToonTalk</button>
     </div>
@@ -693,6 +696,11 @@
     });
     document.getElementById('lplaycity').addEventListener('click', function () {
       location.search = '?user=Playground2001X';
+    });
+    document.getElementById('linfinity').addEventListener('click', function () {
+      // its own page, not a query on this one: it puts the worksheets and a running ToonTalk
+      // side by side, and this page becomes the thing inside its right-hand pane.
+      location.href = 'infinity/index.html';
     });
 
     // The mission game needs its puzzle files. Without p1.pzl the engine aborts before drawing

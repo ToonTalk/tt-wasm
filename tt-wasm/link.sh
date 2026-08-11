@@ -128,4 +128,13 @@ sed -e "s|src=\"tt.js\"|src=\"tt.js?v=$STAMP\"|" -e "s|TTBUILDSTAMP|$STAMP|" \
 mkdir -p build/launcher
 cp -f web/launcher/* build/launcher/ 2>/dev/null
 
+# infinity/ -- the WebLabs cardinality activity sequence: worksheets beside a live ToonTalk.
+# The sheets are the project's own Word documents converted to HTML (with their screenshots)
+# and the ToonTalk-website pages they linked to; the robots those activities need ride in
+# tt.data from assets/toontalk/infinity. Copied wholesale because the sheet folders carry
+# Word's own image directories alongside them.
+rm -rf build/infinity
+mkdir -p build/infinity
+cp -rf web/infinity/. build/infinity/
+
 ls -la build/tt.wasm

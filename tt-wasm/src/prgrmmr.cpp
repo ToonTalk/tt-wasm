@@ -2457,17 +2457,18 @@ void Programmer::em_enter_bootstrap_house() {
          EM_ASM({ setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); });
       };
    };
-   // ?ttfile=NAME loads /toontalk/weblabs/NAME.tt onto the floor -- the same
+   // ?ttfile=NAME loads /toontalk/infinity/NAME.tt onto the floor -- the same
    // sprite_from_file_name() path winmain's WM_USER+FILE_FOR_CLIPBOARD_MESSAGE_ID uses when
-   // a .tt file is double-clicked natively. Used to check that 2003-05 WebLabs student
-   // programs (Ken's cardinality study) still load in the port.
+   // a .tt file is double-clicked natively. Carries the cardinality activities' resources
+   // (Cardinality1to8 is a notebook of notebooks, one page of robots per activity), so the
+   // activity sheets can hand the learner exactly what that activity needs.
    {
-      char tt_name[128];
+      char tt_name[160];
       int got = EM_ASM_INT({
          if (typeof location === 'undefined') return 0;
          var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)'));
          if (!m) return 0;
-         stringToUTF8('/toontalk/weblabs/' + m[1] + '.tt', $0, 120);
+         stringToUTF8('/toontalk/infinity/' + m[1] + '.tt', $0, 150);
          return 1;
       }, tt_name);
       if (got) {

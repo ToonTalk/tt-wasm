@@ -1,0 +1,21 @@
+/* Applied to the ToonTalk-website pages whose own stylesheet and navigation lived at paths
+   that no longer exist. Deliberately plain: these are reading panes inside the activities
+   page, so they should look like paper, not like the dark chrome around them. */
+body {
+  margin: 0; padding: 20px 26px;
+  font: 15px/1.6 Georgia, "Times New Roman", serif;
+  color: #1b1b22; background: #fff;
+}
+h1, h2, h3 { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #14142a; line-height: 1.25; }
+h1 { font-size: 22px; margin: 0 0 14px; }
+h2 { font-size: 18px; margin: 22px 0 8px; }
+img { max-width: 100%; height: auto; }
+table { max-width: 100%; }
+a { color: #7a1020; }
+/* .tt links in the original pages became load buttons */
+a[data-load] {
+  display: inline-block; font-family: system-ui, sans-serif; font-size: 13px;
+  text-decoration: none; color: #fff; background: #7a1020;
+  border-radius: 5px; padding: 3px 10px;
+}
+a[data-load]:hover { background: #99162a; }

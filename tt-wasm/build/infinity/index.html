@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exploring Infinity — ToonTalk</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♾️</text></svg>">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column;
+    background: radial-gradient(1200px 800px at 50% 0%, #23233a, #101018 70%);
+    font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; color: #d7d7e4;
+  }
+
+  /* ---- top bar ---------------------------------------------------------- */
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 9px 16px; border-bottom: 1px solid #33334a; background: #191924;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: #ececf4; margin: 0; }
+  header .sub { color: #7b7b93; font-size: 12px; }
+  .spacer { flex: 1; }
+  .seg { display: flex; border: 1px solid #44445a; border-radius: 6px; overflow: hidden; }
+  .seg button {
+    font: inherit; font-size: 13px; color: #d7d7e4; background: #2a2a3a;
+    border: 0; border-right: 1px solid #44445a; padding: 5px 12px; cursor: pointer;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { background: #34344a; }
+  .seg button[aria-pressed="true"] { background: #AB0519; color: #fff; }
+  a.plain { color: #9d9db4; text-decoration: none; font-size: 13px; }
+  a.plain:hover { color: #d7d7e4; text-decoration: underline; }
+
+  /* ---- three columns ---------------------------------------------------- */
+  main { flex: 1; display: flex; min-height: 0; }
+  nav {
+    width: 246px; flex: none; overflow-y: auto; padding: 12px 10px 24px;
+    border-right: 1px solid #33334a; background: #14141d;
+  }
+  nav h2 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+    color: #7b7b93; margin: 14px 6px 6px;
+  }
+  nav h2:first-child { margin-top: 2px; }
+  .item {
+    font: inherit; text-align: left; width: 100%; cursor: pointer;
+    color: #d7d7e4; background: #191924; border: 1px solid #33334a;
+    border-radius: 6px; padding: 6px 9px; margin-bottom: 4px; display: block;
+  }
+  .item:hover { background: #2f2f44; border-color: #55556e; }
+  .item[aria-current="true"] { background: #2c2c3e; border-color: #AB0519; }
+  .item b { display: block; font-size: 13px; color: #ececf4; font-weight: 600; }
+  .item span { display: block; color: #9d9db4; font-size: 12px; line-height: 1.35; margin-top: 2px; }
+
+  .panes { flex: 1; display: flex; min-width: 0; }
+  .pane { display: flex; flex-direction: column; min-width: 0; }
+  #sheetpane { flex: 1.05; border-right: 1px solid #33334a; }
+  #ttpane { flex: 1; background: #0d0d14; }
+  .panehead {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 6px 10px; background: #191924; border-bottom: 1px solid #33334a;
+    font-size: 12px; color: #9d9db4; min-height: 34px;
+  }
+  .panehead strong { color: #ececf4; font-size: 13px; font-weight: 600; }
+  .panehead button {
+    font: inherit; font-size: 12px; color: #d7d7e4; background: #2a2a3a;
+    border: 1px solid #44445a; border-radius: 5px; padding: 3px 10px; cursor: pointer;
+  }
+  .panehead button:hover { background: #34344a; }
+  .panehead button.go { background: #7a1020; border-color: #99162a; color: #fff; }
+  .panehead button.go:hover { background: #99162a; }
+  iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+  #tt { background: #0d0d14; }
+
+  /* view modes: the pane toggle just hides one side */
+  body[data-view="sheet"] #ttpane { display: none; }
+  body[data-view="tt"] #sheetpane { display: none; }
+  body[data-view="tt"] nav { display: none; }
+
+  @media (max-width: 900px) {
+    nav { width: 190px; }
+    .panes { flex-direction: column; }
+    #sheetpane { border-right: 0; border-bottom: 1px solid #33334a; }
+  }
+</style>
+</head>
+<body data-view="split">
+
+<header>
+  <h1>Exploring Infinity</h1>
+  <span class="sub">Cardinality of infinite sets, in ToonTalk</span>
+  <span class="spacer"></span>
+  <div class="seg" role="group" aria-label="View">
+    <button type="button" data-view="sheet">Sheet</button>
+    <button type="button" data-view="split" aria-pressed="true">Split</button>
+    <button type="button" data-view="tt">ToonTalk</button>
+  </div>
+  <a class="plain" href="../tt.html">← Back to the launcher</a>
+</header>
+
+<main>
+  <nav id="nav"></nav>
+  <div class="panes">
+    <section class="pane" id="sheetpane">
+      <div class="panehead">
+        <strong id="sheettitle">Overview</strong>
+        <span class="spacer"></span>
+        <button type="button" id="openraw" title="Open this sheet in its own tab">Open in a tab ↗</button>
+      </div>
+      <iframe id="sheet" title="Activity sheet"></iframe>
+    </section>
+    <section class="pane" id="ttpane">
+      <div class="panehead">
+        <strong>ToonTalk</strong>
+        <span id="ttnote">the robots for every activity are in the notebook on the floor</span>
+        <span class="spacer"></span>
+        <button type="button" id="ttreload" title="Start over with this activity's materials">Reload materials</button>
+        <button type="button" class="go" id="ttfull" title="Give ToonTalk the whole window">Full width</button>
+      </div>
+      <iframe id="tt" title="ToonTalk"
+              allow="fullscreen; pointer-lock; autoplay; clipboard-read; clipboard-write"></iframe>
+    </section>
+  </div>
+</main>
+
+<script>
+// The activity sequence (v8, the revision tested in Oxford and Bulgaria in 2005). Titles and
+// aims are the sequence document's own; each entry names the worksheet Word produced and the
+// ToonTalk material that activity needs. `res` is a .tt file staged in assets/toontalk/infinity,
+// loaded by the engine's own sprite_from_file_name() via ?ttfile=.
+var SHEETS = 'sheets/';
+var ACTIVITIES = [
+  { id: 'overview', kind: 'doc', title: 'The activity sequence',
+    blurb: 'Aims, setting and assessment for all eight activities',
+    file: 'cardinality_activity_sequence_v8.htm' },
+
+  { id: 'a1', kind: 'act', n: 1, title: 'The even numbers, two ways',
+    blurb: 'A proper subset that is still the same size',
+    file: 'Cardinality_Activity_1.htm', res: 'Cardinality1to8' },
+  { id: 'a2', kind: 'act', n: 2, title: 'Combining sequences — part 1',
+    blurb: 'Making all the integers, and counting them',
+    file: 'Cardinality_Activity_2.htm', res: 'Cardinality1to8' },
+  { id: 'a3', kind: 'act', n: 3, title: 'A variety of sequences',
+    blurb: 'Every sequence you can build turns out to be countable',
+    file: 'Cardinality_Activity_3.htm', res: 'Cardinality1to8' },
+  { id: 'a4', kind: 'act', n: 4, title: 'All fractions between 0 and 1',
+    blurb: 'The obvious enumerations fail; this one works',
+    file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8' },
+  { id: 'a5', kind: 'act', n: 5, title: 'Rational numbers greater than 1',
+    blurb: 'Reciprocals — and a one-to-one map falls out of it',
+    file: 'Cardinality_Activity_5.htm', res: 'Cardinality1to8' },
+  { id: 'a6', kind: 'act', n: 6, title: 'Combining sequences — part 2',
+    blurb: 'Merging to get all the rationals',
+    file: 'Cardinality_Activity_6.htm', res: 'Cardinality1to8' },
+  { id: 'a7', kind: 'act', n: 7, title: 'Rationals between any two numbers',
+    blurb: 'Scale and shift the unit interval; density',
+    file: 'Cardinality_Activity_7.htm', res: 'Cardinality1to8' },
+  { id: 'a8', kind: 'act', n: 8, title: 'Counting sequences',
+    blurb: "Cantor's diagonal, built out of robots",
+    file: 'Cardinality_Activity_8.htm', res: 'Diagonal' },
+  { id: 'extra4', kind: 'act', title: 'Extra task for activity 4',
+    blurb: 'A further fractions challenge',
+    file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8' },
+
+  { id: 'tnotebook', kind: 'tool', title: 'The activity notebook',
+    blurb: 'A notebook of notebooks — one page of robots per activity',
+    file: 'notebook.htm', res: 'Cardinality1to8' },
+  { id: 'tdiag', kind: 'tool', title: 'Diagonal tool',
+    blurb: 'Feed it sequences and work out what it does (activity 8)',
+    file: 'diagonal.htm', res: 'Diagonal' },
+  { id: 'tnocopy', kind: 'tool', title: 'Remove duplicate fractions',
+    blurb: '2/6 never gets past, because 1/3 already did (activity 4)',
+    file: 'no_copies.htm', res: 'NoCopies' },
+  { id: 'thotel', kind: 'tool', title: 'Resort Infinity',
+    blurb: "Hilbert's hotel as a city of five problems",
+    file: 'resort_infinity.htm' },
+
+  { id: 'guide', kind: 'teach', title: 'Teacher guidance',
+    blurb: 'How to run the sessions', file: 'guidance.htm' },
+  { id: 'guide2', kind: 'teach', title: 'More guidance',
+    blurb: 'Further notes for teachers', file: 'guidance2.htm' },
+  { id: 'hotelguide', kind: 'teach', title: 'Resort Infinity guide',
+    blurb: 'Answers for the five hotel problems', file: 'resort_infinity_guide.htm' },
+  { id: 'hist', kind: 'teach', title: 'Historical note',
+    blurb: 'Galileo to Cantor, in brief', file: 'historical_note.htm' }
+];
+
+var GROUPS = [
+  ['Start here', 'doc'], ['The eight activities', 'act'],
+  ['Tools', 'tool'], ['For teachers', 'teach']
+];
+
+var sheet = document.getElementById('sheet');
+var tt = document.getElementById('tt');
+var current = null;          // the activity showing in the sheet pane
+var ttLoaded = null;         // which resource ToonTalk was last started with
+
+function ttURL(res) {
+  // ?floor=1 puts the programmer straight on a house floor with the toolbox and notebook --
+  // no launcher, no demo -- and ?ttfile= drops the activity's materials there with them.
+  return '../tt.html?floor=1' + (res ? '&ttfile=' + encodeURIComponent(res) : '');
+}
+
+function show(a) {
+  current = a;
+  sheet.src = SHEETS + encodeURIComponent(a.file);
+  document.getElementById('sheettitle').textContent =
+    (a.kind === 'act' && a.n ? 'Activity ' + a.n + ' — ' : '') + a.title;
+  Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
+    b.setAttribute('aria-current', b.dataset.id === a.id ? 'true' : 'false');
+  });
+  // Switching sheets deliberately does NOT touch the ToonTalk pane: the engine takes a while
+  // to load and the learner's own work is in there. Materials are (re)loaded only on request.
+  var note = document.getElementById('ttnote');
+  if (a.res && ttLoaded !== a.res) {
+    note.innerHTML = 'this activity uses <b>' + a.res + '</b> — press Reload materials to fetch it';
+  } else if (a.res) {
+    note.textContent = a.res + ' is on the floor';
+  } else {
+    note.textContent = '';
+  }
+}
+
+function loadMaterials(res) {
+  if (ttLoaded && !confirm('Restart ToonTalk with these materials?\n\n' +
+                           'Anything you have built in the ToonTalk pane will be lost.')) return;
+  ttLoaded = res;
+  tt.src = ttURL(res);
+  if (current) show(current);
+}
+
+// ---- build the rail --------------------------------------------------------
+var nav = document.getElementById('nav'), html = '';
+GROUPS.forEach(function (g) {
+  html += '<h2>' + g[0] + '</h2>';
+  ACTIVITIES.filter(function (a) { return a.kind === g[1]; }).forEach(function (a) {
+    html += '<button type="button" class="item" data-id="' + a.id + '"><b>' +
+            (a.kind === 'act' && a.n ? a.n + '. ' : '') + a.title + '</b><span>' +
+            a.blurb + '</span></button>';
+  });
+});
+nav.innerHTML = html;
+nav.addEventListener('click', function (e) {
+  var b = e.target.closest('.item');
+  if (b) show(ACTIVITIES.filter(function (a) { return a.id === b.dataset.id; })[0]);
+});
+
+// ---- view toggle -----------------------------------------------------------
+document.querySelector('.seg').addEventListener('click', function (e) {
+  var b = e.target.closest('button');
+  if (!b) return;
+  document.body.dataset.view = b.dataset.view;
+  Array.prototype.forEach.call(this.querySelectorAll('button'), function (x) {
+    x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+  });
+});
+document.getElementById('ttfull').addEventListener('click', function () {
+  document.querySelector('.seg button[data-view="tt"]').click();
+});
+document.getElementById('ttreload').addEventListener('click', function () {
+  loadMaterials((current && current.res) || 'Cardinality1to8');
+});
+document.getElementById('openraw').addEventListener('click', function () {
+  if (current) window.open(SHEETS + encodeURIComponent(current.file), '_blank');
+});
+
+// A .tt link inside one of the original site pages became a load button; the sheet iframe is
+// same-origin, so listen for those clicks and route them through loadMaterials.
+sheet.addEventListener('load', function () {
+  var d;
+  try { d = sheet.contentDocument; } catch (err) { return; }
+  if (!d) return;
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-load]');
+    if (!a) return;
+    e.preventDefault();
+    loadMaterials(a.dataset.load);
+  });
+});
+
+// ---- start -----------------------------------------------------------------
+show(ACTIVITIES[0]);
+ttLoaded = 'Cardinality1to8';
+tt.src = ttURL('Cardinality1to8');   // load the engine once, up front, so it is ready
+</script>
+</body>
+</html>
