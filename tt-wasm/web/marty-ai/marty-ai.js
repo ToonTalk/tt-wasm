@@ -11,7 +11,7 @@
   var LS_KEY = 'tt_marty_ai';
 
   var state = {
-    provider: '', model: '', key: '', remember: false, speak: true,
+    provider: '', model: '', keys: {}, remember: false, speak: true,   // keys: per provider
     history: [],            // [{role:'user'|'assistant', content}]
     corpus: { full: null, nano: null },
     nano: { session: null, api: null },   // api: 'new' | 'legacy'
@@ -255,15 +255,19 @@
       var j = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
       state.provider = j.provider || ''; state.model = j.model || '';
       state.remember = !!j.remember; state.speak = j.speak !== false;
-      if (j.remember && j.key) state.key = j.key;
+      if (j.remember) {
+        state.keys = j.keys || {};
+        if (j.key && j.provider && !state.keys[j.provider]) state.keys[j.provider] = j.key;  // old single-key format
+      }
     } catch (e) {}
   }
   function saveCfg() {
     var j = { provider: state.provider, model: state.model,
               remember: state.remember, speak: state.speak };
-    if (state.remember) j.key = state.key;
+    if (state.remember) j.keys = state.keys;
     try { localStorage.setItem(LS_KEY, JSON.stringify(j)); } catch (e) {}
   }
+  function currentKey() { return state.keys[state.provider] || ''; }
 
   // ------------------------------------------------------------ tiny DOM helper
   function el(tag, attrs, kids) {
@@ -291,7 +295,10 @@
     modelInput = el('input', { type: 'text', id: 'mai-model', autocomplete: 'off' });
     modelList = el('datalist', { id: 'mai-models' });
     modelInput.setAttribute('list', 'mai-models');
-    keyInput = el('input', { type: 'password', id: 'mai-key', autocomplete: 'off' });
+    // type=text, masked by CSS (-webkit-text-security): a real password field beside a
+    // text field reads as a LOGIN FORM to Chrome, which offered to save the model name
+    // as a username and the key as a password (Ken's screenshot).
+    keyInput = el('input', { type: 'text', id: 'mai-key', autocomplete: 'off', spellcheck: false });
     var remember = el('input', { type: 'checkbox' });
     var speak = el('input', { type: 'checkbox' });
     dlgStatus = el('div', { className: 'mai-status' });
@@ -322,7 +329,7 @@
       }
       state.provider = id;
       state.model = modelInput.value.trim() || PROVIDERS[id].defModel;
-      state.key = keyInput.value.trim();
+      state.keys[id] = keyInput.value.trim();
       state.remember = remember.checked; state.speak = speak.checked;
       state.nano.session = null;          // provider change invalidates any Nano session
       saveCfg(); dlg.close(); openPanel();
@@ -352,7 +359,7 @@
     if (state.provider) {
       var r = dlg.querySelector('input[value="' + state.provider + '"]');
       if (r) { r.checked = true; onProviderPick(state.provider); }
-      modelInput.value = state.model; keyInput.value = state.key;
+      modelInput.value = state.model;   // key hydration happens in onProviderPick
     }
     // grey out Nano if this browser can't do it
     PROVIDERS.nano.availability().then(function (why) {
@@ -366,8 +373,17 @@
     var r = dlg.querySelector('input[name="mai-prov"]:checked');
     return r ? r.value : '';
   }
+  var lastPickedProv = '';
   function onProviderPick(id) {
     var p = PROVIDERS[id];
+    // Each provider keeps its own key: stash whatever was typed for the previous
+    // provider, show what we have for this one (Ken: "when I switch provider the
+    // API key remains, which is confusing" -- and he compares providers a lot).
+    if (lastPickedProv && lastPickedProv !== id && PROVIDERS[lastPickedProv].needsKey) {
+      state.keys[lastPickedProv] = keyInput.value.trim();
+    }
+    keyInput.value = state.keys[id] || '';
+    lastPickedProv = id;
     document.getElementById('mai-keyrow').style.display = p.needsKey ? '' : 'none';
     document.getElementById('mai-keynote').textContent = p.needsKey ? ('Get a key at ' + p.keyHint) : p.keyHint;
     document.getElementById('mai-modelnote').textContent =
@@ -509,7 +525,7 @@
     if (!text || state.busy) return;
     if (!state.provider) { dlg.showModal(); return; }
     // Key not remembered and page was reloaded: ask for it again instead of a 401.
-    if (PROVIDERS[state.provider].needsKey && !state.key) {
+    if (PROVIDERS[state.provider].needsKey && !currentKey()) {
       dlgStatus.className = 'mai-status err';
       dlgStatus.textContent = 'Please enter your API key again (it was not remembered).';
       dlg.showModal(); return;
@@ -529,7 +545,7 @@
     var onStatus = function (t) { thinking.textContent = t; };
     loadCorpus(tier).then(function () {
       return PROVIDERS[state.provider].chat(
-        { key: state.key, model: state.model }, systemPrompt(tier), state.history, onStatus);
+        { key: currentKey(), model: state.model }, systemPrompt(tier), state.history, onStatus);
     }).then(function (reply) {
       reply = (reply || '').trim() || '(no answer)';
       thinking.remove();

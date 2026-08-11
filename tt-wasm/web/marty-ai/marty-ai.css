@@ -75,10 +75,15 @@
 }
 .mai-prov label:has(input:checked) { border-color: #6a6a97; background: #26263a; }
 .mai-prov label.mai-off { opacity: .45; cursor: not-allowed; }
-#mai-dlg input[type=text], #mai-dlg input[type=password] {
+#mai-dlg input[type=text] {
   flex: 1; font: inherit; color: #ececf4; background: #10101a;
   border: 1px solid #3a3a52; border-radius: 7px; padding: 6px 9px;
 }
+/* Masked WITHOUT type=password: a password input plus a text input reads as a login
+   form to Chrome, which then offers to save the model name as a username and the API
+   key as a password (Ken's screenshot). text-security masks the display while carrying
+   none of the credential semantics. */
+#mai-key { -webkit-text-security: disc; }
 #mai-dlg .mai-note { color: #9a9ab2; font-size: 12.5px; margin: -4px 0 0; }
 #mai-dlg .mai-status { min-height: 1.2em; font-size: 13px; color: #9ac89a; }
 #mai-dlg .mai-status.err { color: #f0a8b4; }
