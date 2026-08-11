@@ -367,7 +367,11 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
                                   in every cell, shaving the fraction's top margin (Ken's
                                   side-by-side with the retail original) */
     if (base < asc) base = asc;
-    if (base + desc > cell_h) base = cell_h - desc;
+    /* Descenders may overshoot the CELL -- GDI draws them into the line gap below, and
+     * number.cpp depends on it: the fraction bar is '_', whose ink lives below the
+     * baseline. Clamping to cell_h shoved the bar up INTO the numerator (Ken's "5
+     * touches the bar"). The caller sizes the buffer with descent room; clamp to THAT. */
+    if (base + desc > out_h) base = out_h - desc;
     var originX = 0;
     if (len === 1 && cell_w > 0) {
       var inkL = m.actualBoundingBoxLeft, inkR = m.actualBoundingBoxRight;
@@ -417,7 +421,9 @@ static bool draw_text_run(GdiDC *dc, int x, int y, const unsigned short *u16, in
     if (len <= 0) return true;
     /* the buffer must fit the HONEST width -- the same number the extent functions report --
      * and for a lone digit the whole cw cell, since the glyph is centred within it */
-    int w = tt_text_hwidth(u16, len, p.ch, p.cw, p.fx) + 2, h = p.ch;
+    int w = tt_text_hwidth(u16, len, p.ch, p.cw, p.fx) + 2, h = p.ch + p.ch / 4 + 1;
+    /* h: a quarter-cell of descent room below the cell, as GDI has -- underscores and
+     * g/y/p tails draw into the line gap instead of being clamped up into the glyphs */
     if (len == 1 && p.cw + 2 > w) w = p.cw + 2;
     if (w <= 2) return true;                    /* nothing to draw (spaces measure fine) */
     if (h <= 0 || w > 4096 || h > 1024) return false;

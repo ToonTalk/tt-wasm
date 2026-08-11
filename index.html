@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToonTalk in the browser</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:18px; font:17px/1.5 system-ui,sans-serif; color:#e6e6f0;
+         background: radial-gradient(1200px 800px at 50% 0%, #23233a, #101018 70%); text-align:center; }
+  h1 { margin:0 0 4px; font-size:30px; }
+  p  { margin:0; color:#b9b9cc; max-width:34em; padding:0 16px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; padding:8px 16px; }
+  a.card { display:block; padding:18px 26px; min-width:200px; text-decoration:none; color:#ececf4;
+           background:#21212f; border:1px solid #44445a; border-radius:12px; }
+  a.card:hover { background:#2c2c3e; border-color:#6a6a97; }
+  a.card b { display:block; font-size:20px; margin-bottom:4px; }
+  a.card span { color:#9a9ab2; font-size:14px; }
+  .foot { color:#7b7b93; font-size:13px; padding:0 16px; }
+  .foot a { color:#9a9ab2; }
+</style>
+</head>
+<body>
+  <h1>ToonTalk</h1>
+  <p>The original ToonTalk — the animated world where children build real programs —
+     running in your browser. Best in desktop Chrome or Edge, with a mouse.</p>
+  <div class="row">
+    <a class="card" href="tt-wasm/build/tt.html"><b>▶ Play ToonTalk</b>
+      <span>the faithful original</span></a>
+    <a class="card" href="tt-wasm/build/tt-ai.html"><b>🛸 Play with Marty&nbsp;AI</b>
+      <span>ask Marty anything — bring your own AI key,<br>or use Chrome’s built-in model</span></a>
+  </div>
+  <div class="foot"><a href="https://github.com/ToonTalk/tt-wasm">source on GitHub</a> ·
+    <a href="https://toontalk.com">toontalk.com</a></div>
+</body>
+</html>
