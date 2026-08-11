@@ -655,12 +655,13 @@ END_GDI
 					// added !animation_in_progress on 051104 
 					 (multiple_lines || decimal_places > 0 ||
 					  (correct_character_height > correct_character_width*3 &&
-#ifdef __EMSCRIPTEN__
-						// a pad that has hit the web port's floor-width cap is constrained in practice
-						(size_constrained() || width >= 16*tile_width)
-#else
+						// The port briefly added "|| width >= 16*tile_width" here (41ccb1b) to arm the
+						// shrinking display for wide floor pads while containment was broken. The same
+						// commit FIXED containment, and Ken's retail comparison (2026-08-11, (3/2)^1000)
+						// shows the original lets an unconstrained pad grow its face to the number's
+						// full width and draw plain full-size digits -- the forced fisheye was the
+						// divergence behind the giant-glyph garble and digits painted past the face.
 						size_constrained()
-#endif
 					  ))
 					  && text_length > 2 && !IsCharAlphaW(wide_text[0])) {
 					// added size_constrained() on 081105 since if large number on the ground shouldn't do this
