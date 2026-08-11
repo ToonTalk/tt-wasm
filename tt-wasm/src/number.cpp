@@ -575,15 +575,12 @@ END_GDI
 					};
 #endif
 					need_to_change_size = TRUE;
-#ifdef __EMSCRIPTEN__
-					// Web port: don't let a free pad grow wider than the floor. At the cap, switch
-					// to fitting the FONT instead (the same move the engine makes for constrained
-					// pads) so the shrinking-digits display can arm for long numbers.
-					if (adjusted_text_width > 17*tile_width) {
-						adjusted_text_width = 17*tile_width;
-						set_change_font_size_to_fit_extent(TRUE);
-					};
-#endif
+					// The port briefly capped adjusted_text_width at 17*tile_width here (with a
+					// forced font-fit) so wide pads couldn't outgrow the floor. Ken's retail
+					// photos ((3/2)^100 and ^1000, 2026-08-11) show the original lets the face
+					// grow to the digits' full natural width -- wider than the screen if need
+					// be -- and the cap was exactly what pinned the face while the digits went
+					// fisheye (#65: stretched flush-left denominator, digits spilling the face).
 //					if (!animation_in_progress()) { // if animating shouldn't be changing size to fit, right?
 						set_change_size_to_fit_extent(FALSE);
 //					};
@@ -1430,8 +1427,9 @@ void Number::display_shrinking_growing_integer(wide_string wide_text, int wide_t
 											ignore_longest_line,full_size_width,full_size_height,
 											TRUE,TRUE,FALSE);
 #ifdef __EMSCRIPTEN__
-		{ static int fracw_log = 0;
-		  if (fracw_log < 8) { fracw_log++;   /* which width is lying? (task #65) */
+		{ static long fracw_last = -1;       /* log on change, not first-N: the interesting */
+		  long fracw_key = (long)width*7+(long)total_width+(long)wide_text_length1*131;
+		  if (fracw_key != fracw_last) { fracw_last = fracw_key;   /* frame follows a value change (task #65) */
 		    printf("[tt] fracw: padW=%ld totW=%ld tw1=%.0f tw2=%.0f off1=%ld off2=%ld len1=%d len2=%d chW=%ld fsW1=%ld constrained=%d shrink1=%.3f\n",
 		           (long)width,(long)total_width,total_width1,total_width2,
 		           (long)center_x_offset1,(long)center_x_offset2,
@@ -1444,7 +1442,7 @@ void Number::display_shrinking_growing_integer(wide_string wide_text, int wide_t
 			tt_screen->text_out((string) wide_text1,wide_text_length1,
                              //following updated on 081105
 									  start_x+center_x_offset1, // max(0,(total_width-full_size_width)/2), // center this line
-									  (city_coordinate) (start_y+0.6*character_height), 
+									  (city_coordinate) (start_y+0.6*character_height),
 									  // 0.6 was digit_height_to_character_height prior to 051104
 									  character_width,character_height,
 									  // on 081105 replaced full_size_width with total_width1
@@ -1506,9 +1504,9 @@ void Number::display_shrinking_growing_integer(wide_string wide_text, int wide_t
 		if (full_size_width <= total_width || !size_constrained()) { // size_constrained new on 081105
 			//  || part1_shrinkage <= 0.0) { // both use the same shrinkage factor
 			tt_screen->text_out((string) wide_text2,wide_text_length2,
-									  (city_coordinate) (start_x_as_double+center_x_offset2), 
+									  (city_coordinate) (start_x_as_double+center_x_offset2),
 									  // updated on 081105 center_x_offset2 was max(0,(total_width-full_size_width)/2))
-									  (city_coordinate) (start_y+digit_height_to_character_height*character_height), 
+									  (city_coordinate) (start_y+digit_height_to_character_height*character_height),
 									  character_width,character_height,
 									  TRUE,TRUE,TRUE,text_color,TRUE,color_permutation,WHITE,(city_coordinate) total_width2,FALSE); 
 			// shouldn't this pass full_size_width -- asked 061104

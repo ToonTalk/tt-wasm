@@ -2287,6 +2287,35 @@ xml_element *Programmer::xml(xml_document *document) { // new on 011102 - comple
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+// #65 repro: the ?fraction=1&fracexp=N hook applies a typed "N^" pad to the floor's 3/2
+// pad AFTER it has displayed a few seconds -- the deferred half lives here so the pad's
+// font/size state is the stale "3/2" state Ken's real construction had.
+static NUMBER *tt_frac_pow_target = NULL;
+static int tt_frac_pow_exponent = 0;
+extern "C" EMSCRIPTEN_KEEPALIVE void tt_frac_apply_pow() {
+   if (tt_frac_pow_target == NULL) return;
+   NUMBER *num = tt_frac_pow_target;
+   tt_frac_pow_target = NULL;
+   printf("[tt] fracpow: before exp=%d W=%ld H=%ld cw=%ld ch=%ld\n", tt_frac_pow_exponent,
+          (long)num->current_width(), (long)num->current_height(),
+          (long)num->return_character_width(), (long)num->return_character_height()); fflush(stdout);
+   // The dropped pad, exactly as typing "100^" makes one: trailing '^' becomes
+   // TO_THE_POWER and the rest parses as the value.
+   NUMBER *op = new NUMBER();
+   char op_text[32];
+   sprintf(op_text,"%d^",tt_frac_pow_exponent);
+   op->set_value_as_string(op_text,(int)strlen(op_text));
+   // The drop-arithmetic path (Number::accept_result's duration==0 branch): compute
+   // through result_of_operation, then set_value. (op leaks -- dev hook.)
+   NumberValue *result = NULL;
+   ArithmeticException ex = num->result_of_operation(op,num->pointer_to_value(),result,NULL,TRUE);
+   if (ex == NO_EXCEPTION && result != NULL) {
+      num->set_value(result);
+   };
+   printf("[tt] fracpow: after ex=%d W=%ld cw=%ld ch=%ld\n", (int)ex,
+          (long)num->current_width(),
+          (long)num->return_character_width(), (long)num->return_character_height()); fflush(stdout);
+}
 // WASM new-user bootstrap: drop the programmer straight onto a house's floor (the interactive
 // workspace — notebook, toolbox, robot, cubby) instead of leaving them on open city ground after
 // the fly-in. Mirrors the XML-restore path (HOUSE_LOCATION_TAG then PROGRAMMER_AT_FLOOR_TAG).
@@ -2382,33 +2411,30 @@ void Programmer::em_enter_bootstrap_house() {
                 ltl, (long)pad->current_width(), (long)pad->current_height()); fflush(stdout);
       }
    };
-   // Dev repro hook (?fraction=1): a 3/2 pad on the floor, for the stacked-fraction
-   // rendering (Ken: numerator and denominator drawn overlapping, the bar through them).
-   // Same creation path as the toolbox's own number stack (tools.cpp), value set through
-   // the engine's own text parser so the display state is exactly a player-made fraction.
+   // Dev repro hook (?fraction=1): Ken's exact #65 recipe. The MATH_NOTEBOOK's "Fraction"
+   // page (pad.cpp) is a 3/2 pad with style (FALSE,FALSE,FALSE); Ken took a copy out of
+   // the notebook and dropped a typed "100^"/"1000^" pad on it. The pad must first
+   // DISPLAY as "3/2" (sizing its font for 3 characters) before the power is applied --
+   // that stale font state is what a fresh big-value pad never has -- so the power is
+   // applied a few seconds later through the engine's own drop-arithmetic path.
    if (EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; })) {
-      NUMBER *num = new NUMBER(0L,0,0);
-      // ?fraction=1           -> 2/3 (no decimal form, so the stacked-fraction path MUST run)
-      // ?fraction=1&fracbig=1 -> the 51-digit-per-line monster from Ken's screenshot: the
-      //                          shrink-and-grow fraction display, which spilled past the
-      //                          pad's right edge unless the pad sat at the app's left edge.
-      boolean big = EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('fracbig=1') >= 0) ? 1 : 0; }) != 0;
-      char frac_text[128];
-      strcpy(frac_text,"2/3");
-      boolean ok = num->set_value_as_string(frac_text,(int)strlen(frac_text));
-      num->set_current_style(FALSE,FALSE,FALSE);    // pure num/den display: no integer part,
-                                                    // no decimal even when 2^k divides 10^k
-      if (big) {
-         // Ken's exact case, built the way his was: a fraction pad whose value becomes
-         // (3/2)^100 -- keeping the pad's FRACTION display format (a parsed long string
-         // reformats itself as a shrinking decimal instead, which is a different path).
-         NumberValue *v = num->pointer_to_value();
-         rational_pointer rv;
-         v->rational_value(rv);
-         mpz_ui_pow_ui(mpq_numref(rv),3,100);
-         mpz_ui_pow_ui(mpq_denref(rv),2,100);
+      // The Fraction page pad, exactly as pad.cpp:4672 builds it.
+      NUMBER *page_pad = new NUMBER();
+      char frac_text[16];
+      strcpy(frac_text,"3/2");
+      boolean ok = page_pad->set_value_as_string(frac_text,3,TT_UNDETERMINED_NUMBER_FORMAT,TRUE);
+      page_pad->set_current_style(FALSE,FALSE,FALSE);
+      // ?fflags=abc overrides the page style (integer_and_fraction / decimal_if_pow10 /
+      // shrinking_decimal) for experiments; without it this is the notebook's own 000.
+      {
+         int ff = EM_ASM_INT({
+            var m = (typeof location !== 'undefined') && location.search.match(/fflags=([01])([01])([01])/);
+            return m ? (16 + (m[1]|0)*4 + (m[2]|0)*2 + (m[3]|0)) : -1;
+         });
+         if (ff >= 0) page_pad->set_current_style((ff&4)!=0,(ff&2)!=0,(ff&1)!=0);
       };
-      num->update_text_and_widths(TRUE);
+      // Take-out = copy (Number::copy carries the style flags across).
+      NUMBER *num = (NUMBER *) page_pad->copy();
       num->set_to_good_size(tt_toolbox);
       floor->add_item(num, TRUE, TRUE);
       num->now_on_floor(floor, NULL);
@@ -2417,6 +2443,19 @@ void Programmer::em_enter_bootstrap_house() {
       printf("[tt] fraction: set='%s' ok=%d llx=%ld W=%ld H=%ld cw=%ld ch=%ld\n", frac_text, (int)ok,
              (long)num->current_llx(), (long)num->current_width(), (long)num->current_height(),
              (long)num->return_character_width(), (long)num->return_character_height()); fflush(stdout);
+      // ?fracexp=N (or legacy ?fracbig=1 = 100): drop an "N^" pad on it after 3.5s of
+      // real display frames, via tt_frac_apply_pow below.
+      int exponent = EM_ASM_INT({
+         if (typeof location === 'undefined') return 0;
+         var m = location.search.match(/fracexp=([0-9]+)/);
+         if (m) return parseInt(m[1]);
+         return location.search.indexOf('fracbig=1') >= 0 ? 100 : 0;
+      });
+      if (exponent > 0) {
+         tt_frac_pow_target = num;
+         tt_frac_pow_exponent = exponent;
+         EM_ASM({ setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); });
+      };
    };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages
    // are infinite stacks). Ken's take-out of an Examples robot trapped, so copy every page item
