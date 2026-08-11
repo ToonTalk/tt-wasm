@@ -2457,6 +2457,33 @@ void Programmer::em_enter_bootstrap_house() {
          EM_ASM({ setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); });
       };
    };
+   // ?ttfile=NAME loads /toontalk/weblabs/NAME.tt onto the floor -- the same
+   // sprite_from_file_name() path winmain's WM_USER+FILE_FOR_CLIPBOARD_MESSAGE_ID uses when
+   // a .tt file is double-clicked natively. Used to check that 2003-05 WebLabs student
+   // programs (Ken's cardinality study) still load in the port.
+   {
+      char tt_name[128];
+      int got = EM_ASM_INT({
+         if (typeof location === 'undefined') return 0;
+         var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)'));
+         if (!m) return 0;
+         stringToUTF8('/toontalk/weblabs/' + m[1] + '.tt', $0, 120);
+         return 1;
+      }, tt_name);
+      if (got) {
+         boolean aborted = FALSE;
+         Sprite *loaded = sprite_from_file_name(tt_name, aborted, NULL, NULL);
+         printf("[tt] ttfile: '%s' sprite=%p kind=%d aborted=%d\n", tt_name, (void*)loaded,
+                loaded ? (int)loaded->kind_of() : -1, (int)aborted); fflush(stdout);
+         if (loaded != NULL) {
+            floor->add_item(loaded, TRUE, TRUE);
+            loaded->now_on_floor(floor, NULL);
+            loaded->move_to(9*tile_width, 9*tile_height);
+            printf("[tt] ttfile: placed W=%ld H=%ld\n",
+                   (long)loaded->current_width(), (long)loaded->current_height()); fflush(stdout);
+         };
+      };
+   };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages
    // are infinite stacks). Ken's take-out of an Examples robot trapped, so copy every page item
    // of the page-6 Examples notebook directly and let the trap point at the culprit.
