@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Putting ToonTalk back on its feet — the story of a port</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚁</text></svg>">
 <meta name="description" content="What it took to move ToonTalk, a Windows program for children who program, into a browser tab — the failures, the challenges, and what works now.">
 <style>
   :root {
@@ -200,7 +201,9 @@
     <p class="eyebrow">A restoration diary</p>
     <h1>Putting ToonTalk back on its feet</h1>
     <p class="standfirst">A programming environment for children, written for Windows and left behind by it, now runs in a browser tab. Almost none of the work was in the part you can see.</p>
-    <p class="byline">On the porting of ToonTalk to WebAssembly · 92 commits between 5 July and 2 August 2026</p>
+    <p class="byline">On the porting of ToonTalk to WebAssembly · 267 commits between 5 July and 11 August 2026</p>
+    <p class="byline"><a href="https://toontalk.github.io/tt-wasm/">Play it in your browser</a> ·
+       <a href="https://docs.google.com/document/d/1BLeINnjCbSp2iL4qPa00osr8iuGCbyHUGVUND7ke5iM/edit?usp=sharing">the author's own account of the project</a></p>
   </div>
 </header>
 
@@ -281,22 +284,62 @@
       <li>Full screen reproduces the original's mouse behaviour, which needs the browser to hand over the pointer entirely.</li>
       <li>Time travel works: the buttons appear when you move the mouse and drift away when you stop, Escape freezes a demo and leaves the controls up, and a second Escape offers to resume, hand you the controls, or leave.</li>
       <li>Marty, the Martian who gives advice, speaks aloud again — through the browser's speech synthesiser, standing in for the one the original used.</li>
+      <li>Time travel is complete: sessions record themselves into checkpoints as you play, the tape-recorder buttons jump between them and replay from any point, you can take over from the past, and a whole session can be saved as a demo file and replayed later.</li>
+      <li>Fractions display as fractions again — a three over a bar over a two — which turned out to be the best story of the port, told below.</li>
+      <li>And Marty can now be given a mind: connect an AI of your choice and ask him anything, out loud if you like. That story is below too.</li>
     </ul>
+    <p>It is public. Anyone with a desktop browser can play at
+       <a href="https://toontalk.github.io/tt-wasm/">toontalk.github.io/tt-wasm</a>.</p>
     <p>One thing was deliberately allowed to differ from the original: subtitles now step aside for the time-travel controls instead of being painted over by them. In the original the two simply overlap, and that was only tolerable because the buttons hide themselves after a few seconds. Marty's voice is <em class="term">not</em> such a divergence — he was synthesised in the original too, so the port swaps one speech synthesiser for another.</p>
   </section>
 
   <section>
     <p class="eyebrow">Still open</p>
     <h2>What isn't finished</h2>
-    <p>An honest list, because a restoration is never quite done:</p>
+    <p>An honest list, because a restoration is never quite done. Everything on the previous version of this list has since been closed — there is an opening screen now, the button letter fits, the vibration is gone — and the current one reads:</p>
     <ul class="plain">
-      <li>Occasionally a nest is heard going into a box without being seen to go in, though the world afterwards is correct — the action happened, the picture of it was dropped.</li>
-      <li>Subtitles in full screen look coarse, and letters that hang below the line get clipped.</li>
-      
-      <li>A letter on one of the characters' buttons doesn't fit inside it.</li>
-      <li>There is no menu yet for choosing a demo or starting free play; you name a demo in the address bar.</li>
-      <li>A faint vibration remains in the landed helicopter.</li>
+      <li>After jumping to a time-travel checkpoint, the first frame shown can be a stale or half-drawn one until play resumes.</li>
+      <li>Once, after time travel ended, a bird drew at many times her proper size; it has not been reproduced since.</li>
+      <li>Resuming recording after browsing the past cuts the next checkpoint shorter than it should be — faithful to the original's arithmetic, possibly, which is its own kind of question.</li>
+      <li>Subtitles in full screen still look coarser than they should.</li>
+      <li>The room interior has small fidelity gaps against the original — floor texture noise, a dark pad.</li>
     </ul>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">The port's own worst bug</p>
+    <h2>The feature that ate its recordings</h2>
+    <p>Time travel produced the one genuine data-loss bug of the project, and it was not in the twenty-year-old code. It was in the port's newest addition: the button that saves your session as a file. Saving is supposed to close the current recording segment and open the next one. But if you had jumped <em class="term">back</em> in time first, “the next segment” was one that already existed — and saving quietly wrote over it. A tester lost the very stretch of play he was trying to keep: the numbers in the console showed a thirteen-kilobyte checkpoint replaced by a five-kilobyte one, restamped with the previous segment's clock.</p>
+    <p>The fix is one honest condition — only advance the recording when you are standing at its newest point — and the verification was pleasingly brutal: record nine segments, jump back to seven, save, and then check every byte of all nine against what the console reported when they were written. Nothing was touched. But the episode earned a permanent place in the project's notes, because it is the cautionary tale about restorations: the original code had decades to have its mistakes found. The port's additions have had weeks.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">An enhancement, kept at arm's length</p>
+    <h2>Marty gets a mind</h2>
+    <p>Marty the Martian has always been the helper — he floats beside you, comments on what you pick up, and answers the help key with canned advice. The port now lets you connect a real language model to him: Claude, OpenAI, Gemini, or the small model built into desktop Chrome, which needs no account at all. You type to him, or talk to him, and he answers in a couple of spoken sentences.</p>
+    <p>Two decisions shaped it. First, <strong>the faithful page stays faithful</strong>: the AI lives on a separate page, generated from the same source, so the restoration and the enhancement can never contaminate each other. Second, <strong>Marty reads the manual rather than the internet</strong>: his knowledge is compiled from the documentation that shipped in the box — two hundred odd pages of it — plus the engine's own help strings, so he speaks about ToonTalk in ToonTalk's own words. And because he lives inside the program, the engine tells him where you are and what you are holding. Ask <em class="term">what's in my pocket?</em> and he knows, because the same code that describes things in his speech balloons describes them to the AI.</p>
+
+    <div class="report">
+      <p>“can you tell what's in my pocket?” — “You have a truck in your pocket. If you want, I can tell you what a truck does in ToonTalk.”</p>
+      <span class="who">First live exchange, 11 August</span>
+    </div>
+
+    <p>When a model answers wrongly — one insisted a robot must be trained before a truck will accept it, which is not true — the correction goes into a rulings file that outranks everything else Marty reads. The author red-pens the AI the way he red-pens everything.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">The best bug</p>
+    <h2>The mistake that was load-bearing</h2>
+    <p>Fractions came out wrong: the number squashed onto the number below it, the dividing bar struck through both. The layout code looked fine. The font code looked fine. Measurement settled it — the engine was drawing 36-pixel digits on lines it had spaced 22 pixels apart.</p>
+    <p>The cause was twenty years old. When the original asks Windows for a font, it converts its measurements into <em class="term">points</em>, the printer's unit — but the interface it calls actually wants <em class="term">pixels</em>. So for the program's whole life, every font came out three-quarters of the intended size. Nobody ever noticed, because the code <em class="term">measures</em> the text it gets and lays everything out from the measurement. The mistake was invisible — and every margin, every fudge factor, every stacked fraction was quietly tuned around it.</p>
+    <p>The port's font code, written carefully from the documentation, performed the conversion <em class="term">correctly</em> — and that is what broke the fractions. Being right where the original was wrong is a porting bug. The fix was to reproduce the original's misunderstanding, at which point the self-measuring layout snapped back into the shape it had held since the nineties: numerator, clear bar, denominator, with the original's own margins.</p>
+    <p>It is the purest example of the project's founding rule. The original is the specification — including its accidents.</p>
   </section>
 
   <div class="divider"><div class="studs"></div></div>
@@ -315,6 +358,9 @@
   <div class="wrap">
     <p><span class="swatch"></span>The red on this page is <code>#AB0519</code> — palette entry 171, 5, 25, taken from ToonTalk's own time-travel buttons.</p>
     <p>Written from the port's commit history and test reports. <a href="port-notes.html">A companion page</a> covers the same ground for a technical reader.</p>
+    <p><a href="https://toontalk.github.io/tt-wasm/">Play ToonTalk in your browser</a> ·
+       <a href="https://docs.google.com/document/d/1BLeINnjCbSp2iL4qPa00osr8iuGCbyHUGVUND7ke5iM/edit?usp=sharing">the author's account of the porting project</a> ·
+       <a href="https://github.com/ToonTalk/tt-wasm">source</a></p>
   </div>
 </footer>
 

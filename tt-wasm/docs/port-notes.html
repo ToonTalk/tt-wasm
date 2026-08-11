@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToonTalk to WebAssembly — engineering notes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
 <meta name="description" content="Porting ~210k lines of 2004 Win32/DirectX C++ to WebAssembly: the shim boundary, the failure modes, nine case studies, and what is still open.">
 <style>
   :root {
@@ -248,16 +249,18 @@
   <div class="wrap">
     <p class="kicker">Engineering notes</p>
     <h1>ToonTalk on WebAssembly</h1>
-    <p class="standfirst">Moving a 2004 Win32/DirectX C++ application into the browser without rewriting it: where the seam was cut, which failure modes dominate, and nine bugs worth the retelling.</p>
+    <p class="standfirst">Moving a 2004 Win32/DirectX C++ application into the browser without rewriting it: where the seam was cut, which failure modes dominate, and the bugs worth the retelling.
+    <br><a href="https://toontalk.github.io/tt-wasm/">The running app</a> ·
+    <a href="https://docs.google.com/document/d/1BLeINnjCbSp2iL4qPa00osr8iuGCbyHUGVUND7ke5iM/edit?usp=sharing">the author's account of the project</a></p>
 
     <div class="stats">
       <div class="stat"><span class="stat-value">~210k</span><span class="stat-label">Lines of C++ kept</span></div>
       <div class="stat"><span class="stat-value">67</span><span class="stat-label">Translation units</span></div>
       <div class="stat"><span class="stat-value">37</span><span class="stat-label">Replacement headers</span></div>
-      <div class="stat"><span class="stat-value">9</span><span class="stat-label">Shim implementations</span></div>
-      <div class="stat"><span class="stat-value">100</span><span class="stat-label">Functional JS overrides</span></div>
-      <div class="stat"><span class="stat-value">256</span><span class="stat-label">Zero-stubs</span></div>
-      <div class="stat"><span class="stat-value">92</span><span class="stat-label">Commits</span></div>
+      <div class="stat"><span class="stat-value">14</span><span class="stat-label">Shim implementations</span></div>
+      <div class="stat"><span class="stat-value">117</span><span class="stat-label">Functional JS overrides</span></div>
+      <div class="stat"><span class="stat-value">235</span><span class="stat-label">Zero-stubs</span></div>
+      <div class="stat"><span class="stat-value">267</span><span class="stat-label">Commits</span></div>
     </div>
   </div>
 </header>
@@ -298,7 +301,7 @@
   <section>
     <h2>Failure mode one — stubs that report success</h2>
     <div class="prose">
-      <p>The link runs with <code>-sERROR_ON_UNDEFINED_SYMBOLS=0</code>. This is not optional: the engine imports hundreds of Win32 entry points, most of which are irrelevant in a browser, and demanding an implementation for each would stall the port indefinitely. The build therefore generates a zero-returning JavaScript stub for every import not implemented in the shim — currently 258 of them, against 96 hand-written functional overrides.</p>
+      <p>The link runs with <code>-sERROR_ON_UNDEFINED_SYMBOLS=0</code>. This is not optional: the engine imports hundreds of Win32 entry points, most of which are irrelevant in a browser, and demanding an implementation for each would stall the port indefinitely. The build therefore generates a zero-returning JavaScript stub for every import not implemented in the shim — currently 235 of them, against 117 hand-written functional overrides, and the ratio shifts a little further toward the overrides with every month of testing.</p>
       <p>The cost is that the compiler's most valuable guarantee is switched off, and it is replaced by two much worse ones. A stub that is <em>called through a vtable</em> traps at runtime as <code>null function</code> — noisy, but at least it stops. A stub that is <em>called directly</em> returns 0, and 0 is the success code for most of Win32, <code>S_OK</code> for COM, and <code>Ok</code> for GDI+. It does not fail. It reports that it succeeded.</p>
     </div>
     <div class="callout">
@@ -532,6 +535,64 @@
   </section>
 
   <section>
+    <h2>Failure mode three — the original's own accidents are part of the specification</h2>
+    <div class="prose">
+      <p>The first two failure modes were about the port being wrong. August contributed a third: the port being <em>right</em> where the original was wrong, which under this project's rule is also a port bug — and much harder to suspect.</p>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Symptom</dt><dd>Stacked fractions overlap; the bar strikes through</dd>
+        <dt>Found by</dt><dd>Instrumenting TextOut, not by reading layout code</dd>
+      </dl>
+      <div class="case-body">
+        <h3>lfHeight is pixels, and has been misread since the nineties</h3>
+        <p>The engine's <code>set_font</code> multiplies its pixel cell by −72/96, believing it converts to points. <code>LOGFONT::lfHeight</code> is in logical units — pixels under <code>MM_TEXT</code> — so on real Windows every font came out three-quarters of the layout cell, for the program's entire life. Invisibly: the engine <em>measures</em> the text it gets (<code>digit_height_to_character_height</code> comes from a live <code>get_extent_size</code> of the digit “0”) and tunes its layout from the measurement, so twenty years of margins and fudge factors quietly encoded the mistake.</p>
+        <p>The shim performed the conversion correctly, drawing 4/3-size glyphs. Single lines self-corrected through the measure-and-fit loops; the stacked fraction, whose line pitch comes from the same measurements, could not. A temporary print in <code>TextOut</code> settled it in one run: 36-pixel cells drawn on a 22-pixel pitch. Taking <code>|lfHeight|</code> as pixels made the same scene draw 27-pixel cells on a 30-pixel pitch, and the self-measuring layout snapped back to the original's own proportions everywhere at once.</p>
+        <p>Two companion fixes in the same family: glyph ink anchors at GDI's baseline geometry (ascent 0.9 of the cell, matching Arial's real tables) rather than centred in the cell — which is what places the fraction bar, an underscore, in the descent zone <em>under</em> the numerator where <code>number.cpp</code> draws it — and the raster buffer now carries descent room below the cell, because GDI happily inks below the line and the engine's layout depends on it.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Area</dt><dd>Time travel</dd>
+        <dt>Severity</dt><dd>The port's one data-loss bug</dd>
+      </dl>
+      <div class="case-body">
+        <h3>The archive that overwrote itself</h3>
+        <p>Not in the original's code: in the port's own <code>tt_finish_time_travel_archive()</code>, added so the page can offer a session as a download. It called <code>close_log_and_open_next()</code> unconditionally — and after the user has jumped <em>back</em> in time, “the next” segment already exists on disk. A tester's segment went from 13,181 bytes to 5,389, restamped with the previous segment's clock. The guard is one comparison — only advance when <code>current == youngest</code> — and the verification was byte-level: nine segments recorded, a jump back to seven, a save, and every log and city snapshot checked against the size the console reported when it was written.</p>
+        <p>Same lesson as the sound case above, sharpened: a compensation must respect the contract of the machinery it sits inside, and the port's additions are the least-tested code in the building.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Area</dt><dd>Input</dd>
+        <dt>Shape</dt><dd>One invariant, five bugs</dd>
+      </dl>
+      <div class="case-body">
+        <h3>The mouse mode must be derived, never assigned</h3>
+        <p>The engine has a relative mouse mode (deltas, original full-screen behaviour) and an absolute one (pen and tablet support, which the browser resembles). The port's recurring mistake was setting the mode to a constant at transition points — end of a demo, exit from time travel, taking over recording — when the only correct value is <em>whatever the pointer-lock state actually is</em>. Every variant produced the same signature: a hand that jams against an edge or snaps to the wrong place. The eventual fix checks lock-versus-mode on every mouse move, two integers compared, which closed the class rather than the instance. Two adjacent traps: a key <em>release</em> swallowed by a text box strands the key down engine-side (Alt-Tab's blur handler was “fixing” this for one tester), and JavaScript-initiated pointer-lock exits must be marked, or the shell's Escape-forwarding helpfully delivers an Escape nobody pressed.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Area</dt><dd>Harness</dd>
+        <dt>Cause</dt><dd>An abort that poisoned the runtime</dd>
+      </dl>
+      <div class="case-body">
+        <h3>The headless harness died and nobody noticed</h3>
+        <p>Adding browser-storage persistence (IDBFS) silently killed the node test harness: under node there is no <code>indexedDB</code>, the mount's first sync <em>aborts</em> the Emscripten runtime, and an aborted runtime fails every later call while the harness pumps a dead module. The boot log even said <code>persist: loaded</code>, because the JavaScript side caught the error and carried on. Guarding the mount on <code>indexedDB</code> existing revived the harness — which mattered the same day, because the fraction fix above was verified with its framebuffer dumps.</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>The month also delivered the port's first enhancement, kept deliberately outside the restoration: an optional page where Marty is backed by a language model (Claude, OpenAI, Gemini, or Chrome's built-in Nano). The engineering worth noting: the enhanced page is <em>generated from the same source</em> as the faithful one, so they cannot drift; Marty's knowledge is compiled from the shipped 264-page manual plus the engine's own help strings, placed in a prompt-cached system block so each question costs a fraction of a cent; and a gated engine export built on the same <code>describe()</code> machinery as his speech balloons tells the model where the player is and what is in their hand — so “what's in my pocket?” is answered from ground truth, not inference. Author-confirmed rulings live in a small file that outranks the manual, which is how wrong answers get corrected permanently.</p>
+    </div>
+  </section>
+
+  <section>
     <h2>Open</h2>
     <div class="scroller">
       <table>
@@ -539,11 +600,12 @@
           <tr><th scope="col">Item</th><th scope="col">Current understanding</th></tr>
         </thead>
         <tbody>
-          <tr><td>Mouse unresponsive after training or standing up, windowed</td><td>Almost certainly the windowed pointer-lock capture added for mouse resolution; <code>?pointerlock=0</code> disables it while this is diagnosed.</td></tr>
-          <tr><td>Nest into box not drawn</td><td>Sound fires and later state is correct, so the model performed the operation and only the frame was dropped. An earlier attribution to the pacing skip was retracted; still needs its own measurement.</td></tr>
+          <tr><td>Stale first frame after a time-travel jump</td><td>The frame shown at a checkpoint can be half-drawn until play resumes. A one-cycle "fix" replayed log events and moved the user off the checkpoint; reverted. <code>City::display_region</code> deferring work is the live hypothesis.</td></tr>
+          <tr><td>Giant bird after time travel</td><td>Seen once: a bird drawn at many times her size after a replay ended (<code>birdgo rf=0</code>). Not reproduced since.</td></tr>
+          <tr><td>Runt segment after browsing the past</td><td>Resuming recording leaves <code>next_log</code> unchanged, so the next checkpoint is cut short. The arithmetic may be faithful to the original — in which case it is a question, not a bug.</td></tr>
+          <tr><td>Fullscreen subtitles coarse</td><td>Better since the real font engine and the descent-room fix, but the fullscreen upscale still shows.</td></tr>
+          <tr><td>Room-interior fidelity</td><td>Floor stud noise and a dark pad against the original's look.</td></tr>
           <tr><td>Colours snapped to 256 entries</td><td>The port reports an 8-bit display because the artwork is 8-bit. Sprite art is therefore exact, but anything drawn as a true RGB colorref is snapped, where the original at 32-bit is not. Deferred deliberately.</td></tr>
-          <tr><td>Recorded sessions cannot be replayed yet</td><td>Per-segment city snapshots (<code>city000NN.cty</code>) are not being produced, and a replay needs one per segment to jump. Recording, saving and downloading all work.</td></tr>
-          <tr><td>Residual helicopter vibration</td><td>Frame-decode registration in the <code>.us1</code> resource path.</td></tr>
         </tbody>
       </table>
     </div>
@@ -556,6 +618,9 @@
   <div class="wrap">
     <p>Compiled from the port's commit history, in-engine probes and test reports. Commit hashes refer to the <span class="mono">tt-wasm</span> repository.</p>
     <p><a href="port-story.html">A companion page</a> tells the same story without the implementation detail.</p>
+    <p><a href="https://toontalk.github.io/tt-wasm/">The running app</a> ·
+       <a href="https://docs.google.com/document/d/1BLeINnjCbSp2iL4qPa00osr8iuGCbyHUGVUND7ke5iM/edit?usp=sharing">the author's account of the porting project</a> ·
+       <a href="https://github.com/ToonTalk/tt-wasm">source</a></p>
   </div>
 </footer>
 
