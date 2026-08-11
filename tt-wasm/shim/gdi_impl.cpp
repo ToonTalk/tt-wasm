@@ -356,8 +356,15 @@ EM_JS(int, tt_text_raster, (const unsigned short *text, int len, int cell_h, int
      * now -- but a SINGLE character keeps the ink-centring in its cw cell: the number display
      * lays digits on its own fixed cell grid (number.cpp places each digit at i*character_width),
      * and drawing a lone digit at the origin of that cell put it back 10px left of centre. */
-    var base = cell_h / 2 + (asc - desc) / 2;
-    if (base - asc < 0) base = asc;
+    /* GDI TA_TOP geometry, NOT ink-centring: the baseline hangs tmAscent (4/5 of the
+     * cell, exactly what GetTextMetricsA reports) below the cell top. Low-ink glyphs
+     * are why this matters: number.cpp draws the fraction bar as '_' IN THE NUMERATOR'S
+     * OWN CELL, relying on underscore ink living in the descent zone BELOW the digits;
+     * centring floated the bar to mid-cell (striking through the numerator) and slid
+     * digit ink down enough that stacked numerator/denominator overlapped (Ken's 3/2
+     * screenshots). Full-height glyphs move barely at all, so pad digits stay put. */
+    var base = cell_h * 0.8;
+    if (base < asc) base = asc;
     if (base + desc > cell_h) base = cell_h - desc;
     var originX = 0;
     if (len === 1 && cell_w > 0) {
@@ -460,8 +467,19 @@ HFONT CreateFontIndirectA(const LOGFONTA *lf) {
     GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_FONT;
     int h = lf ? (lf->lfHeight < 0 ? -lf->lfHeight : lf->lfHeight) : 0;
     int w = lf ? (lf->lfWidth  < 0 ? -lf->lfWidth  : lf->lfWidth ) : 0;
-    o->font_h = (h * 96 + 36) / 72; if (o->font_h < 1) o->font_h = 12;   /* LOGFONT points -> ~pixels */
-    o->font_w = (w * 96 + 36) / 72; if (o->font_w < 1) o->font_w = o->font_h / 2;
+    /* lfHeight is in LOGICAL UNITS -- pixels under MM_TEXT -- not points. The engine's
+     * set_font (winmain.cpp:5548) multiplies its pixel cell by -72/96 believing it is
+     * converting to points, so on real Windows every font came out 3/4 of the layout
+     * cell and EVERYTHING was tuned around that: number.cpp measures the digit extent
+     * and derives digit_height_to_character_height (~0.75) from it, and the stacked
+     * fraction pitch (0.6ch numerator step... the whole constant zoo) only clears when
+     * the glyphs really are that size. This shim used to "correct" the units back
+     * (x96/72), drawing 4/3-size glyphs whose measured extents made dh2ch=1.0 -- single
+     * lines self-compensated through the measure-fit loops, but the fraction stack
+     * overlapped exactly as Ken's 3/2 screenshots show (36px cells on a 22px pitch).
+     * Report and draw what GDI would: |lfHeight| pixels. */
+    o->font_h = h; if (o->font_h < 1) o->font_h = 12;
+    o->font_w = w; if (o->font_w < 1) o->font_w = o->font_h / 2;
     /* FIXED_PITCH is how the original GUARANTEES a fit: set_font(width,height,TRUE,TRUE) sizes a
      * monospace face so every glyph -- W included -- advances exactly lfWidth, and place_character
      * hands it the whole button box. Rendering everything proportional made W ~1.7x the average

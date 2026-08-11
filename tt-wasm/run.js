@@ -1,7 +1,8 @@
 // Node test harness: emscripten's fps=0 main loop uses requestAnimationFrame,
 // which node lacks — polyfill it with setTimeout so frames pump headlessly.
 // (In the real browser target, the native rAF drives it.)
-if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=1" };
+// TT_FLOOR=1 as before; TT_FLOOR='1&fraction=1' (etc.) passes extra dev-hook params through
+if (process.env.TT_FLOOR) globalThis.location = { search: "?floor=" + process.env.TT_FLOOR };
 // TT_DEMO=<name>: replay a recorded .dmo demo (build/demos/<name>.dmo), same path as ?demo= in the browser
 if (process.env.TT_DEMO) globalThis.location = { search: "?demo=" + process.env.TT_DEMO };
 if (process.env.TT_COPYROBOTS) globalThis.location = { search: "?floor=1&copyrobots=1" + (process.env.TT_ROBOTPAGE ? "&robotpage=" + process.env.TT_ROBOTPAGE : "") + (process.env.TT_SUBPAGE ? "&subpage=" + process.env.TT_SUBPAGE : "") + (process.env.TT_RUNROBOT ? "&runrobot=1" : "") };

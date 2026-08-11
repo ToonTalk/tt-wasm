@@ -464,6 +464,7 @@
         globalThis.TT_pauseAnswer(1);
       } else {
         hidePanel();              // plain Ctrl+M chat: game was live; the click acts in-game too
+        relockIfFullscreen();     // this click is the gesture the fullscreen relock needs
       }
     }, true);
   }
@@ -487,11 +488,26 @@
     panel.hidden = true;
     globalThis.TT_chatFreeze = false;      // hand follows the cursor again
   }
+  function relockIfFullscreen() {
+    // Closing the chat during LIVE fullscreen play must take the capture back itself:
+    // pre.js's takeLock deliberately excludes fullscreen (wantLock), so without this the
+    // engine stayed in absolute mode -- "the hand is no longer tracking, I can click a
+    // goal to move to" (Ken); standing up re-locked via the fullscreen Esc path, which
+    // is why stand-and-sit repaired it. Must run inside the user's click/keystroke.
+    if (!document.fullscreenElement) return;
+    var c = document.getElementById('ttcanvas');
+    if (c && c.requestPointerLock && document.pointerLockElement !== c) {
+      try { var p = c.requestPointerLock(); if (p && p['catch']) p['catch'](function () {}); }
+      catch (e) {}
+    }
+  }
   function closePanel() {
     hidePanel();
     if (state.resumeChooser !== null && globalThis.TT_demoPause) {
       var kind = state.resumeChooser; state.resumeChooser = null;
       globalThis.TT_demoPause(kind);
+    } else {
+      relockIfFullscreen();
     }
   }
   function openPanel() {
