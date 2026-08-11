@@ -2388,16 +2388,25 @@ void Programmer::em_enter_bootstrap_house() {
    // the engine's own text parser so the display state is exactly a player-made fraction.
    if (EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; })) {
       NUMBER *num = new NUMBER(0L,0,0);
-      char frac_text[8]; strcpy(frac_text,"2/3");        // 2/3: no decimal form, so the stacked-fraction path MUST run
-      boolean ok = num->set_value_as_string(frac_text,3);
-      num->set_shrinking_decimal_notation(FALSE);   // display as 2/3, not 0.666...
+      // ?fraction=1           -> 2/3 (no decimal form, so the stacked-fraction path MUST run)
+      // ?fraction=1&fracbig=1 -> the 51-digit-per-line monster from Ken's screenshot: the
+      //                          shrink-and-grow fraction display, which spilled past the
+      //                          pad's right edge unless the pad sat at the app's left edge.
+      boolean big = EM_ASM_INT({ return (typeof location !== 'undefined' && location.search.indexOf('fracbig=1') >= 0) ? 1 : 0; }) != 0;
+      char frac_text[128];
+      strcpy(frac_text, big
+         ? "480806636890455259752144365965422032752148167664920/186267320948425049060001810561404811705533607443750"
+         : "2/3");
+      boolean ok = num->set_value_as_string(frac_text,(int)strlen(frac_text));
+      num->set_shrinking_decimal_notation(FALSE);   // display as a fraction, not a decimal
       num->update_text_and_widths(TRUE);
       num->set_to_good_size(tt_toolbox);
       floor->add_item(num, TRUE, TRUE);
       num->now_on_floor(floor, NULL);
-      num->move_to(10*tile_width, 8*tile_height);
-      printf("[tt] fraction: set='2/3' ok=%d W=%ld H=%ld cw=%ld ch=%ld\n", (int)ok,
-             (long)num->current_width(), (long)num->current_height(),
+      // Deliberately NOT at the left edge: the spill only happens when llx > 0.
+      num->move_to(12*tile_width, 10*tile_height);
+      printf("[tt] fraction: set='%s' ok=%d llx=%ld W=%ld H=%ld cw=%ld ch=%ld\n", frac_text, (int)ok,
+             (long)num->current_llx(), (long)num->current_width(), (long)num->current_height(),
              (long)num->return_character_width(), (long)num->return_character_height()); fflush(stdout);
    };
    // Dev crash-repro hook (?copyrobots=1): taking an item off a notebook page copies it (pages

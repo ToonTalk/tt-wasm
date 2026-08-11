@@ -61,6 +61,21 @@ struct DDPalette : public IDirectDrawPalette {
 };
 
 /* ------------------------------------------------------------- clipper */
+/* Live horizontal clip shared with the GDI rasterizer (gdi_impl.cpp reads these through
+ * pointers). On Windows, GDI drawing through a DirectDraw surface DC honours the surface's
+ * attached clipper, and the engine leans on that: Number/Sprite display updates the clip
+ * per sprite via MainWindow::set_clip_region -> clipper->SetClipList WHILE the frame's DC
+ * is held, so the GetDC-time SelectClipRgn fallback never fires mid-frame. The old stub
+ * returned DD_OK and dropped the list -- Ken's giant fraction drew its digits straight
+ * past the pad's face (correct only when the pad's left edge sat at x=0).
+ * X ONLY, deliberately: the engine's two SetClipList call sites disagree about the y
+ * convention (winmain.cpp:5219 passes raw city lly/ury, :4623 passes flipped device rows)
+ * while left/right mean the same thing in both. Horizontal spill is the observed bug;
+ * the vertical band stays unclipped until a symptom earns the archaeology. */
+extern "C" int  tt_clip_left, tt_clip_right;
+extern "C" char tt_clip_active;
+int  tt_clip_left = 0, tt_clip_right = 0;
+char tt_clip_active = 0;
 struct DDClipper : public IDirectDrawClipper {
     ULONG rc;
     DDClipper() : rc(1) {}
@@ -68,7 +83,16 @@ struct DDClipper : public IDirectDrawClipper {
     ULONG   AddRef() { return ++rc; }
     ULONG   Release() { if (rc && --rc == 0) { delete this; return 0; } return rc; }
     HRESULT SetHWnd(DWORD, HWND) { return DD_OK; }
-    HRESULT SetClipList(LPRGNDATA, DWORD) { return DD_OK; }
+    HRESULT SetClipList(LPRGNDATA rgn, DWORD) {
+        if (rgn) {
+            RECT *r = (RECT *)((unsigned char *)rgn + sizeof(RGNDATAHEADER));
+            tt_clip_left = r->left; tt_clip_right = r->right;
+            tt_clip_active = 1;
+        } else {
+            tt_clip_active = 0;
+        }
+        return DD_OK;
+    }
 };
 
 /* ------------------------------------------------------------- surface */
@@ -78,6 +102,7 @@ static void tt_present_surface(DDSurface *s);
 /* GDI rasterizer (shim/gdi_impl.cpp): a surface DC draws onto these 8bpp pixels. */
 extern "C" HDC gdi_create_surface_dc(unsigned char *pixels, int w, int h);
 extern "C" void gdi_release_surface_dc(HDC hdc);
+extern "C" void gdi_dc_honor_live_clip(HDC hdc);
 
 struct DDSurface : public IDirectDrawSurface {
     DWORD w, h;
@@ -85,10 +110,11 @@ struct DDSurface : public IDirectDrawSurface {
     DDCOLORKEY colorKey; boolean hasColorKey;
     DDPalette *palette;
     DDSurface *attachedBack;        /* flip chain (exclusive mode) */
+    boolean clipperAttached;        /* engine attached the (one) clipper: its DCs honour it */
     ULONG rc;
 
     DDSurface(DWORD w_, DWORD h_) : w(w_ ? w_ : 1), h(h_ ? h_ : 1),
-        hasColorKey(0), palette(NULL), attachedBack(NULL), rc(1) {
+        hasColorKey(0), palette(NULL), attachedBack(NULL), clipperAttached(0), rc(1) {
         pixels = (unsigned char *)calloc((size_t)w * h, 1);
         colorKey.dwColorSpaceLowValue = colorKey.dwColorSpaceHighValue = 0;
     }
@@ -208,7 +234,16 @@ struct DDSurface : public IDirectDrawSurface {
         return DDERR_NOTFOUND;
     }
     HRESULT GetCaps(LPDDSCAPS caps) { if (caps) caps->dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; return DD_OK; }
-    HRESULT GetDC(HDC *lphDC) { if (lphDC) *lphDC = gdi_create_surface_dc(pixels, (int)w, (int)h); return DD_OK; }
+    HRESULT GetDC(HDC *lphDC) {
+        if (lphDC) {
+            *lphDC = gdi_create_surface_dc(pixels, (int)w, (int)h);
+            /* On Windows, GDI through a surface DC honours the ATTACHED clipper, and the
+             * engine updates that clipper per sprite while the DC is held -- work pages
+             * have no clipper and must stay unclipped (they compose at their own origin). */
+            if (clipperAttached) gdi_dc_honor_live_clip(*lphDC);
+        }
+        return DD_OK;
+    }
     HRESULT GetPalette(LPDIRECTDRAWPALETTE *out) { *out = palette; if (palette) { palette->AddRef(); return DD_OK; } return DDERR_NOPALETTEATTACHED; }
     HRESULT GetPixelFormat(LPDDPIXELFORMAT pf) {
         if (pf) { memset(pf, 0, sizeof(*pf)); pf->dwSize = sizeof(*pf); pf->dwFlags = DDPF_RGB | DDPF_PALETTEINDEXED8; pf->dwRGBBitCount = 8; }
@@ -226,9 +261,9 @@ struct DDSurface : public IDirectDrawSurface {
             printf("[tt] surface Unlock #%d %ux%u primary=%d nonzero=%ld\n", n, w, h, this == g_primary, nz); fflush(stdout); n++; }
         return DD_OK;
     }
-    HRESULT SetClipper(LPDIRECTDRAWCLIPPER) { return DD_OK; }
+    HRESULT SetClipper(LPDIRECTDRAWCLIPPER c) { clipperAttached = (c != NULL); return DD_OK; }
 #else
-    HRESULT SetClipper(LPDIRECTDRAWCLIPPER) { return DD_OK; }
+    HRESULT SetClipper(LPDIRECTDRAWCLIPPER c) { clipperAttached = (c != NULL); return DD_OK; }
 #endif
     HRESULT SetColorKey(DWORD, LPDDCOLORKEY k) { if (k) { colorKey = *k; hasColorKey = 1; } return DD_OK; }
     HRESULT SetPalette(LPDIRECTDRAWPALETTE p) {

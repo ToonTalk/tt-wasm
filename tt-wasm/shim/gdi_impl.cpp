@@ -61,6 +61,11 @@ struct GdiObj {
     bool font_fixed;              /* FIXED_PITCH: every glyph advances exactly font_w */
 };
 
+/* Live horizontal clip from the DirectDraw clipper (ddraw_impl.cpp) -- see
+ * gdi_dc_honor_live_clip below for the semantics. */
+extern "C" int  tt_clip_left, tt_clip_right;
+extern "C" char tt_clip_active;
+
 struct GdiDC {
     unsigned char *pixels; int w, h;   /* target (surface, or a selected bitmap for a memory DC) */
     bool owns_surface_ref;             /* surface DC: don't free pixels */
@@ -68,6 +73,7 @@ struct GdiDC {
     int cur_x, cur_y;                  /* MoveToEx */
     int brush_org_x, brush_org_y;
     RECT clip; bool has_clip;
+    bool live_clip;                 /* honour the DirectDraw clipper's current x-band */
     unsigned char text_index, bk_index; int bk_mode;
 };
 
@@ -121,6 +127,7 @@ static unsigned char colorref_to_index(COLORREF c) {
 static inline void put(GdiDC *dc, int x, int y, unsigned char idx) {
     if (!dc->pixels || x < 0 || y < 0 || x >= dc->w || y >= dc->h) return;
     if (dc->has_clip && (x < dc->clip.left || x >= dc->clip.right || y < dc->clip.top || y >= dc->clip.bottom)) return;
+    if (dc->live_clip && tt_clip_active && (x < tt_clip_left || x >= tt_clip_right)) return;
     dc->pixels[y * dc->w + x] = idx;   /* top-down: surface row 0 = top scanline (matches DDraw + present) */
 }
 static inline unsigned char get(GdiDC *dc, int x, int y) {
@@ -720,7 +727,13 @@ COLORREF SetTextColor(HDC hdc, COLORREF c) { GdiDC *dc = (GdiDC *)hdc; unsigned 
 BOOL     SetBrushOrgEx(HDC hdc, int x, int y, LPPOINT pt) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; if (pt) { pt->x = dc->brush_org_x; pt->y = dc->brush_org_y; } dc->brush_org_x = x; dc->brush_org_y = y; return 1; }
 
 HRGN CreateRectRgn(int l, int t, int r, int b) { GdiObj *o = new GdiObj(); memset(o, 0, sizeof(*o)); o->kind = OBJ_REGION; o->rgn.left = l; o->rgn.top = t; o->rgn.right = r; o->rgn.bottom = b; return (HRGN)o; }
-int  SelectClipRgn(HDC hdc, HRGN hrgn) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; GdiObj *o = (GdiObj *)hrgn; if (o) { dc->clip = o->rgn; dc->has_clip = true; } else dc->has_clip = false; return 1; }
+/* The DirectDraw clipper's live horizontal band (ddraw_impl.cpp): on Windows, GDI on a
+ * surface DC is clipped by the surface's ATTACHED clipper, updated per sprite while the
+ * DC is held. Marked per-DC by gdi_dc_honor_live_clip so work pages stay unclipped. */
+extern "C" void gdi_dc_honor_live_clip(HDC hdc) { GdiDC *dc = (GdiDC *)hdc; if (dc) dc->live_clip = true; }
+int  SelectClipRgn(HDC hdc, HRGN hrgn) { GdiDC *dc = (GdiDC *)hdc; if (!dc) return 0; GdiObj *o = (GdiObj *)hrgn; if (o) { dc->clip = o->rgn; dc->has_clip = true;
+    printf("[tt] clipsel: %d,%d..%d,%d\n", (int)o->rgn.left, (int)o->rgn.top, (int)o->rgn.right, (int)o->rgn.bottom); /* TEMP */
+  } else dc->has_clip = false; return 1; }
 
 UINT     RealizePalette(HDC) { return 0; }
 HPALETTE SelectPalette(HDC, HPALETTE, BOOL) { return (HPALETTE)0; }
