@@ -70,7 +70,12 @@
     font: inherit; font-size: 12px; color: #d7d7e4; background: #2a2a3a;
     border: 1px solid #44445a; border-radius: 5px; padding: 3px 10px; cursor: pointer;
   }
-  .panehead button:hover { background: #34344a; }
+  .panehead button:hover, .panehead a.hbtn:hover { background: #34344a; }
+  .panehead a.hbtn {
+    font: inherit; font-size: 12px; color: #d7d7e4; background: #2a2a3a; text-decoration: none;
+    border: 1px solid #44445a; border-radius: 5px; padding: 3px 10px; cursor: pointer;
+  }
+  .panehead a.hbtn[hidden] { display: none; }
   .panehead button.go { background: #7a1020; border-color: #99162a; color: #fff; }
   .panehead button.go:hover { background: #99162a; }
   iframe { flex: 1; width: 100%; border: 0; background: #fff; }
@@ -135,6 +140,8 @@
                   title="The worksheet exactly as it was written, for printing">Printed page</button>
         </div>
         <span class="spacer"></span>
+        <a id="getpdf" class="hbtn" download title="Download this sheet as a PDF to keep or print">⤓ PDF</a>
+        <button type="button" id="printsheet" title="Print this sheet">🖨 Print</button>
         <button type="button" id="openraw" title="Open this sheet in its own tab">Open in a tab ↗</button>
       </div>
       <div class="matbar" id="matbar" hidden></div>
@@ -155,6 +162,7 @@
   </div>
 </main>
 
+<script src="sheets/pdfs.js"></script>
 <script>
 // The activity sequence (v8, the revision tested in Oxford and Bulgaria in 2005). Titles and
 // aims are the sequence document's own; each entry names the worksheet Word produced and the
@@ -241,19 +249,18 @@ var fmt = 'html';            // 'html' (reads on screen) or 'pdf' (the printed p
 // somewhere else entirely once the pane reflows. The site's own pages were HTML to begin
 // with and have no PDF; for those the toggle is hidden.
 function sheetURL(a) {
-  // hasPDF, not the group: this had its own copy of the old kind test, which is what actually
-  // served Resort Infinity a PDF that was never built (Ken's 404) and denied the activity
-  // sequence the one it has.
-  if (fmt === 'pdf' && hasPDF(a) && a.file.slice(-4) === '.htm') {
-    return SHEETS + 'pdf/' + encodeURIComponent(a.file.slice(0, -4) + '.pdf') + '#view=FitH';
-  }
+  if (fmt === 'pdf' && hasPDF(a)) return pdfURL(a) + '#view=FitH';
   return SHEETS + encodeURIComponent(a.file);
 }
-// Only the worksheets Word converted have a printed page. Keyed off the entry itself, not
-// its group: Resort Infinity moved from Tools into the activities and started offering a
-// PDF that was never built (a 404 in the pane, Ken 2026-08-12), while the activity
-// sequence -- which does have one -- had its toggle hidden for sitting with the teachers.
-function hasPDF(a) { return !a.site; }
+function pdfURL(a) { return SHEETS + 'pdf/' + encodeURIComponent(a.file.slice(0, -4) + '.pdf'); }
+// Which sheets have a printed page comes from sheets/pdfs.js, which build-sheets.py generates
+// by LOOKING at the pdf folder. Deciding it from the entry's group is what served Resort
+// Infinity a 404 and hid the activity sequence's own PDF (Ken, 2026-08-12) -- and the rule was
+// duplicated here and in sheetURL, so fixing one left the other wrong.
+function hasPDF(a) {
+  return !!(a.file.slice(-4) === '.htm' &&
+            typeof SHEET_PDFS !== 'undefined' && SHEET_PDFS[a.file]);
+}
 
 // ?freeplay=1 is the app's own opening flow with the chooser skipped: the usual name-and-head
 // dialog, aimed at free play. The pane deliberately has NO name handling of its own -- an
@@ -280,6 +287,15 @@ function show(a) {
   current = a;
   sheet.src = sheetURL(a);
   document.getElementById('fmt').style.visibility = hasPDF(a) ? '' : 'hidden';
+  // Take it away on paper: the PDF is the printable copy, so offer it as a download for every
+  // sheet that has one -- the worksheets AND the teacher pages (Ken: no way to download and
+  // print the guide or the student tasks).
+  var get = document.getElementById('getpdf');
+  get.hidden = !hasPDF(a);
+  if (!get.hidden) {
+    get.href = pdfURL(a);
+    get.setAttribute('download', a.file.slice(0, -4) + '.pdf');
+  }
   document.getElementById('sheettitle').textContent =
     (a.kind === 'act' && a.n ? 'Activity ' + a.n + ' — ' : '') + a.title;
   Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
@@ -332,7 +348,17 @@ function loadMaterial(name, label) {
       : (label || name) + ' has arrived on the floor';
     if (current) show(current);
   } else {
-    note.textContent = 'ToonTalk is still starting up — try again in a moment';
+    // Say WHICH not-ready this is. Before the name dialog is answered the engine has not
+    // been told to start at all, and "still starting up" reads as a delay you can wait out
+    // (Ken, 2026-08-12). Ask the pane whether its dialog is still up.
+    var waitingForName = false;
+    try {
+      var ld = tt.contentDocument && tt.contentDocument.getElementById('lname');
+      waitingForName = !!(ld && !ld.hidden);
+    } catch (e) {}
+    note.textContent = waitingForName
+      ? 'First type your name and pick a head in the ToonTalk pane — then load this.'
+      : 'ToonTalk is still starting up — try again in a moment';
   }
   return ret;
 }
@@ -395,6 +421,17 @@ document.getElementById('matbar').addEventListener('click', function (e) {
 });
 document.getElementById('openraw').addEventListener('click', function () {
   if (current) window.open(sheetURL(current), '_blank');
+});
+// Print what is showing. A same-origin iframe can be told to print itself, which prints just
+// the sheet rather than the whole three-pane page; Chrome's PDF viewer honours it too, so
+// this works in either format.
+document.getElementById('printsheet').addEventListener('click', function () {
+  try {
+    sheet.contentWindow.focus();
+    sheet.contentWindow.print();
+  } catch (e) {
+    if (current) window.open(sheetURL(current), '_blank');   // popup blockers aside, still printable
+  }
 });
 document.getElementById('fmt').addEventListener('click', function (e) {
   var b = e.target.closest('button');
