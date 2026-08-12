@@ -2316,6 +2316,33 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_frac_apply_pow() {
           (long)num->current_width(),
           (long)num->return_character_width(), (long)num->return_character_height()); fflush(stdout);
 }
+// Hand one of the Infinity activity's ToonTalk files to the RUNNING world: the same
+// sprite_from_file_name() the double-click path uses, delivered the way that path delivers it
+// (tt_add_sprite_when_on_floor, which the floor's own react() picks up a frame later and puts
+// in the programmer's hand). Loading this way instead of restarting the page is the point --
+// the learner keeps everything they have already built.
+// The name arrives through a JS global rather than as a string argument so that no runtime
+// string helpers have to be exported from the build.
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
+   char name[64];
+   if (!EM_ASM_INT({
+         var n = globalThis.TT_pendingLoad;
+         if (!n || !(new RegExp('^[A-Za-z0-9_.-]+$')).test(n)) return 0;
+         stringToUTF8(n, $0, 60);
+         return 1;
+       }, name)) return 0;
+   char path[160];
+   sprintf(path, "/toontalk/infinity/%s.tt", name);
+   boolean aborted = FALSE;
+   Sprite *loaded = sprite_from_file_name(path, aborted, NULL, NULL);
+   printf("[tt] loadfile: '%s' sprite=%p aborted=%d\n", path, (void*)loaded, (int)aborted);
+   fflush(stdout);
+   if (loaded == NULL) return 0;
+   tt_add_sprite_when_on_floor = loaded;
+   tt_add_sprite_when_on_floor_but_wait_a_frame = TRUE;
+   return 1;
+}
+
 // WASM new-user bootstrap: drop the programmer straight onto a house's floor (the interactive
 // workspace — notebook, toolbox, robot, cubby) instead of leaving them on open city ground after
 // the fly-in. Mirrors the XML-restore path (HOUSE_LOCATION_TAG then PROGRAMMER_AT_FLOOR_TAG).

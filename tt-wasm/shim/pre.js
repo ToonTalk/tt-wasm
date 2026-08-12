@@ -1460,6 +1460,17 @@ Module['preRun'].push(function () {
       return UTF8ToString(Module['_tt_marty_context']()) || '';
     } catch (e) { return ''; }
   };
+  // Put one of the Infinity activity's ToonTalk files into the world that is already running,
+  // for the activities page's "load what this activity needs" buttons. Returns false if the
+  // engine is not up yet or the file is not one of the staged ones, so the caller can say so
+  // rather than looking like it did nothing.
+  globalThis.TT_loadMaterial = function (name) {
+    try {
+      if (!globalThis.TT_loop_alive || !Module['_tt_load_pending_file']) return false;
+      globalThis.TT_pendingLoad = name;
+      return !!Module['_tt_load_pending_file']();
+    } catch (e) { return false; }
+  };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
   globalThis.TT_dumpErr = function () {

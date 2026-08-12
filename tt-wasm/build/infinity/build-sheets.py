@@ -41,17 +41,64 @@ HEAD = ('<!doctype html><html><head><meta charset="windows-1252">'
         '<title>%s</title><link rel="stylesheet" href="sheet.css"></head><body>')
 
 
+EMPTY_P = r"<p class=MsoNormal[^>]*>(?:<span style='[^']*'>)?&nbsp;(?:</span>)?</p>"
+
+
 def clean_word_html(h):
-    """Undo the two things Word's filtered HTML does that a reflowing pane cannot honour."""
-    # 1. Floating pictures: position:absolute + margin-left/top measured from Word's page.
-    #    Put them back in the flow at their anchor, which is where they were anchored anyway.
+    """Turn Word's print layout into something a reflowing reading pane can honour."""
+    # 1. Floating pictures carry position:absolute plus offsets measured from Word's page.
+    #    The VERTICAL offset is the harmful one -- it is counted from wherever the anchoring
+    #    paragraph happens to land, so it throws the picture a page away once text reflows.
+    #    Drop that and let the picture sit at its anchor; keep margin-left, which still says
+    #    which side of the page it belongs on (the two Martys under their two balloons).
     h = re.sub(r"position:absolute;?", "", h)
     h = re.sub(r"z-index:-?\d+;?", "", h)
-    h = re.sub(r"margin-left:\d+px;\s*margin-top:\d+px;?", "", h)
+    h = re.sub(r"margin-top:-?\d+px;?", "", h)
+
+    # 1b. A paragraph holding several of those pictures is a ROW of them -- the two Martys
+    #     under the two balloons. Their margin-left said which side of the page each belonged
+    #     on; kept as margins they simply push the second one onto its own line, so the
+    #     paragraph becomes a flex row that spreads them out instead, in left-to-right order.
+    def float_row(m):
+        inner = m.group(1)
+        if inner.count("<img") < 2 or "margin-left:" not in inner:
+            return m.group(0)
+        # Word wraps its output, so "<span" and "style=" are often on different lines.
+        parts = re.findall(r"<span\s+style='[^']*margin-left:-?\d+px[^']*'>.*?</span>",
+                           inner, re.S)
+        if len(parts) < 2:
+            return m.group(0)
+        spans = [re.search(r"margin-left:(-?\d+)px", p).group(1) for p in parts]
+        order = sorted(range(len(parts)), key=lambda i: int(spans[i]))
+        body = "".join(re.sub(r"margin-left:-?\d+px;?", "", parts[i]) for i in order)
+        return '<p class="floatrow">%s</p>' % body
+    h = re.sub(r"<p class=MsoNormal[^>]*>(.*?)</p>", float_row, h, flags=re.S)
     # 2. The empty 16pt paragraphs Word inserts to reserve the space those floats occupied.
     #    Without the floats they are just a screenful of nothing. Collapse runs of them.
-    empty_p = (r"(?:<p class=MsoNormal><span style='[^']*'>&nbsp;</span></p>\s*){3,}")
-    h = re.sub(empty_p, "<p class=MsoNormal>&nbsp;</p>\n", h)
+    h = re.sub(r"(?:%s\s*){3,}" % EMPTY_P, "<p class=MsoNormal>&nbsp;</p>\n", h)
+
+    # 3. The bordered boxes. On paper these are two different things that look alike: a
+    #    CHALLENGE/CLAIM to read, and a question followed by ruled space to write an answer in.
+    #    On screen the writing space is just a hole (Ken, 2026-08-12), so the empty paragraphs
+    #    come out and the box is marked up as something to think about instead.
+    def box(m):
+        inner = m.group(1)
+        blanks = len(re.findall(EMPTY_P, inner))
+        inner = re.sub(EMPTY_P, "", inner)
+        return '<div class="%s">%s</div>' % ("think" if blanks >= 2 else "callout", inner)
+    # Non-greedy to the first </div>: these boxes hold paragraphs, never another box.
+    h = re.sub(r"<div style='border:solid[^']*'>(.*?)</div>", box, h, flags=re.S)
+
+    # 4. A row of pictures Word laid out for an 8.5in page is wider than this pane, and the
+    #    pictures sit against each other with no whitespace, so there is nothing for the line
+    #    to break at -- the row spills off both edges. Marked so it can wrap.
+    def img_row(m):
+        return ('<p class="imgrow">%s</p>' % m.group(1)) if m.group(1).count("<img") >= 2 \
+               else m.group(0)
+    h = re.sub(r"<p class=MsoNormal[^>]*>(.*?)</p>", img_row, h, flags=re.S)
+
+    # 5. Word's export carries its own <style>; ours has to come after it to win.
+    h = h.replace("</head>", '<link rel="stylesheet" href="sheet.css"></head>', 1)
     return h
 
 

@@ -14,6 +14,17 @@ img { max-width: 100%; height: auto; }
 table { max-width: 100%; }
 a { color: #7a1020; }
 
+/* Word laid a row of pictures out for an 8.5in page and left no whitespace between them, so
+   in a narrower pane there is no break opportunity and the row spills off both edges. */
+p.imgrow { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+           gap: 6px 10px; }
+/* The freed floating pictures (the Martys under their speech balloons), spread across the
+   width the way their page positions had them. */
+p.floatrow {
+  display: flex; justify-content: space-around; align-items: flex-start;
+  gap: 12px; margin: 4px 0 12px;
+}
+
 /* .tt links in the original pages became load buttons -- but several of those links wrap a
    screenshot of the program rather than text, and a picture inside a red button reads as a
    broken image (Ken, 2026-08-11). Those keep the picture and just get a hover cue. */
@@ -25,3 +36,18 @@ a[data-load]:not(.imgload) {
 a[data-load]:not(.imgload):hover { background: #99162a; }
 a.imgload { display: inline-block; border: 2px solid transparent; border-radius: 4px; }
 a.imgload:hover { border-color: #7a1020; }
+
+/* The worksheets' bordered boxes. A CHALLENGE or CLAIM is something to read; a question
+   trailed by ruled space was somewhere to write on paper, and on screen becomes a prompt
+   to think about and talk over instead of an empty rectangle. */
+.callout, .think {
+  border: 0; border-left: 4px solid #7a1020; border-radius: 0 6px 6px 0;
+  background: #f6f2f3; margin: 18px 0; padding: 12px 16px;
+}
+.think { border-left-color: #1c6b52; background: #f0f6f3; }
+.think::before {
+  content: "Think about it";
+  display: block; font: 600 11px/1 system-ui, sans-serif; letter-spacing: .08em;
+  text-transform: uppercase; color: #1c6b52; margin-bottom: 8px;
+}
+.callout p, .think p { margin: 6px 0; }

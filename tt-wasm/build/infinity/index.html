@@ -75,6 +75,25 @@
   .panehead button.go:hover { background: #99162a; }
   iframe { flex: 1; width: 100%; border: 0; background: #fff; }
   #tt { background: #0d0d14; }
+  .panehead input {
+    font: inherit; font-size: 12px; color: #ececf4; background: #12121b;
+    border: 1px solid #44445a; border-radius: 5px; padding: 3px 7px;
+  }
+
+  /* what this activity needs in ToonTalk, offered where the activity is */
+  .matbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 7px 10px; background: #101018; border-bottom: 1px solid #33334a;
+    font-size: 12px; color: #9d9db4;
+  }
+  .matbar[hidden] { display: none; }
+  .matbar button {
+    font: inherit; font-size: 12px; color: #fff; background: #7a1020;
+    border: 1px solid #99162a; border-radius: 5px; padding: 3px 10px; cursor: pointer;
+  }
+  .matbar button:hover { background: #99162a; }
+  .matbar button.done { background: #1c6b52; border-color: #2b8a6c; }
+  .matbar button.done::before { content: "✓ "; }
 
   /* view modes: the pane toggle just hides one side */
   body[data-view="sheet"] #ttpane { display: none; }
@@ -109,22 +128,26 @@
       <div class="panehead">
         <strong id="sheettitle">Overview</strong>
         <div class="seg" id="fmt" role="group" aria-label="Sheet format">
-          <button type="button" data-fmt="pdf" aria-pressed="true"
-                  title="The worksheet exactly as it was written">Page</button>
-          <button type="button" data-fmt="html"
-                  title="Reflows to fit the pane; some pictures move">Text</button>
+          <button type="button" data-fmt="html" aria-pressed="true"
+                  title="Reads on screen: fits the pane, and the boxes that were writing space
+                         on paper become things to think about">Read</button>
+          <button type="button" data-fmt="pdf"
+                  title="The worksheet exactly as it was written, for printing">Printed page</button>
         </div>
         <span class="spacer"></span>
         <button type="button" id="openraw" title="Open this sheet in its own tab">Open in a tab ↗</button>
       </div>
+      <div class="matbar" id="matbar" hidden></div>
       <iframe id="sheet" title="Activity sheet"></iframe>
     </section>
     <section class="pane" id="ttpane">
       <div class="panehead">
         <strong>ToonTalk</strong>
-        <span id="ttnote">the robots for every activity are in the notebook on the floor</span>
+        <label for="who" style="color:#9d9db4">Your name</label>
+        <input id="who" size="10" placeholder="NoName" autocomplete="off">
+        <button type="button" id="whogo" title="Start ToonTalk under this name, so your work is saved under it">Use</button>
         <span class="spacer"></span>
-        <button type="button" id="ttreload" title="Start over with this activity's materials">Reload materials</button>
+        <span id="ttnote"></span>
         <button type="button" class="go" id="ttfull" title="Give ToonTalk the whole window">Full width</button>
       </div>
       <iframe id="tt" title="ToonTalk"
@@ -140,10 +163,6 @@
 // loaded by the engine's own sprite_from_file_name() via ?ttfile=.
 var SHEETS = 'sheets/';
 var ACTIVITIES = [
-  { id: 'overview', kind: 'doc', title: 'The activity sequence',
-    blurb: 'Aims, setting and assessment for all eight activities',
-    file: 'cardinality_activity_sequence_v8.htm' },
-
   { id: 'a1', kind: 'act', n: 1, title: 'The even numbers, two ways',
     blurb: 'A proper subset that is still the same size',
     file: 'Cardinality_Activity_1.htm', res: 'Cardinality1to8' },
@@ -155,7 +174,9 @@ var ACTIVITIES = [
     file: 'Cardinality_Activity_3.htm', res: 'Cardinality1to8' },
   { id: 'a4', kind: 'act', n: 4, title: 'All fractions between 0 and 1',
     blurb: 'The obvious enumerations fail; this one works',
-    file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8',
+    also: [['NoCopies', 'Remove duplicate fractions'],
+           ['no_box_copies', 'Remove duplicate boxes']] },
   { id: 'a5', kind: 'act', n: 5, title: 'Rational numbers greater than 1',
     blurb: 'Reciprocals — and a one-to-one map falls out of it',
     file: 'Cardinality_Activity_5.htm', res: 'Cardinality1to8' },
@@ -167,7 +188,8 @@ var ACTIVITIES = [
     file: 'Cardinality_Activity_7.htm', res: 'Cardinality1to8' },
   { id: 'a8', kind: 'act', n: 8, title: 'Counting sequences',
     blurb: "Cantor's diagonal, built out of robots",
-    file: 'Cardinality_Activity_8.htm', res: 'Diagonal' },
+    file: 'Cardinality_Activity_8.htm', res: 'Cardinality1to8',
+    also: [['Diagonal', 'The Diagonal team']] },
   { id: 'extra4', kind: 'act', title: 'Extra task for activity 4',
     blurb: 'A further fractions challenge',
     file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8' },
@@ -185,6 +207,9 @@ var ACTIVITIES = [
     blurb: "Hilbert's hotel as a city of five problems",
     file: 'resort_infinity.htm' },
 
+  { id: 'overview', kind: 'teach', title: 'The activity sequence',
+    blurb: 'Aims, setting and assessment for all eight activities',
+    file: 'cardinality_activity_sequence_v8.htm' },
   { id: 'guide', kind: 'teach', title: 'Teacher guidance',
     blurb: 'How to run the sessions', file: 'guidance.htm' },
   { id: 'guide2', kind: 'teach', title: 'More guidance',
@@ -195,16 +220,19 @@ var ACTIVITIES = [
     blurb: 'Galileo to Cantor, in brief', file: 'historical_note.htm' }
 ];
 
+// Learner first: the eight activities are what this page is for. The activity-sequence
+// document is a researcher's document about them, so it sits with the teacher material.
 var GROUPS = [
-  ['Start here', 'doc'], ['The eight activities', 'act'],
-  ['Tools', 'tool'], ['For teachers', 'teach']
+  ['The eight activities', 'act'], ['Tools', 'tool'], ['For teachers', 'teach']
 ];
 
 var sheet = document.getElementById('sheet');
 var tt = document.getElementById('tt');
 var current = null;          // the activity showing in the sheet pane
-var ttLoaded = null;         // which resource ToonTalk was last started with
-var fmt = 'pdf';             // 'pdf' (as written) or 'html' (reflows)
+var ttLoaded = null;         // material ToonTalk was started with, if any
+var ttUser = null;           // the name the engine is running under
+var ttStarted = false;       // has the engine been up long enough to have work in it
+var fmt = 'html';            // 'html' (reads on screen) or 'pdf' (the printed page)
 
 // The worksheets exist in both forms. Word's PDF keeps the page they were written on --
 // which matters, because these sheets position speech balloons over the Martys saying them,
@@ -221,8 +249,21 @@ function hasPDF(a) { return a.kind !== 'tool' && a.kind !== 'teach'; }
 
 function ttURL(res) {
   // ?floor=1 puts the programmer straight on a house floor with the toolbox and notebook --
-  // no launcher, no demo -- and ?ttfile= drops the activity's materials there with them.
-  return '../tt.html?floor=1' + (res ? '&ttfile=' + encodeURIComponent(res) : '');
+  // no launcher, no demo. Materials are loaded on demand once it is running, so ?ttfile= is
+  // only used to carry one across a restart.
+  return '../tt.html?floor=1' + (ttUser ? '&user=' + encodeURIComponent(ttUser) : '') +
+         (res ? '&ttfile=' + encodeURIComponent(res) : '');
+}
+
+// What each activity needs, named the way the sheets name it. An activity lists only what it
+// is the FIRST to need -- the notebook of robots at activity 1, the duplicate remover at
+// activity 4, the Diagonal team at activity 8 -- because everything loaded earlier is still
+// there. Loading puts the material into the running world; nothing restarts.
+function materials(a) {
+  var m = [];
+  if (a.res) m.push([a.res, a.res === 'Cardinality1to8' ? 'The activity notebook' : a.res]);
+  (a.also || []).forEach(function (x) { m.push(x); });
+  return m;
 }
 
 function show(a) {
@@ -234,24 +275,41 @@ function show(a) {
   Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
     b.setAttribute('aria-current', b.dataset.id === a.id ? 'true' : 'false');
   });
+
   // Switching sheets deliberately does NOT touch the ToonTalk pane: the engine takes a while
-  // to load and the learner's own work is in there. Materials are (re)loaded only on request.
-  var note = document.getElementById('ttnote');
-  if (a.res && ttLoaded !== a.res) {
-    note.innerHTML = 'this activity uses <b>' + a.res + '</b> — press Reload materials to fetch it';
-  } else if (a.res) {
-    note.textContent = a.res + ' is on the floor';
-  } else {
-    note.textContent = '';
-  }
+  // to load and the learner's own work is in there.
+  var bar = document.getElementById('matbar'), mats = materials(a);
+  if (!mats.length) { bar.hidden = true; return; }
+  bar.hidden = false;
+  bar.innerHTML = '<span>For this activity you need:</span>';
+  mats.forEach(function (m) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.file = m[0];
+    b.textContent = (loaded[m[0]] ? '' : 'Load ') + m[1];
+    if (loaded[m[0]]) b.className = 'done';
+    b.title = loaded[m[0]] ? 'Already in ToonTalk — load another copy'
+                           : 'Put ' + m[0] + '.tt into ToonTalk, in your hand';
+    bar.appendChild(b);
+  });
 }
 
-function loadMaterials(res) {
-  if (ttLoaded && !confirm('Restart ToonTalk with these materials?\n\n' +
-                           'Anything you have built in the ToonTalk pane will be lost.')) return;
-  ttLoaded = res;
-  tt.src = ttURL(res);
-  if (current) show(current);
+// Which files have been handed over this session, so the buttons can say so.
+var loaded = {};
+
+function loadMaterial(name, label) {
+  var w = tt.contentWindow, ok = false;
+  try { ok = w && typeof w.TT_loadMaterial === 'function' && w.TT_loadMaterial(name); }
+  catch (e) { ok = false; }
+  var note = document.getElementById('ttnote');
+  if (ok) {
+    loaded[name] = true;
+    note.textContent = (label || name) + ' is in your hand — drop it on the floor';
+    if (current) show(current);
+  } else {
+    note.textContent = 'ToonTalk is still starting up — try again in a moment';
+  }
+  return ok;
 }
 
 // ---- build the rail --------------------------------------------------------
@@ -299,9 +357,30 @@ document.querySelector('.seg').addEventListener('click', function (e) {
 document.getElementById('ttfull').addEventListener('click', function () {
   document.querySelector('.seg button[data-view="tt"]').click();
 });
-document.getElementById('ttreload').addEventListener('click', function () {
-  loadMaterials((current && current.res) || 'Cardinality1to8');
+document.getElementById('matbar').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-file]');
+  if (b) loadMaterial(b.dataset.file, b.textContent.replace(/^(Load |✓ )/, ''));
 });
+
+// The name. ?floor=1 goes straight to the floor and never shows the launcher's name dialog,
+// so the learner would always be NoName; ?user= gives the engine the same -n <name> the
+// dialog would have, and their work is saved under it. Changing it restarts ToonTalk, so it
+// asks first once there is something to lose.
+var who = document.getElementById('who');
+try { who.value = localStorage.getItem('TT_userName') || ''; } catch (e) {}
+function useName() {
+  var n = (who.value || '').replace(/[^A-Za-z0-9_]/g, '');
+  if (!n || n === ttUser) return;
+  if (ttStarted && !confirm('Start ToonTalk again as ' + n + '?\n\n' +
+                            'Anything you have built in the ToonTalk pane will be lost.')) return;
+  try { localStorage.setItem('TT_userName', n); } catch (e) {}
+  ttUser = n;
+  loaded = {};
+  tt.src = ttURL(ttLoaded);
+  if (current) show(current);
+}
+document.getElementById('whogo').addEventListener('click', useName);
+who.addEventListener('keydown', function (e) { if (e.key === 'Enter') useName(); });
 document.getElementById('openraw').addEventListener('click', function () {
   if (current) window.open(sheetURL(current), '_blank');
 });
@@ -325,14 +404,19 @@ sheet.addEventListener('load', function () {
     var a = e.target.closest('a[data-load]');
     if (!a) return;
     e.preventDefault();
-    loadMaterials(a.dataset.load);
+    loadMaterial(a.dataset.load);
   });
 });
 
 // ---- start -----------------------------------------------------------------
-show(ACTIVITIES[0]);
-ttLoaded = 'Cardinality1to8';
-tt.src = ttURL('Cardinality1to8');   // load the engine once, up front, so it is ready
+show(ACTIVITIES[0]);                 // activity 1, not the researchers' overview
+// A name remembered from a previous visit (the launcher stores the same key) is applied to
+// the engine straight away -- otherwise the box would show a name that was not in force.
+try { ttUser = (localStorage.getItem('TT_userName') || '').replace(/[^A-Za-z0-9_]/g, '') || null; }
+catch (e) {}
+tt.src = ttURL(null);                // start the engine now so it is ready when wanted;
+                                     // materials come later, on request
+tt.addEventListener('load', function () { setTimeout(function () { ttStarted = true; }, 4000); });
 </script>
 </body>
 </html>
