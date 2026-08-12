@@ -162,47 +162,50 @@ var SHEETS = 'sheets/';
 var ACTIVITIES = [
   { id: 'a1', kind: 'act', n: 1, title: 'The even numbers, two ways',
     blurb: 'A proper subset that is still the same size',
-    file: 'Cardinality_Activity_1.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_1.htm', res: 'Cardinality1to8.tt' },
   { id: 'a2', kind: 'act', n: 2, title: 'Combining sequences — part 1',
     blurb: 'Making all the integers, and counting them',
-    file: 'Cardinality_Activity_2.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_2.htm', res: 'Cardinality1to8.tt' },
   { id: 'a3', kind: 'act', n: 3, title: 'A variety of sequences',
     blurb: 'Every sequence you can build turns out to be countable',
-    file: 'Cardinality_Activity_3.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_3.htm', res: 'Cardinality1to8.tt' },
   { id: 'a4', kind: 'act', n: 4, title: 'All fractions between 0 and 1',
     blurb: 'The obvious enumerations fail; this one works',
-    file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8',
-    also: [['NoCopies', 'Remove duplicate fractions'],
-           ['no_box_copies', 'Remove duplicate boxes']] },
+    file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8.tt',
+    also: [['NoCopies.tt', 'Remove duplicate fractions'],
+           ['no_box_copies.tt', 'Remove duplicate boxes']] },
   { id: 'a5', kind: 'act', n: 5, title: 'Rational numbers greater than 1',
     blurb: 'Reciprocals — and a one-to-one map falls out of it',
-    file: 'Cardinality_Activity_5.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_5.htm', res: 'Cardinality1to8.tt' },
   { id: 'a6', kind: 'act', n: 6, title: 'Combining sequences — part 2',
     blurb: 'Merging to get all the rationals',
-    file: 'Cardinality_Activity_6.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_6.htm', res: 'Cardinality1to8.tt' },
   { id: 'a7', kind: 'act', n: 7, title: 'Rationals between any two numbers',
     blurb: 'Scale and shift the unit interval; density',
-    file: 'Cardinality_Activity_7.htm', res: 'Cardinality1to8' },
+    file: 'Cardinality_Activity_7.htm', res: 'Cardinality1to8.tt' },
   { id: 'a8', kind: 'act', n: 8, title: 'Counting sequences',
     blurb: "Cantor's diagonal, built out of robots",
-    file: 'Cardinality_Activity_8.htm', res: 'Cardinality1to8',
-    also: [['Diagonal', 'The Diagonal team']] },
+    file: 'Cardinality_Activity_8.htm', res: 'Cardinality1to8.tt',
+    also: [['Diagonal.tt', 'The Diagonal team']] },
   { id: 'extra4', kind: 'act', title: 'Extra task for activity 4',
     blurb: 'A further fractions challenge',
-    file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8' },
+    file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8.tt' },
 
   { id: 'tnotebook', kind: 'tool', title: 'The activity notebook',
     blurb: 'A notebook of notebooks — one page of robots per activity',
-    file: 'notebook.htm', res: 'Cardinality1to8' },
+    file: 'notebook.htm', res: 'Cardinality1to8.tt' },
   { id: 'tdiag', kind: 'tool', title: 'Diagonal tool',
     blurb: 'Feed it sequences and work out what it does (activity 8)',
-    file: 'diagonal.htm', res: 'Diagonal' },
+    file: 'diagonal.htm', res: 'Diagonal.tt' },
   { id: 'tnocopy', kind: 'tool', title: 'Remove duplicate fractions',
     blurb: '2/6 never gets past, because 1/3 already did (activity 4)',
-    file: 'no_copies.htm', res: 'NoCopies' },
+    file: 'no_copies.htm', res: 'NoCopies.tt' },
   { id: 'thotel', kind: 'tool', title: 'Resort Infinity',
     blurb: "Hilbert's hotel as a city of five problems",
-    file: 'resort_infinity.htm' },
+    file: 'resort_infinity.htm',
+    also: [['resort_infinity.xml.cty', 'The hotel city'],
+           ['resort_infinity_task1.tt', 'Hotel task 1'],
+           ['resort_infinity_task2.tt', 'Hotel task 2']] },
 
   { id: 'overview', kind: 'teach', title: 'The activity sequence',
     blurb: 'Aims, setting and assessment for all eight activities',
@@ -254,7 +257,7 @@ var TT_URL = '../tt.html?freeplay=1';
 // there. Loading puts the material into the running world; nothing restarts.
 function materials(a) {
   var m = [];
-  if (a.res) m.push([a.res, a.res === 'Cardinality1to8' ? 'The activity notebook' : a.res]);
+  if (a.res) m.push([a.res, a.res === 'Cardinality1to8.tt' ? 'The activity notebook' : a.res.replace(/\.(tt|xml\.cty)$/, '')]);
   (a.also || []).forEach(function (x) { m.push(x); });
   return m;
 }
@@ -291,18 +294,22 @@ function show(a) {
 var loaded = {};
 
 function loadMaterial(name, label) {
-  var w = tt.contentWindow, ok = false;
-  try { ok = w && typeof w.TT_loadMaterial === 'function' && w.TT_loadMaterial(name); }
-  catch (e) { ok = false; }
+  var w = tt.contentWindow, ret = 0;
+  try { ret = (w && typeof w.TT_loadMaterial === 'function') ? w.TT_loadMaterial(name) : 0; }
+  catch (e) { ret = 0; }
   var note = document.getElementById('ttnote');
-  if (ok) {
+  if (ret === 2) {          // a city: the load replaced the whole world
+    loaded[name] = true;
+    note.textContent = (label || name) + ' has been loaded — you are in it now';
+    if (current) show(current);
+  } else if (ret === 1) {   // an object: pending for the hand
     loaded[name] = true;
     note.textContent = (label || name) + ' is in your hand — drop it on the floor';
     if (current) show(current);
   } else {
     note.textContent = 'ToonTalk is still starting up — try again in a moment';
   }
-  return ok;
+  return ret;
 }
 
 // ---- build the rail --------------------------------------------------------

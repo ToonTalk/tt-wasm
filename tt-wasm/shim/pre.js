@@ -60,6 +60,25 @@ var TT_lut = new Uint32Array(256), TT_lutPal = new Uint8Array(1024), TT_lutValid
 var TT_little_endian = (function () {
   var b = new ArrayBuffer(4); new Uint32Array(b)[0] = 1; return new Uint8Array(b)[0] === 1;
 })();
+// Console policy (Ken: "by default only the most important information"): the port's [tt] probes
+// and the [present] framebuffer census stay available behind ?log=1 (?debug=1 also works), and
+// under node, where the harness greps stdout for them. By default a browser session logs only
+// what someone debugging a report would need first: failures, and the one-line load results.
+var TT_verbose = (typeof location === 'undefined') ||
+                 (typeof process !== 'undefined' && !!process.versions) ||
+                 /[?&](log|debug)=1/.test(typeof location !== 'undefined' ? location.search : '');
+globalThis.TT_verbose = TT_verbose;
+(function quietStdout() {
+  if (TT_verbose) return;
+  var important = /error|fail|abort|warn|missing|denied|cannot|corrupt/i;
+  var keep = /^\[tt\] (loadfile:|ttfile:|user:|engine)/;   // ttfile: not ttfiles:
+  Module['print'] = function (text) {
+    if (typeof text !== 'string') { console.log(text); return; }
+    if (text.lastIndexOf('[tt] ', 0) === 0 && !keep.test(text) && !important.test(text)) return;
+    console.log(text);
+  };
+  // stderr stays unfiltered: the engine only writes there when something is wrong.
+})();
 globalThis.TT_present_times = [];   // ring of recent present timestamps (for the ?fps=1 overlay)
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
@@ -73,13 +92,15 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
     pt.push(performance.now());
     if (pt.length > 120) pt.shift();
   }
-  if (TT_presents <= 3 || TT_presents % 300 === 0 || !globalThis.__ttDrew) {
+  // The pixel census costs a pass over the whole framebuffer; once the first non-blank frame
+  // has been seen it is only worth paying for when someone is watching (?log=1).
+  if (!globalThis.__ttDrew || (TT_verbose && (TT_presents <= 3 || TT_presents % 300 === 0))) {
     var nz = 0, mx = 0, histTop = {}, N = w * h;
     for (var i = 0; i < N; i++) { var v = HEAPU8[ptr + i]; if (v) { nz++; if (v > mx) mx = v; histTop[v] = (histTop[v] || 0) + 1; } }
     var top = Object.keys(histTop).sort(function (a, b) { return histTop[b] - histTop[a]; }).slice(0, 4)
       .map(function (k) { return k + 'x' + histTop[k]; }).join(',');
     if (nz > 0 && !globalThis.__ttDrew) { globalThis.__ttDrew = 1; console.log('[present] *** FIRST NON-BLANK FRAME at present #' + TT_presents + ' ***'); }
-    console.log('[present] #' + TT_presents + ' ' + w + 'x' + h + ' nonzero=' + nz + '/' + N + ' maxIdx=' + mx + ' topIdx=[' + top + ']');
+    if (TT_verbose) console.log('[present] #' + TT_presents + ' ' + w + 'x' + h + ' nonzero=' + nz + '/' + N + ' maxIdx=' + mx + ' topIdx=[' + top + ']');
   }
   if (typeof document === 'undefined') return;
   var c = document.getElementById('ttcanvas');
@@ -1461,15 +1482,16 @@ Module['preRun'].push(function () {
     } catch (e) { return ''; }
   };
   // Put one of the Infinity activity's ToonTalk files into the world that is already running,
-  // for the activities page's "load what this activity needs" buttons. Returns false if the
-  // engine is not up yet or the file is not one of the staged ones, so the caller can say so
-  // rather than looking like it did nothing.
+  // for the activities page's "load what this activity needs" buttons. `name` is the full file
+  // name, extension included -- resort_infinity.xml.cty is a CITY, not an object. Returns 0 if
+  // the engine is not up yet or the load failed, 1 for an object (now pending for the hand),
+  // 2 for a city (the world was replaced) -- so the caller can say what actually happened.
   globalThis.TT_loadMaterial = function (name) {
     try {
-      if (!globalThis.TT_loop_alive || !Module['_tt_load_pending_file']) return false;
+      if (!globalThis.TT_loop_alive || !Module['_tt_load_pending_file']) return 0;
       globalThis.TT_pendingLoad = name;
-      return !!Module['_tt_load_pending_file']();
-    } catch (e) { return false; }
+      return Module['_tt_load_pending_file']() | 0;
+    } catch (e) { return 0; }
   };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.

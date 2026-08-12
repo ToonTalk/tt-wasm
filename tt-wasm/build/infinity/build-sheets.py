@@ -42,6 +42,7 @@ HEAD = ('<!doctype html><html><head><meta charset="windows-1252">'
 
 
 EMPTY_P = r"<p class=MsoNormal[^>]*>(?:<span style='[^']*'>)?&nbsp;(?:</span>)?</p>"
+FLOATSPAN = r"<span\s+style='[^']*margin-left:-?\d+px[^']*'>.*?</span>"
 
 
 def clean_word_html(h):
@@ -49,30 +50,64 @@ def clean_word_html(h):
     # 1. Floating pictures carry position:absolute plus offsets measured from Word's page.
     #    The VERTICAL offset is the harmful one -- it is counted from wherever the anchoring
     #    paragraph happens to land, so it throws the picture a page away once text reflows.
-    #    Drop that and let the picture sit at its anchor; keep margin-left, which still says
-    #    which side of the page it belongs on (the two Martys under their two balloons).
     h = re.sub(r"position:absolute;?", "", h)
     h = re.sub(r"z-index:-?\d+;?", "", h)
     h = re.sub(r"margin-top:-?\d+px;?", "", h)
 
-    # 1b. A paragraph holding several of those pictures is a ROW of them -- the two Martys
-    #     under the two balloons. Their margin-left said which side of the page each belonged
-    #     on; kept as margins they simply push the second one onto its own line, so the
-    #     paragraph becomes a flex row that spreads them out instead, in left-to-right order.
+    # 1b. Activity 5 floats a speech balloon over the NEIGHBOURING table cell -- the one with
+    #     Marty in it. Word's export left the balloon in the text cell, where no amount of
+    #     styling puts it back over Marty. Move the balloon's picture into Marty's paragraph
+    #     (in front of him), where rule 1d lays the pair out as balloon-above-Marty. Word
+    #     helpfully labels balloon pictures alt="Speech Bubble: ...".
+    def across_cells(mm):
+        tr = mm.group(0)
+        b = re.search(r"<span\s+style='[^']*margin-left:[^']*'>\s*"
+                      r"(<img[^>]*alt=\"Speech Bubble[^>]*>)\s*</span>", tr, re.S)
+        if not b:
+            return tr
+        rest = tr[:b.start()] + tr[b.end():]
+        marty = re.search(r"<p class=MsoNormal[^>]*>()(?=(?:(?!</p>).)*margin-left)", rest, re.S)
+        if not marty:
+            return tr
+        at = marty.end(1)
+        return rest[:at] + b.group(1) + rest[at:]
+    h = re.sub(r"<tr>.*?</tr>", across_cells, h, flags=re.S)
+
+    # 1c. A paragraph holding SEVERAL floated pictures is a row of them -- the two Martys
+    #     under the two balloons in activities 2 and 4. Their margin-left said which side of
+    #     the page each belonged on; spread them across the width in that order instead.
     def float_row(m):
         inner = m.group(1)
-        if inner.count("<img") < 2 or "margin-left:" not in inner:
-            return m.group(0)
-        # Word wraps its output, so "<span" and "style=" are often on different lines.
-        parts = re.findall(r"<span\s+style='[^']*margin-left:-?\d+px[^']*'>.*?</span>",
-                           inner, re.S)
+        parts = re.findall(FLOATSPAN, inner, re.S)
         if len(parts) < 2:
             return m.group(0)
-        spans = [re.search(r"margin-left:(-?\d+)px", p).group(1) for p in parts]
-        order = sorted(range(len(parts)), key=lambda i: int(spans[i]))
+        keys = [int(re.search(r"margin-left:(-?\d+)px", p).group(1)) for p in parts]
+        order = sorted(range(len(parts)), key=lambda i: keys[i])
         body = "".join(re.sub(r"margin-left:-?\d+px;?", "", parts[i]) for i in order)
         return '<p class="floatrow">%s</p>' % body
     h = re.sub(r"<p class=MsoNormal[^>]*>(.*?)</p>", float_row, h, flags=re.S)
+
+    # 1d. ONE floated picture beside an inline picture is Marty and his balloon sharing a
+    #     table cell (activities 1 and 5): on the page the balloon sits above him, tail down.
+    #     Make the pair a centred column in that order (Ken, 2026-08-12: they came out as a
+    #     wrapping row with Marty on top).
+    def speaker(m):
+        inner = m.group(1)
+        floats = re.findall(FLOATSPAN, inner, re.S)
+        if len(floats) != 1:
+            return m.group(0)
+        inline_imgs = re.findall(r"<img[^>]*>", re.sub(FLOATSPAN, "", inner, flags=re.S))
+        if not inline_imgs:
+            return m.group(0)
+        marty = re.sub(r"margin-left:-?\d+px;?", "", floats[0])
+        return '<p class="speaker">%s%s</p>' % ("".join(inline_imgs), marty)
+    h = re.sub(r"<p class=MsoNormal[^>]*>(.*?)</p>", speaker, h, flags=re.S)
+
+    # 1e. Any float still standing is on its own -- the balloon over a heading in activity 7,
+    #     or a lone Marty in an otherwise empty cell. Let it float right of its anchor, which
+    #     is where the page had it.
+    h = re.sub(r"<span\s+style='([^']*)margin-left:-?\d+px;?([^']*)'(?=>\s*<img)",
+               "<span class=\"fltr\" style='\\1\\2'", h)
     # 2. The empty 16pt paragraphs Word inserts to reserve the space those floats occupied.
     #    Without the floats they are just a screenful of nothing. Collapse runs of them.
     h = re.sub(r"(?:%s\s*){3,}" % EMPTY_P, "<p class=MsoNormal>&nbsp;</p>\n", h)
@@ -113,11 +148,13 @@ def clean_site_page(path):
     body = re.sub(r'(src|background)="\.\./([^"/]+)"', r'\1="\2"', body)
     # Cross-section links (Lunar Lander, LEGO Mindstorms...) point at pages we do not have.
     body = re.sub(r'href="\.\./\.\./[^"]*"', 'href="#"', body)
-    # A link to a .tt becomes a request to load it into the ToonTalk pane. Anchors that wrap
-    # a picture keep the picture (class 'imgload'); text ones are styled as buttons.
+    # A link to a .tt becomes a request to load it into the ToonTalk pane. The FULL file name
+    # rides along -- resort_infinity.xml.cty is a city, and guessing extensions engine-side
+    # made its button a no-op. Anchors that wrap a picture keep the picture (class 'imgload');
+    # text ones are styled as buttons.
     def as_load(mm):
         return 'href="#" data-load="%s"' % mm.group(1)
-    body = re.sub(r'href="\.\./([A-Za-z0-9_.]+)\.(?:tt|cty)"', as_load, body)
+    body = re.sub(r'href="\.\./([A-Za-z0-9_.]+\.(?:tt|cty))"', as_load, body)
     body = re.sub(r'(<a [^>]*data-load="[^"]+")([^>]*>)(\s*<img)',
                   r'\1 class="imgload"\2\3', body)
     return title, body

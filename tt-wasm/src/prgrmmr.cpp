@@ -2324,15 +2324,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE void tt_frac_apply_pow() {
 // The name arrives through a JS global rather than as a string argument so that no runtime
 // string helpers have to be exported from the build.
 extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
-   char name[64];
+   // The FULL file name arrives from JS -- extension included, because the materials are not
+   // all objects: resort_infinity.xml.cty is a whole city, and guessing ".tt" here turned the
+   // Resort Infinity button into a silent no-op (Ken, 2026-08-12: loadfile '...xml.tt' sprite=0).
+   char name[96];
    if (!EM_ASM_INT({
          var n = globalThis.TT_pendingLoad;
-         if (!n || !(new RegExp('^[A-Za-z0-9_.-]+$')).test(n)) return 0;
-         stringToUTF8(n, $0, 60);
+         if (!n || !(new RegExp('^[A-Za-z0-9_.-]+\\.(tt|cty)$')).test(n)) return 0;
+         stringToUTF8(n, $0, 90);
          return 1;
        }, name)) return 0;
-   char path[160];
-   sprintf(path, "/toontalk/infinity/%s.tt", name);
+   char path[192];
+   sprintf(path, "/toontalk/infinity/%s", name);
    boolean aborted = FALSE;
    Sprite *loaded = sprite_from_file_name(path, aborted, NULL, NULL);
    // sprite_from_file_name raises the "Loading, please wait." subtitle (loading_wait) and
@@ -2342,6 +2345,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
    printf("[tt] loadfile: '%s' sprite=%p aborted=%d\n", path, (void*)loaded, (int)aborted);
    fflush(stdout);
    if (loaded == NULL) return 0;
+   if (loaded == (Sprite *) tt_global_picture) {
+      // A city: the load already replaced the world (winmain's double-click handler makes the
+      // same test); there is nothing to put in the hand.
+      return 2;
+   };
    tt_add_sprite_when_on_floor = loaded;
    tt_add_sprite_when_on_floor_but_wait_a_frame = TRUE;
    return 1;

@@ -24,6 +24,14 @@ p.floatrow {
   display: flex; justify-content: space-around; align-items: flex-start;
   gap: 12px; margin: 4px 0 12px;
 }
+/* Marty and the balloon saying something to him: balloon above, tail pointing down at him,
+   as the printed page has it. */
+p.speaker {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0; margin: 4px 0 12px;
+}
+/* A balloon (or Marty) on its own floats right of whatever it was anchored to. */
+.fltr { float: right; margin: 0 0 6px 12px; }
 
 /* .tt links in the original pages became load buttons -- but several of those links wrap a
    screenshot of the program rather than text, and a picture inside a red button reads as a

@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpro_wqgag.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp6q0jtdvn.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -205,14 +205,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpro_wqgag.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp391dzjzh.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp6q0jtdvn.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpipmtewk_.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp391dzjzh.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpipmtewk_.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -276,6 +276,25 @@ var TT_lut = new Uint32Array(256), TT_lutPal = new Uint8Array(1024), TT_lutValid
 var TT_little_endian = (function () {
   var b = new ArrayBuffer(4); new Uint32Array(b)[0] = 1; return new Uint8Array(b)[0] === 1;
 })();
+// Console policy (Ken: "by default only the most important information"): the port's [tt] probes
+// and the [present] framebuffer census stay available behind ?log=1 (?debug=1 also works), and
+// under node, where the harness greps stdout for them. By default a browser session logs only
+// what someone debugging a report would need first: failures, and the one-line load results.
+var TT_verbose = (typeof location === 'undefined') ||
+                 (typeof process !== 'undefined' && !!process.versions) ||
+                 /[?&](log|debug)=1/.test(typeof location !== 'undefined' ? location.search : '');
+globalThis.TT_verbose = TT_verbose;
+(function quietStdout() {
+  if (TT_verbose) return;
+  var important = /error|fail|abort|warn|missing|denied|cannot|corrupt/i;
+  var keep = /^\[tt\] (loadfile:|ttfile:|user:|engine)/;   // ttfile: not ttfiles:
+  Module['print'] = function (text) {
+    if (typeof text !== 'string') { console.log(text); return; }
+    if (text.lastIndexOf('[tt] ', 0) === 0 && !keep.test(text) && !important.test(text)) return;
+    console.log(text);
+  };
+  // stderr stays unfiltered: the engine only writes there when something is wrong.
+})();
 globalThis.TT_present_times = [];   // ring of recent present timestamps (for the ?fps=1 overlay)
 globalThis.TT_present = function (ptr, w, h, palPtr) {
   TT_presents++;
@@ -289,13 +308,15 @@ globalThis.TT_present = function (ptr, w, h, palPtr) {
     pt.push(performance.now());
     if (pt.length > 120) pt.shift();
   }
-  if (TT_presents <= 3 || TT_presents % 300 === 0 || !globalThis.__ttDrew) {
+  // The pixel census costs a pass over the whole framebuffer; once the first non-blank frame
+  // has been seen it is only worth paying for when someone is watching (?log=1).
+  if (!globalThis.__ttDrew || (TT_verbose && (TT_presents <= 3 || TT_presents % 300 === 0))) {
     var nz = 0, mx = 0, histTop = {}, N = w * h;
     for (var i = 0; i < N; i++) { var v = HEAPU8[ptr + i]; if (v) { nz++; if (v > mx) mx = v; histTop[v] = (histTop[v] || 0) + 1; } }
     var top = Object.keys(histTop).sort(function (a, b) { return histTop[b] - histTop[a]; }).slice(0, 4)
       .map(function (k) { return k + 'x' + histTop[k]; }).join(',');
     if (nz > 0 && !globalThis.__ttDrew) { globalThis.__ttDrew = 1; console.log('[present] *** FIRST NON-BLANK FRAME at present #' + TT_presents + ' ***'); }
-    console.log('[present] #' + TT_presents + ' ' + w + 'x' + h + ' nonzero=' + nz + '/' + N + ' maxIdx=' + mx + ' topIdx=[' + top + ']');
+    if (TT_verbose) console.log('[present] #' + TT_presents + ' ' + w + 'x' + h + ' nonzero=' + nz + '/' + N + ' maxIdx=' + mx + ' topIdx=[' + top + ']');
   }
   if (typeof document === 'undefined') return;
   var c = document.getElementById('ttcanvas');
@@ -1677,15 +1698,16 @@ Module['preRun'].push(function () {
     } catch (e) { return ''; }
   };
   // Put one of the Infinity activity's ToonTalk files into the world that is already running,
-  // for the activities page's "load what this activity needs" buttons. Returns false if the
-  // engine is not up yet or the file is not one of the staged ones, so the caller can say so
-  // rather than looking like it did nothing.
+  // for the activities page's "load what this activity needs" buttons. `name` is the full file
+  // name, extension included -- resort_infinity.xml.cty is a CITY, not an object. Returns 0 if
+  // the engine is not up yet or the load failed, 1 for an object (now pending for the hand),
+  // 2 for a city (the world was replaced) -- so the caller can say what actually happened.
   globalThis.TT_loadMaterial = function (name) {
     try {
-      if (!globalThis.TT_loop_alive || !Module['_tt_load_pending_file']) return false;
+      if (!globalThis.TT_loop_alive || !Module['_tt_load_pending_file']) return 0;
       globalThis.TT_pendingLoad = name;
-      return !!Module['_tt_load_pending_file']();
-    } catch (e) { return false; }
+      return Module['_tt_load_pending_file']() | 0;
+    } catch (e) { return 0; }
   };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
@@ -1706,13 +1728,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp76nkdwn7.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxk251816.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp76nkdwn7.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpxk251816.js
 
 
 var programArgs = [];
@@ -10855,28 +10877,28 @@ var ASM_CONSTS = {
  17077422: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
  17077520: () => { globalThis.TT_replayOver = true; if (globalThis.TT_setMouseModeForUser) globalThis.TT_setMouseModeForUser(); },  
  17077633: ($0) => { globalThis.TT_timeTravelActive = ($0 !== 0); if ($0 && document.pointerLockElement) document.exitPointerLock(); },  
- 17077749: ($0) => { var n = globalThis.TT_pendingLoad; if (!n || !(new RegExp('^[A-Za-z0-9_.-]+$')).test(n)) return 0; stringToUTF8(n, $0, 60); return 1; },  
- 17077887: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17077983: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17078082: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17078181: () => { return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; },  
- 17078281: () => { var m = (typeof location !== 'undefined') && location.search.match(/fflags=([01])([01])([01])/); return m ? (16 + (m[1]|0)*4 + (m[2]|0)*2 + (m[3]|0)) : -1; },  
- 17078441: () => { if (typeof location === 'undefined') return 0; var m = location.search.match(/fracexp=([0-9]+)/); if (m) return parseInt(m[1]); return location.search.indexOf('fracbig=1') >= 0 ? 100 : 0; },  
- 17078633: () => { setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); },  
- 17078700: ($0) => { if (typeof location === 'undefined') return 0; var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)')); if (!m) return 0; stringToUTF8('/toontalk/infinity/' + m[1] + '.tt', $0, 150); return 1; },  
- 17078911: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17079013: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17079156: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17079256: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17079397: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17079470: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17079564: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17079657: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17079717: ($0) => { globalThis.TT_engineReplaying = ($0 !== 0); },  
- 17079765: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
- 17079827: () => { return globalThis.TT_presents|0; },  
- 17079864: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
- 17079944: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
+ 17077749: ($0) => { var n = globalThis.TT_pendingLoad; if (!n || !(new RegExp('^[A-Za-z0-9_.-]+\.(tt|cty)$')).test(n)) return 0; stringToUTF8(n, $0, 90); return 1; },  
+ 17077898: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17077994: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17078093: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17078192: () => { return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; },  
+ 17078292: () => { var m = (typeof location !== 'undefined') && location.search.match(/fflags=([01])([01])([01])/); return m ? (16 + (m[1]|0)*4 + (m[2]|0)*2 + (m[3]|0)) : -1; },  
+ 17078452: () => { if (typeof location === 'undefined') return 0; var m = location.search.match(/fracexp=([0-9]+)/); if (m) return parseInt(m[1]); return location.search.indexOf('fracbig=1') >= 0 ? 100 : 0; },  
+ 17078644: () => { setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); },  
+ 17078711: ($0) => { if (typeof location === 'undefined') return 0; var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)')); if (!m) return 0; stringToUTF8('/toontalk/infinity/' + m[1] + '.tt', $0, 150); return 1; },  
+ 17078922: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17079024: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17079167: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17079267: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17079408: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17079481: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17079575: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17079668: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17079728: ($0) => { globalThis.TT_engineReplaying = ($0 !== 0); },  
+ 17079776: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
+ 17079838: () => { return globalThis.TT_presents|0; },  
+ 17079875: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
+ 17079955: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
