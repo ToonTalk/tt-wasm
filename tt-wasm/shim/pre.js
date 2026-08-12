@@ -94,7 +94,7 @@ globalThis.TT_verbose = TT_verbose;
   var realErr = (Module['printErr'] || console.error).bind(console);
   Module['printErr'] = function (text) {
     if (typeof text === 'string' &&
-        /^(still waiting on run dependencies|dependency: |\(end of list\)|memory growth)/.test(text)) return;
+        /^(still waiting on run dependencies|dependency: |\(end of list\)|memory growth|Heap resize call from|warning: \d+ FS\.syncfs)/.test(text)) return;
     realErr(text);
   };
 })();

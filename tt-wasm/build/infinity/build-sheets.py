@@ -37,6 +37,69 @@ SITE_PAGES = ["guidance.htm", "guidance2.htm", "historical_note.htm",
               "resort_infinity_guide.htm", "diagonal.htm", "no_copies.htm",
               "notebook.htm", "resort_infinity.htm"]
 
+# Appended to resort_infinity.htm. Every hint below is the city's own -- the flip-over text
+# pads inside resort_infinity.xml.cty, transcribed -- with <details> standing in for flipping
+# the pad over, so answers stay hidden until asked for (Ken, 2026-08-12: "there needs to be
+# much more instructions for how to build houses for guests and moving them").
+RESORT_STEPS = """
+<h2>Working the resort, step by step</h2>
+<p><i>These instructions and hints are the city's own flip-over pads, gathered here.
+Click a hint to "flip it over".</i></p>
+<p>Point at a problem's sign and press the <b>space bar</b> to turn it on; from then on a
+new guest arrives on that problem's nest every 5 seconds, forever. Solutions are given to
+the <b>Solution bird</b> as a two-hole box labelled <b>Move</b> and <b>Build</b>. The Build
+hole holds a box of your address robot and the guests' nest; the Move hole holds a move
+robot and nest (empty until problem 2). Never two cottages at the same address. Press
+<b>F8</b> to pause the robots and look around; F8 again resumes. Save your city after each
+solved problem.</p>
+<h3>Problem 1 &mdash; the first infinite group</h3>
+<p>&ldquo;Since there are no cottages to move at first just leave the first hole
+empty.&rdquo; &ldquo;Put the Problem 1 nest in the Guests hole.&rdquo; Your Address Robot
+accepts a box with the guest's number and a bird, and must give the bird the address where
+that guest's cottage is built. Train it exactly the way the activity sheets trained
+<tt>Doubler</tt> and <tt>Add 1</tt>.</p>
+<details><summary>Flip over: what address should the first guest get?</summary>
+<p>Address 1 &mdash; &ldquo;a robot that gives each guest the next address&rdquo;: guest
+<i>i</i> lives at cottage <i>i</i>. Give the guest's own number to the bird.</p></details>
+<details><summary>Flip over: I give up. What do I give the Solution bird?</summary>
+<p>The ready-made solution box &mdash; the page's <b>Answer to problem 1</b> button puts it
+in your hand.</p></details>
+<h3>Problem 2 &mdash; five more guests, no empty cottages</h3>
+<p>&ldquo;This time you'll also need a Move Robot. It needs a box like this:&rdquo; a
+current address and a bird. It computes where that guest should move and gives the new
+address to the bird; the guest blows up their cottage and moves. &ldquo;Fill the empty
+Guests hole with the Problem 2 nest.&rdquo;</p>
+<details><summary>Flip over: where should the guest in cottage 1 move to?</summary>
+<p>&ldquo;Add 5 to the current address and give the result to the bird.&rdquo; Everyone
+moves up five; the five newcomers get cottages 1 to 5. (Is the Build robot any different
+from problem 1's?)</p></details>
+<h3>Problem 3 &mdash; a second infinite group</h3>
+<details><summary>Flip over: adding will not work this time&hellip;</summary>
+<p>&ldquo;Multiply the current address by 2 and give the result to the bird.&rdquo; The old
+guests take the even addresses; &ldquo;this robot puts the new guests in the odd numbered
+cottages&rdquo; &mdash; new guest <i>i</i> builds at 2<i>i</i>&minus;1.</p></details>
+<h3>Problem 4 &mdash; three infinite groups at once</h3>
+<details><summary>Flip over for the move robot</summary>
+<p>&ldquo;Multiply the current address by 4 and give the result to the bird.&rdquo;</p>
+</details>
+<details><summary>Flip over for the build robot</summary>
+<p>&ldquo;This robot assigns new guests to addresses that are not multiples of 4&rdquo;
+&mdash; guest <i>i</i> of group <i>j</i> builds at 4<i>i</i>&minus;<i>j</i>. (Merging the
+three guest streams into one, with Activity 2's Merge robot, also works.)</p></details>
+<h3>Problem 5 &mdash; infinitely many infinite groups</h3>
+<details><summary>Flip over: remember the even addresses are already taken</summary>
+<p>&ldquo;This one moves the guests like problem 3&rdquo; &mdash; double the address. Then
+the city's own build robot &ldquo;assigns new guests to odd addresses by successive squares
+in the upper left corner of the square of all new guests&rdquo;; its hint walks the diagonal:
+&ldquo;the next addresses are 2,2 then 1,2 then 3,1 then 3,2 then 3,3 then 2,3 then
+1,3&rdquo;. (The teachers' guide offers the classic alternative: send group <i>j</i>'s guest
+<i>i</i> to the <i>j</i>th prime raised to the <i>i</i>th power &mdash; wasteful of
+addresses, and that waste is worth discussing.)</p></details>
+<p>&ldquo;Robots on my back deal with sending out announcements to the guests and arranging
+for new cottages to be built&rdquo; &mdash; the text pad in the lower right corner of the
+room runs the machinery; you never need to touch it.</p>
+"""
+
 HEAD = ('<!doctype html><html><head><meta charset="windows-1252">'
         '<title>%s</title><link rel="stylesheet" href="sheet.css"></head><body>')
 
@@ -215,6 +278,8 @@ def main():
         p = os.path.join(infinity, "Doc", f)
         if not os.path.exists(p): continue
         title, body = clean_site_page(p)
+        if f == "resort_infinity.htm":
+            body += RESORT_STEPS
         open(os.path.join(DST, f), "w", encoding="windows-1252", errors="replace").write(
             (HEAD % title) + body + "</body></html>")
         n += 1

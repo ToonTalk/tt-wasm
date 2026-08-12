@@ -5925,17 +5925,10 @@ void Robot::really_try_clause() {
 	} else {
 		match_status = MATCH_GOOD;
 	};
-#ifdef __EMSCRIPTEN__
-	{ // robot matching trace (Pong 2026-07-19; widened for the sentence stream 2026-07-22)
-		static int rob_log = 0;
-		if (rob_log < 3000) { rob_log++;
-			character rn[max_resource_string_length];
-			name(rn);
-			printf("[tt] robtry: '%s' match=%d f=%ld\n", rn, (int)match_status, (long)tt_frame_number);
-			fflush(stdout);
-		}
-	}
-#endif
+	// The port's robot-matching trace lived here (Pong 2026-07-19, sentence stream 2026-07-22).
+	// Removed 2026-08-12: its work was done, and in Resort Infinity -- robots matching every
+	// frame, with multi-line NAMES that split the printf across console lines so half escaped
+	// the quiet filter -- it flooded the console at two lines per frame (Ken: "very slow").
 #if TT_DEBUG_ON
 	if (tt_debug_mode == 190499 || (tt_debug_target == debug_counter && tt_debug_mode != 261000)) {
 		debug_log(debug_counter);

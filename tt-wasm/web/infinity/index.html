@@ -195,9 +195,12 @@ var ACTIVITIES = [
   { id: 'thotel', kind: 'act', title: 'Resort Infinity',
     blurb: "To finish: Hilbert's hotel as a city of five problems",
     file: 'resort_infinity.htm',
+    // The two .tt files are READY-MADE SOLUTION boxes (an "i,j -> i" build robot; an
+    // "i -> i+5" move robot) -- labelled as the spoilers they are, not as "tasks", which
+    // made two near-identical boxes look like a bug (Ken, 2026-08-12).
     also: [['resort_infinity.xml.cty', 'The hotel city'],
-           ['resort_infinity_task1.tt', 'Hotel task 1'],
-           ['resort_infinity_task2.tt', 'Hotel task 2']] },
+           ['resort_infinity_task1.tt', 'Answer to problem 1 (spoiler)'],
+           ['resort_infinity_task2.tt', 'Answer to problem 2 (spoiler)']] },
 
   { id: 'tnotebook', kind: 'tool', title: 'The activity notebook',
     blurb: 'A notebook of notebooks — one page of robots per activity',

@@ -59,3 +59,12 @@ a.imgload:hover { border-color: #7a1020; }
   text-transform: uppercase; color: #1c6b52; margin-bottom: 8px;
 }
 .callout p, .think p { margin: 6px 0; }
+
+/* The resort's flip-over hint pads, as click-to-flip disclosures. */
+details {
+  border: 1px solid #d8cfd1; border-radius: 6px; background: #faf7f7;
+  margin: 10px 0; padding: 6px 12px;
+}
+details summary { cursor: pointer; font-family: system-ui, sans-serif; font-size: 14px;
+                  color: #7a1020; font-weight: 600; }
+details[open] { background: #fff; }

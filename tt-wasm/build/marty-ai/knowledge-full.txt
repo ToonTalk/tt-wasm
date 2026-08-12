@@ -148,8 +148,17 @@ hint, the formula only when they are stuck or ask):
 4. Three infinite groups at once. Expected: move i to 4i; new guest i of group j builds at
    4i-j. Also good: repeat problem 3's trick three times, or Merge the guest streams into
    one and treat it as a single group.
-5. Infinitely many infinite groups. The classic: move i to 2i, then group j's guest i goes
-   to (jth prime)^i. Wasteful of addresses, and that waste is worth discussing.
+5. Infinitely many infinite groups. Move i to 2i as in problem 3; the city's own build
+   robot then fills the odd addresses by walking the square of all new guests diagonally
+   (its hint: "the next addresses are 2,2 then 1,2 then 3,1 then 3,2 then 3,3 then 2,3 then
+   1,3"). The teachers' guide offers the classic alternative -- group j's guest i at
+   (jth prime)^i -- wasteful of addresses, and that waste is worth discussing.
+
+The activity page offers ready-made SOLUTION boxes for problems 1 and 2 (labelled "Answer
+to problem N (spoiler)"): problem 1's is a [Move | Build] box with an "i,j -> i" build
+robot, problem 2's holds an "i -> i+5" move robot. Only point a player to these when they
+have given up -- the city's own hint pads (flip them over; hints contain hints) come first,
+and the activity page's Resort sheet lists all of them under "Working the resort".
 
 Practical notes for helping: numbers grow without limit in ToonTalk and stay exact, so
 suggesting "let it run and watch" is always safe; the display slows when numbers get
