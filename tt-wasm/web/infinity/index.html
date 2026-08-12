@@ -145,6 +145,8 @@
         <strong>ToonTalk</strong>
         <span id="ttnote"></span>
         <span class="spacer"></span>
+        <button type="button" id="ttmarty"
+                title="Chat with Marty about what you are doing — he knows these activities">🛸 Ask Marty</button>
         <button type="button" class="go" id="ttfull" title="Give ToonTalk the whole window">Full width</button>
       </div>
       <iframe id="tt" title="ToonTalk"
@@ -174,6 +176,9 @@ var ACTIVITIES = [
     file: 'Cardinality_Activity_4.htm', res: 'Cardinality1to8.tt',
     also: [['NoCopies.tt', 'Remove duplicate fractions'],
            ['no_box_copies.tt', 'Remove duplicate boxes']] },
+  { id: 'extra4', kind: 'act', title: 'Extra task for activity 4',
+    blurb: 'A further fractions challenge',
+    file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8.tt' },
   { id: 'a5', kind: 'act', n: 5, title: 'Rational numbers greater than 1',
     blurb: 'Reciprocals — and a one-to-one map falls out of it',
     file: 'Cardinality_Activity_5.htm', res: 'Cardinality1to8.tt' },
@@ -187,9 +192,12 @@ var ACTIVITIES = [
     blurb: "Cantor's diagonal, built out of robots",
     file: 'Cardinality_Activity_8.htm', res: 'Cardinality1to8.tt',
     also: [['Diagonal.tt', 'The Diagonal team']] },
-  { id: 'extra4', kind: 'act', title: 'Extra task for activity 4',
-    blurb: 'A further fractions challenge',
-    file: 'Extra Cardinality Activity 4 Task.htm', res: 'Cardinality1to8.tt' },
+  { id: 'thotel', kind: 'act', title: 'Resort Infinity',
+    blurb: "To finish: Hilbert's hotel as a city of five problems",
+    file: 'resort_infinity.htm',
+    also: [['resort_infinity.xml.cty', 'The hotel city'],
+           ['resort_infinity_task1.tt', 'Hotel task 1'],
+           ['resort_infinity_task2.tt', 'Hotel task 2']] },
 
   { id: 'tnotebook', kind: 'tool', title: 'The activity notebook',
     blurb: 'A notebook of notebooks — one page of robots per activity',
@@ -200,13 +208,6 @@ var ACTIVITIES = [
   { id: 'tnocopy', kind: 'tool', title: 'Remove duplicate fractions',
     blurb: '2/6 never gets past, because 1/3 already did (activity 4)',
     file: 'no_copies.htm', res: 'NoCopies.tt' },
-  { id: 'thotel', kind: 'tool', title: 'Resort Infinity',
-    blurb: "Hilbert's hotel as a city of five problems",
-    file: 'resort_infinity.htm',
-    also: [['resort_infinity.xml.cty', 'The hotel city'],
-           ['resort_infinity_task1.tt', 'Hotel task 1'],
-           ['resort_infinity_task2.tt', 'Hotel task 2']] },
-
   { id: 'overview', kind: 'teach', title: 'The activity sequence',
     blurb: 'Aims, setting and assessment for all eight activities',
     file: 'cardinality_activity_sequence_v8.htm' },
@@ -244,12 +245,15 @@ function sheetURL(a) {
 }
 function hasPDF(a) { return a.kind !== 'tool' && a.kind !== 'teach'; }
 
-// ?freeplay=1 is tt.html's own opening flow with the chooser skipped: the usual name-and-head
+// ?freeplay=1 is the app's own opening flow with the chooser skipped: the usual name-and-head
 // dialog, aimed at free play. The pane deliberately has NO name handling of its own -- an
 // earlier version remembered the last name and applied it silently, and the time-travel logs
 // recorded under that name began replaying (Ken, 2026-08-12). Materials load on demand once
 // the learner is on the floor.
-var TT_URL = '../tt.html?freeplay=1';
+// tt-ai.html rather than tt.html: the same generated page plus the Marty AI chat, whose
+// briefing includes these activities -- so Marty can play the researcher's role here
+// ("what would happen if the robots ran forever?").
+var TT_URL = '../tt-ai.html?freeplay=1';
 
 // What each activity needs, named the way the sheets name it. An activity lists only what it
 // is the FIRST to need -- the notebook of robots at activity 1, the duplicate remover at
@@ -356,6 +360,13 @@ document.querySelector('.seg').addEventListener('click', function (e) {
 });
 document.getElementById('ttfull').addEventListener('click', function () {
   document.querySelector('.seg button[data-view="tt"]').click();
+});
+document.getElementById('ttmarty').addEventListener('click', function () {
+  var w = tt.contentWindow;
+  try {
+    if (w && typeof w.TT_martyToggle === 'function') { w.TT_martyToggle(); return; }
+  } catch (e) {}
+  document.getElementById('ttnote').textContent = 'ToonTalk is still starting up — try again in a moment';
 });
 document.getElementById('matbar').addEventListener('click', function (e) {
   var b = e.target.closest('button[data-file]');

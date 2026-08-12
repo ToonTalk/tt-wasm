@@ -54,6 +54,14 @@ def clean_word_html(h):
     h = re.sub(r"z-index:-?\d+;?", "", h)
     h = re.sub(r"margin-top:-?\d+px;?", "", h)
 
+    # 0. The authors' review comments. The PDF export drops them, but the HTML export keeps
+    #    the in-text anchors -- a red "[KK1]" in the middle of a heading (Ken's screenshot,
+    #    2026-08-12) -- and, in documents that carry them, the comment texts at the end.
+    h = re.sub(r"<span class=MsoCommentReference>.*?</span>", "", h, flags=re.S)
+    h = re.sub(r"<a[^>]*(?:msocomanchor|_msoanchor_|_msocom_)[^>]*>.*?</a>", "", h, flags=re.S)
+    h = re.sub(r"<div[^>]*style='[^']*mso-element:comment-list[^']*'[^>]*>.*", "", h, flags=re.S)
+    h = re.sub(r"<hr class=msocomoff[^>]*>.*", "", h, flags=re.S)
+
     # 1b. Activity 5 floats a speech balloon over the NEIGHBOURING table cell -- the one with
     #     Marty in it. Word's export left the balloon in the text cell, where no amount of
     #     styling puts it back over Marty. Move the balloon's picture into Marty's paragraph
@@ -116,11 +124,25 @@ def clean_word_html(h):
     #    CHALLENGE/CLAIM to read, and a question followed by ruled space to write an answer in.
     #    On screen the writing space is just a hole (Ken, 2026-08-12), so the empty paragraphs
     #    come out and the box is marked up as something to think about instead.
+    # A paragraph that says just "Explain" -- plain, bold, trailing dot or ellipsis, the
+    # punctuation sometimes in a span of its own -- was an instruction to fill the ruled
+    # space below it. ("Explain in general what..." is a real sentence and stays.)
+    BARE_EXPLAIN = (r"<p[^>]*>\s*(?:<b>)?(?:<span[^>]*>)?\s*Explain\s*[.…]?\s*"
+                    r"(?:</span>)?\s*(?:</b>)?\s*(?:<span[^>]*>\s*[.…]\s*</span>)?\s*</p>")
+
     def box(m):
         inner = m.group(1)
         blanks = len(re.findall(EMPTY_P, inner))
         inner = re.sub(EMPTY_P, "", inner)
-        return '<div class="%s">%s</div>' % ("think" if blanks >= 2 else "callout", inner)
+        # An answer box is one with room to write -- blank ruled lines, or a bare "Explain"
+        # pointing at the space. On screen it is a prompt to think about instead, so the
+        # paper mechanics come out (Ken, 2026-08-12).
+        kind = "think" if (blanks >= 2 or re.search(BARE_EXPLAIN, inner)) else "callout"
+        if kind == "think":
+            inner = re.sub(BARE_EXPLAIN, "", inner)
+            inner = re.sub(r"(?:<span[^>]*>)?\s*Write your answer here[^<.]*[.…]?\s*(?:</span>)?",
+                           "", inner)
+        return '<div class="%s">%s</div>' % (kind, inner)
     # Non-greedy to the first </div>: these boxes hold paragraphs, never another box.
     h = re.sub(r"<div style='border:solid[^']*'>(.*?)</div>", box, h, flags=re.S)
 

@@ -939,7 +939,7 @@ boolean City::load_city(ascii_string city_name, boolean directly_loadable) {
        FILE *em_probe_fp = fopen(city_name,"rb");
        printf("[tt] loadcityfn: name='%s' direct=%d resolved='%s' fopen=%s\n",
               city_name,(int)directly_loadable,full_name != NULL ? full_name : "(NULL)",
-              em_probe_fp != NULL ? "OK" : "FAIL"); fflush(stdout);
+              em_probe_fp != NULL ? "OK" : "absent"); fflush(stdout);
        if (em_probe_fp != NULL) fclose(em_probe_fp);
      };
    }

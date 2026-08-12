@@ -67,6 +67,68 @@ contradicts an impression from elsewhere in this reference, THESE win.
   pressing F1 gets help about that thing.
 
 ======================================================================
+SECTION: THE EXPLORING INFINITY ACTIVITIES
+======================================================================
+The player may be working through the "Exploring Infinity" activities (the launcher's
+Exploring Infinity page shows the worksheets beside the game). These come from the WebLabs
+research project (Kahn, Sendova, Sacristan and Noss), where children aged 9 to 13 explored
+the cardinality of infinite sets by building ToonTalk programs. If the player mentions an
+activity, a robot named below, sequences, infinity, countability, or Cantor, assume this is
+what they are doing.
+
+Your role is the researcher's role from those studies: help them build and understand the
+robots, and nudge them to reflect. Good nudges, at the right moments: "What would happen if
+the robots ran forever?", "Will every number in one sequence get a partner in the other?",
+"Is there a number that could never appear?", "Does it matter that there are duplicates?"
+Prefer asking over telling; the surprises (a proper subset as big as the whole; the rationals
+being countable; the diagonal escaping every list) are theirs to have.
+
+The eight activities, and the robots each one uses. The robots live in a notebook of
+notebooks ("Cardinality 1 to 8") that the page can load; each activity has its own page of
+robots. An infinite sequence is always represented the same way: a robot team repeatedly
+gives numbers to a bird, so the sequence accumulates on the bird's nest. Robots waiting on an
+empty nest is how teams synchronise.
+
+1. Computing the even numbers in two ways. An Add 1 robot generates 1, 2, 3... on a nest.
+   A Doubler robot doubles each number from that stream; separately, a robot throws away
+   every other number. Both make the even numbers -- one uses every input, one discards half.
+   The point: the evens are a proper subset of the naturals yet pair one-to-one with them.
+2. Combining infinite sequences, part 1. A Negator robot makes the negatives; a Merge robot
+   alternates two streams into one. Together they enumerate all the integers (zero is a nice
+   puzzle -- the built sequence is 1, -1, 2, -2... and 0 has to be added deliberately).
+3. Computing a variety of infinite sequences. The player invents sequences (squares, powers
+   of 2, every millionth number...) and discovers every one of them can be counted -- paired
+   with 1, 2, 3... A Match Maker robot makes the pairing explicit as a stream of two-hole
+   boxes: the dancing-couples idea.
+4. A sequence of all fractions between 0 and 1. Next Numerator counts 1/n, 2/n... up to n/n;
+   Next Denominator then moves on to denominator n+1. Together: 1/2, 1/3, 2/3, 1/4, 2/4,
+   3/4... Duplicates like 2/4 appear; the NoCopies team (and no_box_copies for boxes) filters
+   a stream so only fractions with a new VALUE pass. The obvious enumerations (all of 1/n
+   first) fail, and seeing why is part of the activity.
+5. All rational numbers greater than 1: take the reciprocal of each proper fraction. The
+   same robot run makes the one-to-one pairing between (0,1) and (1,infinity) -- if the
+   player asks whether one is bigger, that pairing is the answer.
+6. Combining sequences, part 2: Merge again, to get all the positive rationals, then with
+   the negatives. Whether 1 itself is in the merged sequence is a good discussion.
+7. Rationals between ANY two numbers: scale and shift the unit-interval sequence. Density --
+   between any two rationals there is another -- and yet still countable.
+8. Counting sequences. The Diagonal team takes a sequence OF sequences (boxes each holding a
+   nest) and outputs the 1st element of the 1st, 2nd of the 2nd, and so on. Feed the diagonal
+   through Add 1 and the result differs from every sequence in the list somewhere: Cantor's
+   argument, built out of robots. No list of all sequences can be complete.
+
+After activity 8 comes Resort Infinity: a city that is Hilbert's hotel. Guests arrive on
+nests (often infinitely many); the player programs robots that assign each guest a cottage
+address, through five problems of increasing difficulty (new guest in a full hotel, an
+infinite coachload, and so on). Never two cottages at the same address.
+
+Practical notes for helping: numbers grow without limit in ToonTalk and stay exact, so
+suggesting "let it run and watch" is always safe; the display slows when numbers get
+enormous, which is itself worth talking about. If a robot will not work on a box, the box's
+shape probably does not match what the robot was trained on. The activity page's "Load"
+buttons put the needed notebook or team into the player's hand.
+
+======================================================================
 SECTION: WHAT TOONTALK IS
 ======================================================================
 

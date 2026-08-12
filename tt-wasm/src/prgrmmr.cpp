@@ -2342,14 +2342,20 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
    // leaves taking it down to its caller; without this the caption stays up forever and the
    // room's dirty-region redraws punch holes through the stale band (Ken, 2026-08-12).
    done_waiting_for_load();
-   printf("[tt] loadfile: '%s' sprite=%p aborted=%d\n", path, (void*)loaded, (int)aborted);
-   fflush(stdout);
-   if (loaded == NULL) return 0;
+   // Say what HAPPENED, not just a pointer: Ken read a successful city load ("sprite=0x11fc6a8")
+   // as a failure, reasonably, since the failure case ("sprite=0") looked almost the same.
+   if (loaded == NULL) {
+      printf("[tt] loadfile: '%s' FAILED (aborted=%d)\n", path, (int)aborted); fflush(stdout);
+      return 0;
+   };
    if (loaded == (Sprite *) tt_global_picture) {
       // A city: the load already replaced the world (winmain's double-click handler makes the
       // same test); there is nothing to put in the hand.
+      printf("[tt] loadfile: '%s' loaded as a CITY — the world has been replaced\n", path);
+      fflush(stdout);
       return 2;
    };
+   printf("[tt] loadfile: '%s' loaded — heading for the hand\n", path); fflush(stdout);
    tt_add_sprite_when_on_floor = loaded;
    tt_add_sprite_when_on_floor_but_wait_a_frame = TRUE;
    return 1;

@@ -468,6 +468,9 @@
       }
     }, true);
   }
+  // The Exploring Infinity page embeds this page in a pane and offers its own Ask Marty
+  // button in the surrounding chrome -- same-origin, so it can call straight in.
+  globalThis.TT_martyToggle = function () { toggleOpen(); };
   function toggleOpen() {
     if (!state.provider) { dlg.showModal(); return; }
     if (panel.hidden) {

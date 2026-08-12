@@ -11392,7 +11392,7 @@ boolean open_images_file(int mode_number) {
 #endif
 //	file.put('\0');
 	boolean ok_to_fail = (tt_video_mode > 640); // these data files might not exists but can fall back on m25
-	printf("[tt] open_images: trying '%s' ok_to_fail=%d builtin_dir='%s'\n", file_name, (int)ok_to_fail, tt_builtin_picture_directory?tt_builtin_picture_directory:"(null)"); fflush(stdout);
+	printf("[tt] open_images: trying '%s' optional=%d builtin_dir='%s'\n", file_name, (int)ok_to_fail, tt_builtin_picture_directory?tt_builtin_picture_directory:"(null)"); fflush(stdout);
 #if TT_SMALL_TRIAL
    images_file = load_data_file(file_name,1000000L,FALSE,FALSE);
 #else

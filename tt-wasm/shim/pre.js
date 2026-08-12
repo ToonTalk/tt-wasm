@@ -72,12 +72,31 @@ globalThis.TT_verbose = TT_verbose;
   if (TT_verbose) return;
   var important = /error|fail|abort|warn|missing|denied|cannot|corrupt/i;
   var keep = /^\[tt\] (loadfile:|ttfile:|user:|engine)/;   // ttfile: not ttfiles:
-  Module['print'] = function (text) {
-    if (typeof text !== 'string') { console.log(text); return; }
-    if (text.lastIndexOf('[tt] ', 0) === 0 && !keep.test(text) && !important.test(text)) return;
-    console.log(text);
+  var quiet = function (text) {
+    if (typeof text !== 'string') return false;
+    if (text.lastIndexOf('[present] ', 0) === 0) return text.indexOf('***') < 0;
+    if (text.lastIndexOf('[tt] ', 0) !== 0) return false;
+    return !keep.test(text) && !important.test(text);
   };
-  // stderr stays unfiltered: the engine only writes there when something is wrong.
+  // printf from the engine and the port probes
+  Module['print'] = function (text) { if (!quiet(text)) console.log(text); };
+  // ...but half the probes call console.log directly (persist, lock, loopsnd, the zip layer),
+  // so the same policy has to sit on console.log itself. Page-level scripts in the OUTER
+  // document are unaffected -- this runs in the game page only.
+  var realLog = console.log.bind(console);
+  console.log = function () {
+    if (arguments.length === 1 && quiet(arguments[0])) return;
+    realLog.apply(null, arguments);
+  };
+  // stderr: emscripten's run-dependency reporter prints its whole list on an interval while
+  // the opening dialog waits for a name -- minutes of "still waiting on run dependencies:
+  // dependency: tt-launcher" that mean nothing is wrong. Real errors pass untouched.
+  var realErr = (Module['printErr'] || console.error).bind(console);
+  Module['printErr'] = function (text) {
+    if (typeof text === 'string' &&
+        /^(still waiting on run dependencies|dependency: |\(end of list\)|memory growth)/.test(text)) return;
+    realErr(text);
+  };
 })();
 globalThis.TT_present_times = [];   // ring of recent present timestamps (for the ?fps=1 overlay)
 globalThis.TT_present = function (ptr, w, h, palPtr) {
@@ -358,6 +377,12 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // Ask with OPTIONS: requestPointerLock() with no argument returns undefined in Chrome and
   // reports failure only through the document's pointerlockerror event, so a version that hung
   // its logging off the return value reported nothing at all.
+  // After a rejection, stop asking until the next MOUSE gesture. A held arrow key auto-repeats
+  // keydown, and each repeat asked again -- in a browser that refuses keydown-initiated locks
+  // that is a rejection storm, two log lines per repeat, for as long as the walk lasts (Ken's
+  // console: ~60 in a row). A mousedown is the one gesture every browser accepts, so it clears
+  // the backoff.
+  var lockDenied = false;
   var takeLock = function () {
     // The original RELEASES the mouse for the whole of time travel (log.cpp time_travel():
     // tt_mouse_acquired = (tt_time_travel == TIME_TRAVEL_OFF), OS cursor shown) so the cursor
@@ -366,18 +391,21 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
     // button below it is unreachable (Ken). time_travel() publishes the flag and also drops any
     // capture already held when time travel starts.
     if (globalThis.TT_timeTravelActive) return;
+    if (lockDenied) return;
     if (!wantLock() || !c.requestPointerLock) return;
     try {
       var p = c.requestPointerLock({ unadjustedMovement: false });
       if (p && p.then) {
-        p.then(function () {}, function (err) {
-          console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
+        p.then(function () { lockDenied = false; }, function (err) {
+          lockDenied = true;
+          if (globalThis.TT_verbose) console.log('[tt] lock: windowed request rejected: ' + (err && err.name));
         });
       }
-    } catch (err) { console.log('[tt] lock: windowed request threw: ' + err); }
+    } catch (err) { if (globalThis.TT_verbose) console.log('[tt] lock: windowed request threw: ' + err); }
   };
   c.addEventListener('mousedown', function (e) {
     e.preventDefault(); if (c.focus) c.focus(); resumeAudio();
+    lockDenied = false;          // a mouse gesture: every browser grants locks from these
     takeLock();
     if (firstClickSwallowed === 'down') firstClickSwallowed = true; // released off-canvas: abandon the pair
     if (demoReplay() && !firstClickSwallowed) { firstClickSwallowed = 'down'; return; }
@@ -414,7 +442,7 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
   // promise. Say so, and try once more after Chrome's post-Escape cooldown -- the retry that used
   // to hang off a return value that was never a promise, so it never ran.
   document.addEventListener('pointerlockerror', function () {
-    console.log('[tt] lock: pointerlockerror (windowed=' + (!document.fullscreenElement) + ')');
+    if (globalThis.TT_verbose) console.log('[tt] lock: pointerlockerror (windowed=' + (!document.fullscreenElement) + ')');
     // NO automatic retry. Chrome requires a user gesture to re-lock after an Escape exit, and a
     // setTimeout has none -- so a timed retry cannot succeed, and each failed attempt renews the
     // penalty period rather than waiting it out. That is why adding one made this worse instead

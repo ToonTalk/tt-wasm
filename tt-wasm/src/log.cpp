@@ -1685,7 +1685,7 @@ void synchronize_subtitles() {
    if (!subtitles_initialized) {
       if (!initialize_subtitles()) { // can't initialize
 #ifdef __EMSCRIPTEN__
-         printf("[tt] subspeed: initialize_subtitles FAILED (name=%s)\n",
+         printf("[tt] subspeed: no subtitles timing (name=%s)\n",
                 subtitles_file_name != NULL ? subtitles_file_name : "(null)"); fflush(stdout);
 #endif
          tt_subtitles_speed = 0;

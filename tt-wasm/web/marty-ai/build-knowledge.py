@@ -167,6 +167,12 @@ def main():
     if clar.is_file():
         out.append(f"\n{'='*70}\nSECTION: AUTHOR'S RULINGS (THESE OVERRIDE EVERYTHING ELSE)\n{'='*70}\n"
                    + clar.read_text(encoding="utf-8").strip())
+    # The Exploring Infinity page embeds the AI-enabled build, so Marty can take the
+    # researcher's role in the WebLabs cardinality activities (Ken, 2026-08-12).
+    inf = HERE / "infinity-activities.txt"
+    if inf.is_file():
+        out.append(f"\n{'='*70}\nSECTION: THE EXPLORING INFINITY ACTIVITIES\n{'='*70}\n"
+                   + inf.read_text(encoding="utf-8").strip())
     for title, pages in SECTIONS:
         out.append(f"\n{'='*70}\nSECTION: {title}\n{'='*70}")
         for pg in pages:
