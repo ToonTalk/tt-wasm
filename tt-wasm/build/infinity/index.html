@@ -192,7 +192,7 @@ var ACTIVITIES = [
     blurb: "Cantor's diagonal, built out of robots",
     file: 'Cardinality_Activity_8.htm', res: 'Cardinality1to8.tt',
     also: [['Diagonal.tt', 'The Diagonal team']] },
-  { id: 'thotel', kind: 'act', title: 'Resort Infinity',
+  { id: 'thotel', site: true, kind: 'act', title: 'Resort Infinity',
     blurb: "To finish: Hilbert's hotel as a city of five problems",
     file: 'resort_infinity.htm',
     // The two .tt files are READY-MADE SOLUTION boxes (an "i,j -> i" build robot; an
@@ -202,25 +202,25 @@ var ACTIVITIES = [
            ['resort_infinity_task1.tt', 'Answer to problem 1 (spoiler)'],
            ['resort_infinity_task2.tt', 'Answer to problem 2 (spoiler)']] },
 
-  { id: 'tnotebook', kind: 'tool', title: 'The activity notebook',
+  { id: 'tnotebook', site: true, kind: 'tool', title: 'The activity notebook',
     blurb: 'A notebook of notebooks — one page of robots per activity',
     file: 'notebook.htm', res: 'Cardinality1to8.tt' },
-  { id: 'tdiag', kind: 'tool', title: 'Diagonal tool',
+  { id: 'tdiag', site: true, kind: 'tool', title: 'Diagonal tool',
     blurb: 'Feed it sequences and work out what it does (activity 8)',
     file: 'diagonal.htm', res: 'Diagonal.tt' },
-  { id: 'tnocopy', kind: 'tool', title: 'Remove duplicate fractions',
+  { id: 'tnocopy', site: true, kind: 'tool', title: 'Remove duplicate fractions',
     blurb: '2/6 never gets past, because 1/3 already did (activity 4)',
     file: 'no_copies.htm', res: 'NoCopies.tt' },
   { id: 'overview', kind: 'teach', title: 'The activity sequence',
     blurb: 'Aims, setting and assessment for all eight activities',
     file: 'cardinality_activity_sequence_v8.htm' },
-  { id: 'guide', kind: 'teach', title: 'Teacher guidance',
+  { id: 'guide', site: true, kind: 'teach', title: 'Teacher guidance',
     blurb: 'How to run the sessions', file: 'guidance.htm' },
-  { id: 'guide2', kind: 'teach', title: 'More guidance',
+  { id: 'guide2', site: true, kind: 'teach', title: 'More guidance',
     blurb: 'Further notes for teachers', file: 'guidance2.htm' },
-  { id: 'hotelguide', kind: 'teach', title: 'Resort Infinity guide',
+  { id: 'hotelguide', site: true, kind: 'teach', title: 'Resort Infinity guide',
     blurb: 'Answers for the five hotel problems', file: 'resort_infinity_guide.htm' },
-  { id: 'hist', kind: 'teach', title: 'Historical note',
+  { id: 'hist', site: true, kind: 'teach', title: 'Historical note',
     blurb: 'Galileo to Cantor, in brief', file: 'historical_note.htm' }
 ];
 
@@ -241,12 +241,19 @@ var fmt = 'html';            // 'html' (reads on screen) or 'pdf' (the printed p
 // somewhere else entirely once the pane reflows. The site's own pages were HTML to begin
 // with and have no PDF; for those the toggle is hidden.
 function sheetURL(a) {
-  if (fmt === 'pdf' && a.file.slice(-4) === '.htm' && a.kind !== 'tool' && a.kind !== 'teach') {
+  // hasPDF, not the group: this had its own copy of the old kind test, which is what actually
+  // served Resort Infinity a PDF that was never built (Ken's 404) and denied the activity
+  // sequence the one it has.
+  if (fmt === 'pdf' && hasPDF(a) && a.file.slice(-4) === '.htm') {
     return SHEETS + 'pdf/' + encodeURIComponent(a.file.slice(0, -4) + '.pdf') + '#view=FitH';
   }
   return SHEETS + encodeURIComponent(a.file);
 }
-function hasPDF(a) { return a.kind !== 'tool' && a.kind !== 'teach'; }
+// Only the worksheets Word converted have a printed page. Keyed off the entry itself, not
+// its group: Resort Infinity moved from Tools into the activities and started offering a
+// PDF that was never built (a 404 in the pane, Ken 2026-08-12), while the activity
+// sequence -- which does have one -- had its toggle hidden for sitting with the teachers.
+function hasPDF(a) { return !a.site; }
 
 // ?freeplay=1 is the app's own opening flow with the chooser skipped: the usual name-and-head
 // dialog, aimed at free play. The pane deliberately has NO name handling of its own -- an
@@ -291,14 +298,13 @@ function show(a) {
     b.dataset.file = m[0];
     b.textContent = (loaded[m[0]] ? '' : 'Load ') + m[1];
     if (loaded[m[0]]) b.className = 'done';
-    // A city REPLACES the world; everything else arrives in the hand. (The tooltip used to
-    // append ".tt" to a name that already had its extension, and promise a city in your
-    // hand -- Ken, 2026-08-12.)
+    // A city REPLACES the world; everything else is flown in by Tooly and lands ON THE FLOOR
+    // beside you (Toolbox::add_sprite) -- "in your hand" was wrong, twice over (Ken).
     var isCity = /\.cty$/.test(m[0]);
     b.title = loaded[m[0]]
       ? (isCity ? 'Load the city again — this restarts it' : 'Already loaded — get another copy')
       : (isCity ? 'Load this city: it replaces the world you are in'
-                : 'Put ' + m[0] + ' into your hand');
+                : 'Tooly brings ' + m[0] + ' and puts it on the floor beside you');
     bar.appendChild(b);
   });
 }
