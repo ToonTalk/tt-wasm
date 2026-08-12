@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToonTalk to WebAssembly — engineering notes</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
-<meta name="description" content="Porting ~210k lines of 2004 Win32/DirectX C++ to WebAssembly: the shim boundary, the failure modes, nine case studies, and what is still open.">
+<meta name="description" content="Porting ~210k lines of 2004 Win32/DirectX C++ to WebAssembly: the shim boundary, four failure modes, the case studies worth retelling, what the work cost in tokens and hours, and what is still open.">
 <style>
   :root {
     --ground:  #F4F6F7;
@@ -260,7 +260,8 @@
       <div class="stat"><span class="stat-value">14</span><span class="stat-label">Shim implementations</span></div>
       <div class="stat"><span class="stat-value">117</span><span class="stat-label">Functional JS overrides</span></div>
       <div class="stat"><span class="stat-value">235</span><span class="stat-label">Zero-stubs</span></div>
-      <div class="stat"><span class="stat-value">267</span><span class="stat-label">Commits</span></div>
+      <div class="stat"><span class="stat-value">287</span><span class="stat-label">Commits</span></div>
+      <div class="stat"><span class="stat-value">87 h</span><span class="stat-label">Active build time</span></div>
     </div>
   </div>
 </header>
@@ -593,6 +594,116 @@
   </section>
 
   <section>
+    <h2>Failure mode four — the port's own compensations, outliving their reason</h2>
+    <div class="prose">
+      <p>The three modes above are all about the original's code. This one is about the port's. A compensation is written to work around a defect; the defect is later fixed; the compensation stays, and is now itself the divergence. It is harder to find than any of the others, because the suspicious-looking code is code the port added <em>on purpose</em>, with a comment explaining why.</p>
+      <p>The prescription that came out of it: when behaviour diverges in a region the port has touched, <code>git log -S</code> its own <code>#ifdef __EMSCRIPTEN__</code> blocks and re-justify each one against the original <em>before</em> suspecting the engine.</p>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">4800db6</dd>
+        <dt>Subsystem</dt><dd>Number display</dd>
+        <dt>Symptom</dt><dd>(3/2)<sup>100</sup> drawn with a stretched, flush-left denominator; (3/2)<sup>1000</sup> with full-size digits spilling past a too-narrow face</dd>
+      </dl>
+      <div class="case-body">
+        <h3>A safety net that became the bug</h3>
+        <p>An earlier commit had capped a free number pad's width at seventeen tiles and forced font-fitting at the cap — a guard added while containment was broken, in the same commit that fixed containment. Retail photographs settled what the original actually does: it lets the face grow to the digits' full natural width, wider than the screen if need be, with full-size digits and the shorter line centred. The cap was the divergence, and it was also what armed the fisheye display that produced the garbled glyphs.</p>
+        <p>The reproduction mattered as much as the fix. A pad built fresh with the same value looked perfect; the fault only appeared when the pad had first displayed <span class="mono">3/2</span> and was then given a large value, because it sized itself from the stale small-text font. Replaying the user's construction sequence — take the notebook's Fraction page, drop a typed <span class="mono">100^</span> on it — was what made it reproducible at all.</p>
+      </div>
+    </div>
+
+    <h2>Since the fractions</h2>
+    <div class="prose">
+      <p>The work after that point was less about the engine and more about what surrounds it: putting a 2005 research study back in front of a learner, letting people take their work out of the tab, and cleaning up after the port's own diagnostics.</p>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commits</dt><dd class="commit">bc5c961 · 3d34e4b</dd>
+        <dt>Subsystem</dt><dd>Object loading; activity page</dd>
+        <dt>Finding</dt><dd>A <span class="mono">.tt</span> file is a zip of <span class="mono">data.xml</span> — the same pasted-object XML the clipboard already decodes</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Twenty-year-old student programs still load</h3>
+        <p>The WebLabs cardinality study (Kahn, Sendova, Sacristán &amp; Noss, 2011) had children aged 9–13 building infinite sequences in ToonTalk. Its worksheets survive in the author's own files; 464 of the students' programs survive in the Wayback Machine, under <span class="mono">weblabs.org.uk/wlplone/Members/…</span>, and still download intact.</p>
+        <p>Loading them needed no new engine code. <code>sprite_from_file_name</code> — what the native build calls when a <span class="mono">.tt</span> file is double-clicked — parses them directly. Seven 2005 programs were tried: the Match Maker, the Diagonal team, the duplicate removers, a Bulgarian student's multiple-sequence box. All loaded and rendered, boxes with live nests and trained robots inside.</p>
+        <p>Handing one to a <em>running</em> world is the same path: the sprite goes to <code>tt_add_sprite_when_on_floor</code>, which the floor's own <code>react()</code> picks up a frame later. That is what the activity page's load buttons do, so nothing restarts and the learner keeps what they have built.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commit</dt><dd class="commit">80356f9</dd>
+        <dt>Subsystem</dt><dd>Saving</dd>
+        <dt>Trap</dt><dd>A save that reported success and wrote nothing</dd>
+      </dl>
+      <div class="case-body">
+        <h3>Out of the tab, onto a disk</h3>
+        <p>The engine has always written both kinds of file — the paused dialog's <em>save what is in the hand</em> (case 7) and <em>save everything</em> (case 4). Natively they land in My Documents, which a browser tab has no equivalent of, so the port runs those same paths into its own filesystem and hands the bytes to the browser as a download. Reading one back is the loader above.</p>
+        <p>The trap was in the city path. <code>City::compute_full_file_name</code> takes a name that already ends in <span class="mono">.cty</span> verbatim, and otherwise resolves it against the user's folder — so an absolute path became <span class="mono">&lt;user dir&gt;//toontalk/save/…</span>, wrote nothing, and still returned TRUE. It now checks <code>file_exists</code> before claiming success: 10,181 bytes for a city, 662 for a held robot, and the robot's file reloads.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commits</dt><dd class="commit">c39ff81 · 6a114b6 · ec2f7f5</dd>
+        <dt>Subsystem</dt><dd>Diagnostics</dd>
+        <dt>Symptom</dt><dd>52,000 console lines in one session; “everything slowed down”</dd>
+      </dl>
+      <div class="case-body">
+        <h3>The probes become the problem</h3>
+        <p>Debugging probes added for one bug outlive it. Two of them printed per robot-match attempt — fine for a Pong demo, catastrophic in Resort Infinity where robots match every frame, at two console lines each. One had a multi-line robot <em>name</em> in it, so the printf split across console lines and the second half slipped past a filter that keyed on the line's prefix. Another was called <span class="mono">holefail</span>, and hole mismatches are routine — the resort's machinery probes an incomplete solution box every cycle — so the word “fail” in its own name held the quiet filter open.</p>
+        <p>Console output is now off by default and available behind <span class="mono">?log=1</span>, the filter sits on <code>console.log</code> as well as on <code>printf</code> because half the probes bypass the latter, and probes that report expected conditions no longer say FAIL. The remaining bulk of that 52,000-line log was Chrome's own <span class="mono">[Violation]</span> notices, which only exist while DevTools is open.</p>
+      </div>
+    </div>
+
+    <div class="case">
+      <dl class="rail">
+        <dt>Commits</dt><dd class="commit">230efa2 · 2ae22fd</dd>
+        <dt>Subsystem</dt><dd>Activity page</dd>
+        <dt>Symptom</dt><dd>A worksheet's “printed page” 404s; another's is hidden although it exists</dd>
+      </dl>
+      <div class="case-body">
+        <h3>A fact written twice will drift</h3>
+        <p>Whether a sheet had a printable PDF was deduced from which group it was listed in, in two places that then disagreed. Moving one sheet between groups made it claim a PDF that was never built; fixing the first copy of the rule left the second still serving the 404. The rule is now <em>generated</em> — the build script lists the PDF folder and writes out what it finds.</p>
+        <p>It is the same shape as the port bugs catalogued above: one quantity computed in two places that must agree. The port has been producing them at about the rate it finds them in the original.</p>
+      </div>
+    </div>
+
+    <h2>The work, measured</h2>
+    <div class="prose">
+      <p>The whole port was carried out in a single continuous Claude Code session, which logs every request. The figures below are counted from that log and from git, not estimated. “Active time” sums the gaps between logged events with any gap capped at five minutes, so overnight pauses and the author's testing breaks do not inflate it; build waits do count.</p>
+    </div>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th scope="col">Measure</th><th scope="col">The port (5 July – 12 Aug)</th><th scope="col">Whole session (from 22 June)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Active working time</td><td>87 hours</td><td>104 hours</td></tr>
+          <tr><td>Days worked</td><td>32</td><td>41</td></tr>
+          <tr><td>Commits</td><td>287, on 30 distinct days</td><td>—</td></tr>
+          <tr><td>Lines added / removed after the source import</td><td>+101,978 / −29,775</td><td>—</td></tr>
+          <tr><td>Messages from the author</td><td>450</td><td>525</td></tr>
+          <tr><td>Model requests</td><td>19,130</td><td>23,850</td></tr>
+          <tr><td>Output tokens (everything written)</td><td>18.7 M</td><td>27.6 M</td></tr>
+          <tr><td>Fresh input tokens</td><td>0.49 M</td><td>1.35 M</td></tr>
+          <tr><td>Cache writes</td><td>344 M</td><td>418 M</td></tr>
+          <tr><td>Cache reads</td><td>9.66 B</td><td>11.26 B</td></tr>
+          <tr><td>Tool calls</td><td>10,366</td><td>12,693</td></tr>
+          <tr><td>— of which shell commands</td><td>4,663</td><td>5,328</td></tr>
+          <tr><td>— file edits / reads</td><td>1,474 / 902</td><td>2,105 / 1,447</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <p>The ratio worth noticing is between the two input rows. Fresh input — text the model had never seen — is half a million tokens. Cache reads are nine and a half <em>billion</em>. Over 19,130 requests the accumulated conversation is re-read on each one, so 96% of all tokens processed were re-reads of context already paid for once. A single session spanning seven weeks is only affordable because of that.</p>
+      <p>The other ratio: 450 messages from the author against 10,366 tool calls — roughly twenty-three actions per instruction. Most of those actions are measurement rather than editing. Shell commands outnumber file edits three to one, which is the shape of the method described above: probe, measure, then change one thing.</p>
+    </div>
+
     <h2>Open</h2>
     <div class="scroller">
       <table>
@@ -605,6 +716,8 @@
           <tr><td>Runt segment after browsing the past</td><td>Resuming recording leaves <code>next_log</code> unchanged, so the next checkpoint is cut short. The arithmetic may be faithful to the original — in which case it is a question, not a bug.</td></tr>
           <tr><td>Fullscreen subtitles coarse</td><td>Better since the real font engine and the descent-room fix, but the fullscreen upscale still shows.</td></tr>
           <tr><td>Room-interior fidelity</td><td>Floor stud noise and a dark pad against the original's look.</td></tr>
+          <tr><td>Guest pad truncated in flight</td><td>In Resort Infinity the box a bird carries draws with its text cut off. Same family as the earlier text-fit bugs; the carried-sprite scale and the text layout disagree.</td></tr>
+          <tr><td>Time-travel exit sets a fixed mouse mode</td><td>Leaving time travel assigns a constant instead of deriving the mode from the pointer-lock state — the same class of error as the demo-replay mode bug, which was fixed by deriving rather than assigning.</td></tr>
           <tr><td>Colours snapped to 256 entries</td><td>The port reports an 8-bit display because the artwork is 8-bit. Sprite art is therefore exact, but anything drawn as a true RGB colorref is snapped, where the original at 32-bit is not. Deferred deliberately.</td></tr>
         </tbody>
       </table>

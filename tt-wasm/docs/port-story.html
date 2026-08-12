@@ -201,7 +201,7 @@
     <p class="eyebrow">A restoration diary</p>
     <h1>Putting ToonTalk back on its feet</h1>
     <p class="standfirst">A programming environment for children, written for Windows and left behind by it, now runs in a browser tab. Almost none of the work was in the part you can see.</p>
-    <p class="byline">On the porting of ToonTalk to WebAssembly · 267 commits between 5 July and 11 August 2026</p>
+    <p class="byline">On the porting of ToonTalk to WebAssembly · 287 commits between 5 July and 12 August 2026</p>
     <p class="byline"><a href="https://toontalk.github.io/tt-wasm/">Play it in your browser</a> ·
        <a href="https://docs.google.com/document/d/1BLeINnjCbSp2iL4qPa00osr8iuGCbyHUGVUND7ke5iM/edit?usp=sharing">the author's own account of the project</a></p>
   </div>
@@ -287,6 +287,8 @@
       <li>Time travel is complete: sessions record themselves into checkpoints as you play, the tape-recorder buttons jump between them and replay from any point, you can take over from the past, and a whole session can be saved as a demo file and replayed later.</li>
       <li>Fractions display as fractions again — a three over a bar over a two — which turned out to be the best story of the port, told below.</li>
       <li>And Marty can now be given a mind: connect an AI of your choice and ask him anything, out loud if you like. That story is below too.</li>
+      <li>You can take your work out of the tab: save what you are holding, or a whole city, to a file on your own disk — and open one again.</li>
+      <li>A 2005 research study runs again. Eight activities on the sizes of infinity sit beside a live ToonTalk, with the robots each one needs a click away.</li>
     </ul>
     <p>It is public. Anyone with a desktop browser can play at
        <a href="https://toontalk.github.io/tt-wasm/">toontalk.github.io/tt-wasm</a>.</p>
@@ -303,7 +305,9 @@
       <li>Resuming recording after browsing the past cuts the next checkpoint shorter than it should be — faithful to the original's arithmetic, possibly, which is its own kind of question.</li>
       <li>Subtitles in full screen still look coarser than they should.</li>
       <li>The room interior has small fidelity gaps against the original — floor texture noise, a dark pad.</li>
+      <li>In Hilbert's hotel, the little box a bird carries to you draws with its label cut off.</li>
     </ul>
+    <p>And one boundary worth stating plainly: the eight infinity activities have been checked as far as loading and running their materials goes, but only the first has been solved end to end by a person. Solving the rest means training robots by hand, which is exactly the thing a program cannot fake on your behalf.</p>
   </section>
 
   <div class="divider"><div class="studs"></div></div>
@@ -345,10 +349,41 @@
   <div class="divider"><div class="studs"></div></div>
 
   <section>
+    <p class="eyebrow">A different kind of mistake</p>
+    <h2>The safety net that became the bug</h2>
+    <p>A number pad in ToonTalk grows to fit its number. Raise three-halves to the hundredth power and you get a fraction forty-eight digits over thirty-one, and the pad is supposed to become as wide as the digits need — wider than the screen, if that is what it takes.</p>
+    <p>It did not. The face stayed pinned while the digits went strange: stretched, crowded, spilling past the edge of the thing that was meant to contain them. Photographs of the original running on Windows settled what should happen, and they disagreed with the port.</p>
+    <p>The cause was not in the old code. Weeks earlier the port had added a guard — <em class="term">don't let a pad grow wider than the floor</em> — while a containment bug was making wide pads escape their surroundings. The very same change had also fixed the containment bug. The guard was never needed after the day it was written, and it sat there, commented and reasonable-looking, quietly being the divergence.</p>
+    <p>This is the hardest kind of bug to find in a restoration, because everything about it looks deliberate. It also only reproduced if you built the number the way a person would: take the three-halves out of the notebook, drop a typed <em class="term">100^</em> on it. A pad created fresh with the same value looked perfect, because the fault lay in the pad's history — it had sized its font while it still said <em class="term">3/2</em>. Replaying what the user actually did, rather than the state they ended up in, was what made it visible.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">A study, brought back</p>
+    <h2>Children, infinity, and 464 files in an archive</h2>
+    <p>In 2004 and 2005, as part of a European project called WebLabs, children aged nine to thirteen in England and Bulgaria used ToonTalk to build infinite sequences — the natural numbers, the evens, the integers, all the fractions between nought and one — and to argue about whether one infinity can be larger than another. They trained robots called <em class="term">Add 1</em>, <em class="term">Doubler</em>, <em class="term">Merge</em>, <em class="term">Match Maker</em>, and one team that walks Cantor's diagonal. A paper came out of it in 2011.</p>
+    <p>The worksheets survived in the author's own files — eight activities, in a version tested in Oxford and Sofia, together with the teachers' guide and a city that is Hilbert's hotel. The children's programs survived somewhere less expected: 464 of them are still sitting in the Internet Archive, where a long-dead project website was crawled. They still download. And because a ToonTalk program file is just its own saved description, the port opens them with the same code the original used when you double-clicked one. Seven were tried at random — a Match Maker, a diagonal team, a Bulgarian boy's sequence box — and every one came up on the floor, robots and birds and nests intact, twenty-one years later.</p>
+    <p>So the activities are back, as a page where the worksheet sits beside a running ToonTalk. Each activity offers the robots it needs, delivered into the world you are already in rather than restarting it. The boxes on the worksheets that were ruled space to write an answer on paper have become prompts to think about instead. And Marty has read the whole activity sequence, so he can play the part the researchers played: <em class="term">what would happen if the robots ran forever?</em></p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
+    <p class="eyebrow">Sharing</p>
+    <h2>Taking your work with you</h2>
+    <p>ToonTalk could always write what you were holding to a file, or save your whole city. In the browser those files landed in a place with no door to the outside: a private filesystem inside the tab. Now the same two commands hand their bytes to the browser as a download, and a third reads one back. Hold something, press Escape, save it; mail it to someone; they open it and it lands on their floor.</p>
+    <p>It is a small feature that closes a large gap. The 2011 paper's claim that a computation could be saved and resumed on another machine — that a child's infinite process need not die with the computer it started on — is true again.</p>
+  </section>
+
+  <div class="divider"><div class="studs"></div></div>
+
+  <section>
     <h2>Why bother</h2>
     <p>Software of this kind is unusually easy to lose. It is not a document you can migrate; it is a machine, and it only works while the machinery beneath it is kept alive. When that goes, the thing is gone — not corrupted, not deleted, simply unrunnable, which amounts to the same thing for anyone who wanted to see it.</p>
     <p>What makes the browser worth the trouble is that it is the one platform that has consistently declined to break old things. A page that works today has a fair chance of working in fifteen years, which is a claim almost nothing else in computing can make.</p>
     <p>So the goal was never to modernise ToonTalk. It was to move it somewhere it can go on being itself, with its own artwork, its own timing, its own twenty-year-old decisions intact — including the ones nobody remembers making.</p>
+    <p>For anyone curious about the cost: the port took about eighty-seven hours of active work spread over five weeks, in 287 commits, with the author sending 450 messages and reading a great many screenshots. The <a href="port-notes.html">engineering notes</a> carry the full accounting.</p>
   </section>
 
 </div>
