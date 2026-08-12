@@ -143,11 +143,8 @@
     <section class="pane" id="ttpane">
       <div class="panehead">
         <strong>ToonTalk</strong>
-        <label for="who" style="color:#9d9db4">Your name</label>
-        <input id="who" size="10" placeholder="NoName" autocomplete="off">
-        <button type="button" id="whogo" title="Start ToonTalk under this name, so your work is saved under it">Use</button>
-        <span class="spacer"></span>
         <span id="ttnote"></span>
+        <span class="spacer"></span>
         <button type="button" class="go" id="ttfull" title="Give ToonTalk the whole window">Full width</button>
       </div>
       <iframe id="tt" title="ToonTalk"
@@ -229,9 +226,6 @@ var GROUPS = [
 var sheet = document.getElementById('sheet');
 var tt = document.getElementById('tt');
 var current = null;          // the activity showing in the sheet pane
-var ttLoaded = null;         // material ToonTalk was started with, if any
-var ttUser = null;           // the name the engine is running under
-var ttStarted = false;       // has the engine been up long enough to have work in it
 var fmt = 'html';            // 'html' (reads on screen) or 'pdf' (the printed page)
 
 // The worksheets exist in both forms. Word's PDF keeps the page they were written on --
@@ -247,13 +241,12 @@ function sheetURL(a) {
 }
 function hasPDF(a) { return a.kind !== 'tool' && a.kind !== 'teach'; }
 
-function ttURL(res) {
-  // ?floor=1 puts the programmer straight on a house floor with the toolbox and notebook --
-  // no launcher, no demo. Materials are loaded on demand once it is running, so ?ttfile= is
-  // only used to carry one across a restart.
-  return '../tt.html?floor=1' + (ttUser ? '&user=' + encodeURIComponent(ttUser) : '') +
-         (res ? '&ttfile=' + encodeURIComponent(res) : '');
-}
+// ?freeplay=1 is tt.html's own opening flow with the chooser skipped: the usual name-and-head
+// dialog, aimed at free play. The pane deliberately has NO name handling of its own -- an
+// earlier version remembered the last name and applied it silently, and the time-travel logs
+// recorded under that name began replaying (Ken, 2026-08-12). Materials load on demand once
+// the learner is on the floor.
+var TT_URL = '../tt.html?freeplay=1';
 
 // What each activity needs, named the way the sheets name it. An activity lists only what it
 // is the FIRST to need -- the notebook of robots at activity 1, the duplicate remover at
@@ -361,26 +354,6 @@ document.getElementById('matbar').addEventListener('click', function (e) {
   var b = e.target.closest('button[data-file]');
   if (b) loadMaterial(b.dataset.file, b.textContent.replace(/^(Load |✓ )/, ''));
 });
-
-// The name. ?floor=1 goes straight to the floor and never shows the launcher's name dialog,
-// so the learner would always be NoName; ?user= gives the engine the same -n <name> the
-// dialog would have, and their work is saved under it. Changing it restarts ToonTalk, so it
-// asks first once there is something to lose.
-var who = document.getElementById('who');
-try { who.value = localStorage.getItem('TT_userName') || ''; } catch (e) {}
-function useName() {
-  var n = (who.value || '').replace(/[^A-Za-z0-9_]/g, '');
-  if (!n || n === ttUser) return;
-  if (ttStarted && !confirm('Start ToonTalk again as ' + n + '?\n\n' +
-                            'Anything you have built in the ToonTalk pane will be lost.')) return;
-  try { localStorage.setItem('TT_userName', n); } catch (e) {}
-  ttUser = n;
-  loaded = {};
-  tt.src = ttURL(ttLoaded);
-  if (current) show(current);
-}
-document.getElementById('whogo').addEventListener('click', useName);
-who.addEventListener('keydown', function (e) { if (e.key === 'Enter') useName(); });
 document.getElementById('openraw').addEventListener('click', function () {
   if (current) window.open(sheetURL(current), '_blank');
 });
@@ -410,13 +383,7 @@ sheet.addEventListener('load', function () {
 
 // ---- start -----------------------------------------------------------------
 show(ACTIVITIES[0]);                 // activity 1, not the researchers' overview
-// A name remembered from a previous visit (the launcher stores the same key) is applied to
-// the engine straight away -- otherwise the box would show a name that was not in force.
-try { ttUser = (localStorage.getItem('TT_userName') || '').replace(/[^A-Za-z0-9_]/g, '') || null; }
-catch (e) {}
-tt.src = ttURL(null);                // start the engine now so it is ready when wanted;
-                                     // materials come later, on request
-tt.addEventListener('load', function () { setTimeout(function () { ttStarted = true; }, 4000); });
+tt.src = TT_URL;                     // opens on the usual name dialog; the engine loads behind it
 </script>
 </body>
 </html>

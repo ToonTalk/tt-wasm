@@ -307,9 +307,9 @@
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
-    // 1786512717 is rewritten by link.sh on every build; without it Chrome's heuristic cache
+    // 1786513439 is rewritten by link.sh on every build; without it Chrome's heuristic cache
     // can serve a stale tt.wasm/tt.data under a fresh tt.js (the script URL alone is stamped).
-    locateFile: function (f) { return f + '?v=1786512717'; },
+    locateFile: function (f) { return f + '?v=1786513439'; },
     // TT_log: in-page ring of the engine's [tt] trace lines. The extension's console capture
     // resets on navigation and resurrects stale lines, so automation reads this instead.
     print: function (t) {
@@ -628,6 +628,12 @@
     var stage = document.getElementById('stage');
     var user = document.getElementById('luser'), ttbox = document.getElementById('lttbox');
     var pending = '';                                  // '-next_puzzle 0' or '-next_puzzle 1'
+    // ?freeplay=1 (the Exploring Infinity pane): skip the opening chooser and go straight to
+    // the usual name-and-head dialog, already aimed at free play. The engine then starts under
+    // the dialog's own choices, exactly as if Free Play had been clicked -- the pane must NOT
+    // invent its own name handling (Ken: a remembered name silently took effect and the
+    // time-travel logs it had recorded began replaying).
+    var freeplayOnly = /[?&]freeplay=1/.test(location.search);
     stage.style.display = 'none';
     box.hidden = false;
 
@@ -691,6 +697,14 @@
       });
     });
     document.getElementById('lback').addEventListener('click', function () { show('main'); });
+    if (freeplayOnly) {
+      pending = '-next_puzzle 0';
+      ttbox.disabled = false;
+      document.getElementById('lttnote').textContent =
+        'I want to be able to travel in time to undo mistakes or replay what I just did. ' +
+        '(Sometimes ToonTalk runs slowly when this is checked.)';
+      document.getElementById('lback').hidden = true;  // there is no chooser behind this dialog
+    }
     document.getElementById('lplayground').addEventListener('click', function () {
       location.search = '?user=PlaygroundBookX';
     });
@@ -792,7 +806,7 @@
         try { localStorage.setItem('TT_userHead', b.getAttribute('data-head')); } catch (e) {}
       });
     });
-    show('main');
+    show(freeplayOnly ? 'name' : 'main');
   })();
 
   // Idle: slide the page furniture out of the way after a few quiet seconds so the canvas is all
@@ -837,6 +851,6 @@
     }, 500);
   }
 </script>
-<script src="tt.js?v=1786512717"></script>
+<script src="tt.js?v=1786513439"></script>
 </body>
 </html>
