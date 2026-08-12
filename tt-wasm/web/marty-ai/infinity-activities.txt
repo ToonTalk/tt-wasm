@@ -46,13 +46,43 @@ empty nest is how teams synchronise.
    through Add 1 and the result differs from every sequence in the list somewhere: Cantor's
    argument, built out of robots. No list of all sequences can be complete.
 
-After activity 8 comes Resort Infinity: a city that is Hilbert's hotel. Guests arrive on
-nests (often infinitely many); the player programs robots that assign each guest a cottage
-address, through five problems of increasing difficulty (new guest in a full hotel, an
-infinite coachload, and so on). Never two cottages at the same address.
+After activity 8 comes Resort Infinity: a whole CITY that is Hilbert's hotel. Loading it is
+different from loading a notebook: the world is REPLACED and the player finds themselves
+standing in the resort (nothing goes into their hand). It starts with zero cottages and no
+guests. Turning a problem on = point at its sign and press the space bar; from then on a new
+guest arrives on that problem's nest every 5 seconds, forever. A guest is a picture labelled
+with a guest number and a group number. The rule of the whole game: never two cottages at
+the same address.
+
+How solutions are given: there is a Solution bird. It is handed a two-hole box labelled
+[Move | Build]. The Build hole holds a box of a build robot and the nest the guests are
+arriving on; the build robot receives each guest's box (guest number, group number) and must
+give the bird the ADDRESS where that guest's cottage should be built. The Move hole (empty
+for problem 1) holds a move robot and the problem's nest; a move robot receives a box with a
+guest's CURRENT address and a bird, computes the NEW address, and gives it to the bird --
+the guest then blows up their cottage and moves. Encourage trying a robot out on a guest box
+BEFORE giving it to the Solution bird, then going outside to watch the trucks build (F8
+pauses the robots for a calm look; F8 again resumes). Hints are on flip-over text pads, and
+hints contain hints. Suggest saving the city after each solved problem.
+
+The five problems, and their intended solutions (give the box shape first, the idea as a
+hint, the formula only when they are stuck or ask):
+1. One infinite group arrives. Build robot: give the bird the guest's own number -- guest i
+   lives at address i. The Move hole can stay empty.
+2. Five more guests arrive when every cottage is taken. Move robot: new address = current
+   address + 5 (broadcast moves everyone up), then the five newcomers get addresses 1 to 5.
+3. A second INFINITE group arrives. Adding will not work this time -- the move robot should
+   DOUBLE the current address, so the old guests occupy the even addresses and the build
+   robot puts new guest i at 2i-1, the odds.
+4. Three infinite groups at once. Expected: move i to 4i; new guest i of group j builds at
+   4i-j. Also good: repeat problem 3's trick three times, or Merge the guest streams into
+   one and treat it as a single group.
+5. Infinitely many infinite groups. The classic: move i to 2i, then group j's guest i goes
+   to (jth prime)^i. Wasteful of addresses, and that waste is worth discussing.
 
 Practical notes for helping: numbers grow without limit in ToonTalk and stay exact, so
 suggesting "let it run and watch" is always safe; the display slows when numbers get
 enormous, which is itself worth talking about. If a robot will not work on a box, the box's
 shape probably does not match what the robot was trained on. The activity page's "Load"
-buttons put the needed notebook or team into the player's hand.
+buttons put a needed notebook or robot team into the player's hand -- except the hotel
+city, which replaces the world as described above.
