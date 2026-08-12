@@ -732,6 +732,58 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         demoRow.appendChild(demoBtn);
         panel.appendChild(demoRow);
       }
+      // Taking work away as files, and bringing it back. Ken's design: "when holding
+      // something and hitting Esc an option could be to save the object to disk". These are
+      // the engine's own save paths (ask_continue_or_quit's cases 7 and 4) with the result
+      // downloaded instead of left in a My Documents the browser does not have. Like the
+      // rows above they report and do NOT dismiss.
+      var fileRow = document.createElement('div');
+      fileRow.style.cssText = 'padding:8px 12px 14px;display:flex;flex-direction:column;gap:6px';
+      var mkBtn = function (label, onclick) {
+        var b = document.createElement('button');
+        b.textContent = label;
+        b.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+        b.onclick = onclick;
+        fileRow.appendChild(b);
+        return b;
+      };
+      var askName = function (what, dflt) {
+        var n = prompt('Save ' + what + ' as:', dflt);
+        return (n === null) ? null : (n.replace(/[^A-Za-z0-9 _.-]/g, '') || dflt);
+      };
+      mkBtn('Save what I am holding to a file…', function () {
+        var n = askName('what you are holding', 'my ToonTalk object');
+        if (n === null) return;
+        var ok = false;
+        try { ok = !!globalThis.TT_saveHeld(n); } catch (e) {}
+        saveNote.textContent = ok ? 'Saved ' + n + '.tt — check your downloads.'
+          : 'Nothing saved. Are you holding something? (Pick it up first, then press Esc.)';
+      });
+      mkBtn('Save this city to a file…', function () {
+        var n = askName('this city', 'my ToonTalk city');
+        if (n === null) return;
+        var ok = false;
+        try { ok = !!globalThis.TT_saveCityFile(n); } catch (e) {}
+        saveNote.textContent = ok ? 'Saved ' + n + '.xml.cty — check your downloads.'
+                                  : 'Could not save this city.';
+      });
+      mkBtn('Open a ToonTalk file from my computer…', function () {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.tt,.cty';
+        input.onchange = function () {
+          var f = input.files && input.files[0];
+          if (!f) return;
+          globalThis.TT_loadUserFile(f).then(function (r) {
+            saveNote.textContent = r === 2
+              ? f.name + ' loaded — it has replaced the world. Choose Back to ToonTalk.'
+              : r === 1 ? f.name + ' has arrived on the floor — choose Back to ToonTalk.'
+                        : 'Could not read ' + f.name + '. Is it a ToonTalk .tt or .cty file?';
+          });
+        };
+        input.click();
+      });
+      panel.appendChild(fileRow);
     }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
@@ -1520,6 +1572,72 @@ Module['preRun'].push(function () {
       globalThis.TT_pendingLoad = name;
       return Module['_tt_load_pending_file']() | 0;
     } catch (e) { return 0; }
+  };
+  // ---- taking your work away, and bringing it back ------------------------------------
+  // ToonTalk has always been able to write what you are holding, or the whole city, to a
+  // file; natively they land in My Documents. A browser tab has no My Documents, so the
+  // engine writes into /toontalk/save and these hand the bytes to the browser as a download.
+  // Reading one back needs no new engine code at all: it is the same sprite_from_file_name
+  // the double-click path uses, pointed at a file we wrote into /toontalk/loaded.
+  var download = function (path, suggested) {
+    var bytes;
+    try { bytes = FS.readFile(path); } catch (e) { return false; }
+    // slice() so the Blob owns its own copy: FS.readFile hands back a view on the wasm heap,
+    // which can be detached by a memory growth before the download finishes.
+    var blob = new Blob([bytes.slice().buffer], { type: 'application/octet-stream' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = suggested;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 20000);
+    return true;
+  };
+  // Write the file and return where it landed, or null. Separate from the download so the
+  // node harness -- which has no document to download into, and cannot see Module from
+  // outside this scope -- can test the engine half on its own.
+  globalThis.TT_writeSave = function (kind, name) {
+    var fn = (kind === 'city') ? '_tt_save_city_to_file' : '_tt_save_in_hand';
+    try {
+      if (!globalThis.TT_loop_alive || !Module[fn]) return null;
+      globalThis.TT_saveName = (name || 'ToonTalk').replace(/[^A-Za-z0-9 _.-]/g, '') || 'ToonTalk';
+      globalThis.TT_savedPath = null;
+      if (!Module[fn]()) return null;
+      return globalThis.TT_savedPath || null;
+    } catch (e) { return null; }
+  };
+  var saveThrough = function (kind, name, fallbackExt) {
+    var p = globalThis.TT_writeSave(kind, name);
+    if (!p) return false;
+    return download(p, p.split('/').pop() || (globalThis.TT_saveName + fallbackExt));
+  };
+  // What you are holding, as a .tt file. Returns false if your hand is empty.
+  globalThis.TT_saveHeld = function (name) { return saveThrough('held', name, '.tt'); };
+  // The whole city, as a .xml.cty file.
+  globalThis.TT_saveCityFile = function (name) { return saveThrough('city', name, '.xml.cty'); };
+  // A file the player picked from their own disk: write it where the engine can see it, then
+  // load it exactly as a double-clicked .tt is loaded. Objects arrive on the floor; a city
+  // replaces the world. Returns a promise for 0 (failed) / 1 (object) / 2 (city).
+  globalThis.TT_loadUserFile = function (file) {
+    return new Promise(function (resolve) {
+      if (!file) return resolve(0);
+      var reader = new FileReader();
+      reader.onerror = function () { resolve(0); };
+      reader.onload = function () {
+        try {
+          FS.mkdirTree('/toontalk/loaded');
+          var safe = file.name.replace(/[^A-Za-z0-9_.-]/g, '_');
+          var path = '/toontalk/loaded/' + safe;
+          FS.writeFile(path, new Uint8Array(reader.result));
+          globalThis.TT_pendingLoad = path;
+          resolve(Module['_tt_load_pending_file'] ? (Module['_tt_load_pending_file']() | 0) : 0);
+        } catch (e) { console.log('[tt] loadfile: ' + e); resolve(0); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+  // Harness helper: how big is a file in the engine's filesystem (FS is module-scoped).
+  globalThis.TT_fileSize = function (path) {
+    try { return FS.readFile(path).length; } catch (e) { return -1; }
   };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.

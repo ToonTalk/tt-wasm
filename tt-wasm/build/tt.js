@@ -71,7 +71,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmph3a5o_86.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj1f5pkl1.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -205,14 +205,14 @@ Module['FS_createPath']("/toontalk", "pics", true, true);
 
   })();
 
-// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmph3a5o_86.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp4ofnd89d.js
+// end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpj1f5pkl1.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmph3m8nqc8.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp4ofnd89d.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmph3m8nqc8.js
 // include: shim/pre.js
 // Keep the engine ticking when the tab is hidden: Chrome stops requestAnimationFrame for
 // non-visible tabs (and clamps page timers to 1Hz), which froze the whole message loop —
@@ -948,6 +948,58 @@ globalThis.TT_msgq = globalThis.TT_msgq || [];
         demoRow.appendChild(demoBtn);
         panel.appendChild(demoRow);
       }
+      // Taking work away as files, and bringing it back. Ken's design: "when holding
+      // something and hitting Esc an option could be to save the object to disk". These are
+      // the engine's own save paths (ask_continue_or_quit's cases 7 and 4) with the result
+      // downloaded instead of left in a My Documents the browser does not have. Like the
+      // rows above they report and do NOT dismiss.
+      var fileRow = document.createElement('div');
+      fileRow.style.cssText = 'padding:8px 12px 14px;display:flex;flex-direction:column;gap:6px';
+      var mkBtn = function (label, onclick) {
+        var b = document.createElement('button');
+        b.textContent = label;
+        b.style.cssText = 'font:inherit;padding:4px 10px;width:100%;cursor:pointer';
+        b.onclick = onclick;
+        fileRow.appendChild(b);
+        return b;
+      };
+      var askName = function (what, dflt) {
+        var n = prompt('Save ' + what + ' as:', dflt);
+        return (n === null) ? null : (n.replace(/[^A-Za-z0-9 _.-]/g, '') || dflt);
+      };
+      mkBtn('Save what I am holding to a file…', function () {
+        var n = askName('what you are holding', 'my ToonTalk object');
+        if (n === null) return;
+        var ok = false;
+        try { ok = !!globalThis.TT_saveHeld(n); } catch (e) {}
+        saveNote.textContent = ok ? 'Saved ' + n + '.tt — check your downloads.'
+          : 'Nothing saved. Are you holding something? (Pick it up first, then press Esc.)';
+      });
+      mkBtn('Save this city to a file…', function () {
+        var n = askName('this city', 'my ToonTalk city');
+        if (n === null) return;
+        var ok = false;
+        try { ok = !!globalThis.TT_saveCityFile(n); } catch (e) {}
+        saveNote.textContent = ok ? 'Saved ' + n + '.xml.cty — check your downloads.'
+                                  : 'Could not save this city.';
+      });
+      mkBtn('Open a ToonTalk file from my computer…', function () {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.tt,.cty';
+        input.onchange = function () {
+          var f = input.files && input.files[0];
+          if (!f) return;
+          globalThis.TT_loadUserFile(f).then(function (r) {
+            saveNote.textContent = r === 2
+              ? f.name + ' loaded — it has replaced the world. Choose Back to ToonTalk.'
+              : r === 1 ? f.name + ' has arrived on the floor — choose Back to ToonTalk.'
+                        : 'Could not read ' + f.name + '. Is it a ToonTalk .tt or .cty file?';
+          });
+        };
+        input.click();
+      });
+      panel.appendChild(fileRow);
     }
     box.appendChild(panel);
     // In fullscreen only the fullscreen element's subtree is painted, so hang the chooser there.
@@ -1737,6 +1789,72 @@ Module['preRun'].push(function () {
       return Module['_tt_load_pending_file']() | 0;
     } catch (e) { return 0; }
   };
+  // ---- taking your work away, and bringing it back ------------------------------------
+  // ToonTalk has always been able to write what you are holding, or the whole city, to a
+  // file; natively they land in My Documents. A browser tab has no My Documents, so the
+  // engine writes into /toontalk/save and these hand the bytes to the browser as a download.
+  // Reading one back needs no new engine code at all: it is the same sprite_from_file_name
+  // the double-click path uses, pointed at a file we wrote into /toontalk/loaded.
+  var download = function (path, suggested) {
+    var bytes;
+    try { bytes = FS.readFile(path); } catch (e) { return false; }
+    // slice() so the Blob owns its own copy: FS.readFile hands back a view on the wasm heap,
+    // which can be detached by a memory growth before the download finishes.
+    var blob = new Blob([bytes.slice().buffer], { type: 'application/octet-stream' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = suggested;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 20000);
+    return true;
+  };
+  // Write the file and return where it landed, or null. Separate from the download so the
+  // node harness -- which has no document to download into, and cannot see Module from
+  // outside this scope -- can test the engine half on its own.
+  globalThis.TT_writeSave = function (kind, name) {
+    var fn = (kind === 'city') ? '_tt_save_city_to_file' : '_tt_save_in_hand';
+    try {
+      if (!globalThis.TT_loop_alive || !Module[fn]) return null;
+      globalThis.TT_saveName = (name || 'ToonTalk').replace(/[^A-Za-z0-9 _.-]/g, '') || 'ToonTalk';
+      globalThis.TT_savedPath = null;
+      if (!Module[fn]()) return null;
+      return globalThis.TT_savedPath || null;
+    } catch (e) { return null; }
+  };
+  var saveThrough = function (kind, name, fallbackExt) {
+    var p = globalThis.TT_writeSave(kind, name);
+    if (!p) return false;
+    return download(p, p.split('/').pop() || (globalThis.TT_saveName + fallbackExt));
+  };
+  // What you are holding, as a .tt file. Returns false if your hand is empty.
+  globalThis.TT_saveHeld = function (name) { return saveThrough('held', name, '.tt'); };
+  // The whole city, as a .xml.cty file.
+  globalThis.TT_saveCityFile = function (name) { return saveThrough('city', name, '.xml.cty'); };
+  // A file the player picked from their own disk: write it where the engine can see it, then
+  // load it exactly as a double-clicked .tt is loaded. Objects arrive on the floor; a city
+  // replaces the world. Returns a promise for 0 (failed) / 1 (object) / 2 (city).
+  globalThis.TT_loadUserFile = function (file) {
+    return new Promise(function (resolve) {
+      if (!file) return resolve(0);
+      var reader = new FileReader();
+      reader.onerror = function () { resolve(0); };
+      reader.onload = function () {
+        try {
+          FS.mkdirTree('/toontalk/loaded');
+          var safe = file.name.replace(/[^A-Za-z0-9_.-]/g, '_');
+          var path = '/toontalk/loaded/' + safe;
+          FS.writeFile(path, new Uint8Array(reader.result));
+          globalThis.TT_pendingLoad = path;
+          resolve(Module['_tt_load_pending_file'] ? (Module['_tt_load_pending_file']() | 0) : 0);
+        } catch (e) { console.log('[tt] loadfile: ' + e); resolve(0); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+  // Harness helper: how big is a file in the engine's filesystem (FS is module-scoped).
+  globalThis.TT_fileSize = function (path) {
+    try { return FS.readFile(path).length; } catch (e) { return -1; }
+  };
   // Harness helper: dump the engine's tt_error_file() output (a .txt in the temp/main dir) to
   // the console — the engine's own complaints (robot failures etc.) land there, not on stdout.
   globalThis.TT_dumpErr = function () {
@@ -1756,13 +1874,13 @@ Module['preRun'].push(function () {
   };
 });
 // end include: shim/pre.js
-// include: C:\Users\toont\dev\tt-wasm\.tmp\tmpafzh1h4p.js
+// include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0gd8xcuc.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmpafzh1h4p.js
+  // end include: C:\Users\toont\dev\tt-wasm\.tmp\tmp0gd8xcuc.js
 
 
 var programArgs = [];
@@ -10900,33 +11018,38 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('onCOSStore');
 }
 var ASM_CONSTS = {
-  17077300: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
- 17077400: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
- 17077470: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
- 17077568: () => { globalThis.TT_replayOver = true; if (globalThis.TT_setMouseModeForUser) globalThis.TT_setMouseModeForUser(); },  
- 17077681: ($0) => { globalThis.TT_timeTravelActive = ($0 !== 0); if ($0 && document.pointerLockElement) document.exitPointerLock(); },  
- 17077797: ($0) => { var n = globalThis.TT_pendingLoad; if (!n || !(new RegExp('^[A-Za-z0-9_.-]+\.(tt|cty)$')).test(n)) return 0; stringToUTF8(n, $0, 90); return 1; },  
- 17077946: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
- 17078042: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
- 17078141: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
- 17078240: () => { return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; },  
- 17078340: () => { var m = (typeof location !== 'undefined') && location.search.match(/fflags=([01])([01])([01])/); return m ? (16 + (m[1]|0)*4 + (m[2]|0)*2 + (m[3]|0)) : -1; },  
- 17078500: () => { if (typeof location === 'undefined') return 0; var m = location.search.match(/fracexp=([0-9]+)/); if (m) return parseInt(m[1]); return location.search.indexOf('fracbig=1') >= 0 ? 100 : 0; },  
- 17078692: () => { setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); },  
- 17078759: ($0) => { if (typeof location === 'undefined') return 0; var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)')); if (!m) return 0; stringToUTF8('/toontalk/infinity/' + m[1] + '.tt', $0, 150); return 1; },  
- 17078970: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
- 17079072: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
- 17079215: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
- 17079315: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
- 17079456: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
- 17079529: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
- 17079623: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
- 17079716: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
- 17079776: ($0) => { globalThis.TT_engineReplaying = ($0 !== 0); },  
- 17079824: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
- 17079886: () => { return globalThis.TT_presents|0; },  
- 17079923: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
- 17080003: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
+  17077508: ($0, $1) => { if (globalThis.TT_engineFailed) globalThis.TT_engineFailed(UTF8ToString($0), UTF8ToString($1)); },  
+ 17077608: ($0, $1, $2, $3) => { if (typeof TT_present === 'function') TT_present($0, $1, $2, $3); },  
+ 17077678: ($0) => { var s = (typeof TT_cmdline === 'string') ? TT_cmdline : ''; if (s) stringToUTF8(s, $0, 1023); },  
+ 17077776: () => { globalThis.TT_replayOver = true; if (globalThis.TT_setMouseModeForUser) globalThis.TT_setMouseModeForUser(); },  
+ 17077889: ($0) => { globalThis.TT_timeTravelActive = ($0 !== 0); if ($0 && document.pointerLockElement) document.exitPointerLock(); },  
+ 17078005: ($0) => { var n = globalThis.TT_pendingLoad; if (!n) return 0; if ((new RegExp('^/toontalk/(loaded|save)/[^/]+$')).test(n)) { stringToUTF8(n, $0, 185); return 1; } if (!(new RegExp('^[A-Za-z0-9_.-]+\.(tt|cty)$')).test(n)) return 0; stringToUTF8('/toontalk/infinity/' + n, $0, 185); return 1; },  
+ 17078292: () => { return (typeof location !== 'undefined' && location.search.indexOf('wand=1') >= 0) ? 1 : 0; },  
+ 17078388: () => { return (typeof location !== 'undefined' && location.search.indexOf('textpad=1') >= 0) ? 1 : 0; },  
+ 17078487: () => { return (typeof location !== 'undefined' && location.search.indexOf('padlong=1') >= 0) ? 1 : 0; },  
+ 17078586: () => { return (typeof location !== 'undefined' && location.search.indexOf('fraction=1') >= 0) ? 1 : 0; },  
+ 17078686: () => { var m = (typeof location !== 'undefined') && location.search.match(/fflags=([01])([01])([01])/); return m ? (16 + (m[1]|0)*4 + (m[2]|0)*2 + (m[3]|0)) : -1; },  
+ 17078846: () => { if (typeof location === 'undefined') return 0; var m = location.search.match(/fracexp=([0-9]+)/); if (m) return parseInt(m[1]); return location.search.indexOf('fracbig=1') >= 0 ? 100 : 0; },  
+ 17079038: () => { setTimeout(function() { Module._tt_frac_apply_pow(); }, 3500); },  
+ 17079105: ($0) => { if (typeof location === 'undefined') return 0; var m = location.search.match(new RegExp('ttfile=([A-Za-z0-9_.-]+)')); if (!m) return 0; stringToUTF8('/toontalk/infinity/' + m[1] + '.tt', $0, 150); return 1; },  
+ 17079316: () => { return (typeof location !== 'undefined' && location.search.indexOf('copyrobots=1') >= 0) ? 1 : 0; },  
+ 17079418: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('robotpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 2; },  
+ 17079561: () => { return (typeof location !== 'undefined' && location.search.indexOf('runrobot=1') >= 0) ? 1 : 0; },  
+ 17079661: () => { var m = (typeof location !== 'undefined') ? location.search.match(new RegExp('subpage=([0-9]+)')) : null; return m ? parseInt(m[1]) : 0; },  
+ 17079802: () => { if (globalThis.TT_persistSave) globalThis.TT_persistSave('history'); },  
+ 17079875: () => { return (typeof location !== 'undefined' && /[?&]probes=1/.test(location.search)) ? 1 : 0; },  
+ 17079969: () => { return (typeof location !== 'undefined' && /[?&]floor=1/.test(location.search)) ? 1 : 0; },  
+ 17080062: ($0) => { var n = globalThis.TT_saveName; if (!n || !(new RegExp('^[A-Za-z0-9 _.-]+$')).test(n)) return 0; stringToUTF8(n, $0, 90); return 1; },  
+ 17080198: () => { try { FS.mkdirTree('/toontalk/save'); } catch (e) {} },  
+ 17080255: ($0) => { var n = globalThis.TT_saveName; if (!n || !(new RegExp('^[A-Za-z0-9 _.-]+$')).test(n)) return 0; stringToUTF8(n, $0, 90); return 1; },  
+ 17080391: () => { try { FS.mkdirTree('/toontalk/save'); } catch (e) {} },  
+ 17080448: () => { if (globalThis.TT_leaveDemo) globalThis.TT_leaveDemo(); },  
+ 17080508: ($0) => { globalThis.TT_engineReplaying = ($0 !== 0); },  
+ 17080556: ($0, $1) => { globalThis.TT_savedPath = UTF8ToString($0); globalThis.TT_savedKind = UTF8ToString($1); },  
+ 17080648: ($0) => { if (globalThis.TT_demoPause) globalThis.TT_demoPause($0); },  
+ 17080710: () => { return globalThis.TT_presents|0; },  
+ 17080747: ($0, $1) => { try { localStorage.setItem('tt_walk',$0+','+Math.round($1)); } catch (e) {} },  
+ 17080827: () => { if (typeof location === 'undefined') return -1; var m = location.search.match(/[?&]citybudget=(d+)/); return m ? (m[1]|0) : -1; }
 };
 function tt_ds_play(id,pcm,bytes,channels,rate,bits,loop,playing_flag) { try { var DS = Module.TT_ds || (Module.TT_ds = { ctx: null, srcs: {}, gains: {}, vols: {} }); if (!DS.ctx) { var AC = (typeof AudioContext !== 'undefined') ? AudioContext : (typeof webkitAudioContext !== 'undefined') ? webkitAudioContext : null; if (!AC) return; DS.ctx = new AC(); } if (DS.ctx.state === 'suspended' && globalThis.TT_volume !== 0) { try { DS.ctx.resume(); } catch (e) {} } if (DS.srcs[id]) { var prev = DS.srcs[id]; try { prev.onended = null; } catch (e) {} try { prev.stop(); } catch (e) {} try { prev.disconnect(); } catch (e) {} delete DS.srcs[id]; } var bytesPerSample = bits >>> 3; var frames = (bytes / (bytesPerSample * channels)) | 0; if (frames <= 0) return; var ab = DS.ctx.createBuffer(channels, frames, rate); for (var ch = 0; ch < channels; ch++) { var out = ab.getChannelData(ch); if (bits === 8) { for (var i = 0; i < frames; i++) out[i] = (HEAPU8[pcm + i * channels + ch] - 128) / 128; } else { for (var j = 0; j < frames; j++) { var lo = HEAPU8[pcm + (j * channels + ch) * 2]; var hi = HEAPU8[pcm + (j * channels + ch) * 2 + 1]; var v = (hi << 8) | lo; if (v >= 0x8000) v -= 0x10000; out[j] = v / 32768; } } } var gain = DS.gains[id]; if (!DS.master) { DS.master = DS.ctx.createGain(); DS.master.gain.value = (globalThis.TT_volume !== undefined) ? globalThis.TT_volume : 1; DS.master.connect(DS.ctx.destination); } if (!DS.bus) { DS.bus = DS.ctx.createGain(); DS.bus.connect(DS.master); try { DS.probe = DS.ctx.createAnalyser(); DS.probe.fftSize = 1024; DS.bus.connect(DS.probe); } catch (e) {} } if (!gain) { gain = DS.ctx.createGain(); gain.connect(DS.bus); DS.gains[id] = gain; } gain.gain.value = (DS.vols[id] !== undefined) ? DS.vols[id] : 1; var src = DS.ctx.createBufferSource(); src.buffer = ab; src.loop = !!loop; src.connect(gain); if (loop) { DS.loopLog = (DS.loopLog || 0) + 1; if (DS.loopLog <= 12) { var m = '[tt] loopsnd: START buffer=' + id + ' ' + (frames / rate).toFixed(2) + 's'; (globalThis.TT_log = globalThis.TT_log || []).push(m); console.log(m); } } if (!loop) src.onended = function () { HEAP8[playing_flag] = 0; delete DS.srcs[id]; }; HEAP8[playing_flag] = 1; if (!DS.flags) DS.flags = {}; DS.flags[id] = playing_flag; DS.srcs[id] = src; if (!DS.all) DS.all = []; var ent = { id: id, src: src, ended: false }; try { src.addEventListener('ended', function () { ent.ended = true; }); } catch (e) {} DS.all.push(ent); if (DS.all.length > 64) DS.all.splice(0, DS.all.length - 64); src.start(); } catch (e) { } }
 function tt_ds_stop(id,playing_flag) { var DS = Module.TT_ds; if (DS && DS.srcs[id]) { if (DS.srcs[id].loop && (DS.loopLog || 0) <= 12) { var m2 = '[tt] loopsnd: STOP buffer=' + id; (globalThis.TT_log = globalThis.TT_log || []).push(m2); console.log(m2); } var s0 = DS.srcs[id]; try { s0.onended = null; } catch (e) {} try { s0.stop(); } catch (e) {} try { s0.disconnect(); } catch (e) {} delete DS.srcs[id]; } HEAP8[playing_flag] = 0; }
@@ -10976,6 +11099,8 @@ var _tt_dev_indirect_text = Module['_tt_dev_indirect_text'] = makeInvalidEarlyAc
 var _tt_dev_text_sizes = Module['_tt_dev_text_sizes'] = makeInvalidEarlyAccess('_tt_dev_text_sizes');
 var _tt_dispatch_to_wndproc = Module['_tt_dispatch_to_wndproc'] = makeInvalidEarlyAccess('_tt_dispatch_to_wndproc');
 var _tt_save_city = Module['_tt_save_city'] = makeInvalidEarlyAccess('_tt_save_city');
+var _tt_save_in_hand = Module['_tt_save_in_hand'] = makeInvalidEarlyAccess('_tt_save_in_hand');
+var _tt_save_city_to_file = Module['_tt_save_city_to_file'] = makeInvalidEarlyAccess('_tt_save_city_to_file');
 var _tt_demo_pause_choice = Module['_tt_demo_pause_choice'] = makeInvalidEarlyAccess('_tt_demo_pause_choice');
 var _tt_dev_xml_bench = Module['_tt_dev_xml_bench'] = makeInvalidEarlyAccess('_tt_dev_xml_bench');
 var _emscripten_stack_get_end = makeInvalidEarlyAccess('_emscripten_stack_get_end');
@@ -11032,6 +11157,8 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['tt_dev_text_sizes'] != 'undefined', 'missing Wasm export: tt_dev_text_sizes');
   assert(typeof wasmExports['tt_dispatch_to_wndproc'] != 'undefined', 'missing Wasm export: tt_dispatch_to_wndproc');
   assert(typeof wasmExports['tt_save_city'] != 'undefined', 'missing Wasm export: tt_save_city');
+  assert(typeof wasmExports['tt_save_in_hand'] != 'undefined', 'missing Wasm export: tt_save_in_hand');
+  assert(typeof wasmExports['tt_save_city_to_file'] != 'undefined', 'missing Wasm export: tt_save_city_to_file');
   assert(typeof wasmExports['tt_demo_pause_choice'] != 'undefined', 'missing Wasm export: tt_demo_pause_choice');
   assert(typeof wasmExports['tt_dev_xml_bench'] != 'undefined', 'missing Wasm export: tt_dev_xml_bench');
   assert(typeof wasmExports['emscripten_stack_get_end'] != 'undefined', 'missing Wasm export: emscripten_stack_get_end');
@@ -11084,6 +11211,8 @@ function assignWasmExports(wasmExports) {
   _tt_dev_text_sizes = Module['_tt_dev_text_sizes'] = createExportWrapper('tt_dev_text_sizes', 0);
   _tt_dispatch_to_wndproc = Module['_tt_dispatch_to_wndproc'] = createExportWrapper('tt_dispatch_to_wndproc', 3);
   _tt_save_city = Module['_tt_save_city'] = createExportWrapper('tt_save_city', 0);
+  _tt_save_in_hand = Module['_tt_save_in_hand'] = createExportWrapper('tt_save_in_hand', 0);
+  _tt_save_city_to_file = Module['_tt_save_city_to_file'] = createExportWrapper('tt_save_city_to_file', 0);
   _tt_demo_pause_choice = Module['_tt_demo_pause_choice'] = createExportWrapper('tt_demo_pause_choice', 1);
   _tt_dev_xml_bench = Module['_tt_dev_xml_bench'] = createExportWrapper('tt_dev_xml_bench', 1);
   _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end'];

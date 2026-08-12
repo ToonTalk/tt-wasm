@@ -291,8 +291,14 @@ function show(a) {
     b.dataset.file = m[0];
     b.textContent = (loaded[m[0]] ? '' : 'Load ') + m[1];
     if (loaded[m[0]]) b.className = 'done';
-    b.title = loaded[m[0]] ? 'Already in ToonTalk — load another copy'
-                           : 'Put ' + m[0] + '.tt into ToonTalk, in your hand';
+    // A city REPLACES the world; everything else arrives in the hand. (The tooltip used to
+    // append ".tt" to a name that already had its extension, and promise a city in your
+    // hand -- Ken, 2026-08-12.)
+    var isCity = /\.cty$/.test(m[0]);
+    b.title = loaded[m[0]]
+      ? (isCity ? 'Load the city again — this restarts it' : 'Already loaded — get another copy')
+      : (isCity ? 'Load this city: it replaces the world you are in'
+                : 'Put ' + m[0] + ' into your hand');
     bar.appendChild(b);
   });
 }
@@ -311,12 +317,13 @@ function loadMaterial(name, label) {
     if (current) show(current);
   } else if (ret === 1) {   // an object: pending for the hand
     loaded[name] = true;
-    // The canned resort answers ship with an EMPTY Guests hole (a nest cannot ride in a
-    // file) -- giving one to the Solution bird unchanged builds nothing (Ken, 2026-08-12).
+    // Tooly brings it to the FLOOR (Toolbox::add_sprite), not to the hand. And the canned
+    // resort answers ship with an EMPTY Guests hole -- a nest cannot ride in a file -- so
+    // giving one to the Solution bird unchanged builds nothing (Ken, 2026-08-12).
     note.textContent = /^resort_infinity_task/.test(name)
-      ? (label || name) + ' is in your hand — put the problem’s nest in its empty ' +
+      ? (label || name) + ' has arrived on the floor — put the problem’s nest in its empty ' +
         'Guests hole, then give it to the Solution bird'
-      : (label || name) + ' is in your hand — drop it on the floor';
+      : (label || name) + ' has arrived on the floor';
     if (current) show(current);
   } else {
     note.textContent = 'ToonTalk is still starting up — try again in a moment';

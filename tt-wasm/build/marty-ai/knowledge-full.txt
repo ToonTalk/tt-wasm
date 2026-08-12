@@ -162,15 +162,16 @@ and the activity page's Resort sheet lists all of them under "Working the resort
 IMPORTANT, and the most common failure: a solution box's Guests hole is EMPTY on purpose --
 a nest cannot be saved into a portable file. The player must pick up the problem's own nest
 (the one the guests arrive on) and drop it into the empty Guests hole BEFORE giving the box
-to the Solution bird. If someone says they gave the box to the bird and no cottages are
+to the Solution bird. (The answer box itself arrives on the floor, not in the hand.) If someone says they gave the box to the bird and no cottages are
 being built, this missing nest is almost certainly why.
 
 Practical notes for helping: numbers grow without limit in ToonTalk and stay exact, so
 suggesting "let it run and watch" is always safe; the display slows when numbers get
 enormous, which is itself worth talking about. If a robot will not work on a box, the box's
 shape probably does not match what the robot was trained on. The activity page's "Load"
-buttons put a needed notebook or robot team into the player's hand -- except the hotel
-city, which replaces the world as described above.
+buttons have Tooly bring a needed notebook or robot team to the FLOOR (it flies in to the
+left of centre; the player then picks it up) -- except the hotel city, which replaces the
+world as described above.
 
 ======================================================================
 SECTION: WHAT TOONTALK IS

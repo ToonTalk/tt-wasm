@@ -2327,15 +2327,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
    // The FULL file name arrives from JS -- extension included, because the materials are not
    // all objects: resort_infinity.xml.cty is a whole city, and guessing ".tt" here turned the
    // Resort Infinity button into a silent no-op (Ken, 2026-08-12: loadfile '...xml.tt' sprite=0).
-   char name[96];
+   // A staged activity file (a bare name, looked up in /toontalk/infinity) or an absolute
+   // path -- which is how a file the player chose from their own disk arrives, written into
+   // /toontalk/loaded by pre.js's TT_loadUserFile.
+   char path[192];
    if (!EM_ASM_INT({
          var n = globalThis.TT_pendingLoad;
-         if (!n || !(new RegExp('^[A-Za-z0-9_.-]+\\.(tt|cty)$')).test(n)) return 0;
-         stringToUTF8(n, $0, 90);
+         if (!n) return 0;
+         if ((new RegExp('^/toontalk/(loaded|save)/[^/]+$')).test(n)) { stringToUTF8(n, $0, 185); return 1; }
+         if (!(new RegExp('^[A-Za-z0-9_.-]+\\.(tt|cty)$')).test(n)) return 0;
+         stringToUTF8('/toontalk/infinity/' + n, $0, 185);
          return 1;
-       }, name)) return 0;
-   char path[192];
-   sprintf(path, "/toontalk/infinity/%s", name);
+       }, path)) return 0;
    boolean aborted = FALSE;
    Sprite *loaded = sprite_from_file_name(path, aborted, NULL, NULL);
    // sprite_from_file_name raises the "Loading, please wait." subtitle (loading_wait) and
@@ -2355,7 +2358,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
       fflush(stdout);
       return 2;
    };
-   printf("[tt] loadfile: '%s' loaded — heading for the hand\n", path); fflush(stdout);
+   // Toolbox::add_sprite -- what the floor's react() hands this to -- puts the object on the
+   // FLOOR and animates it to mid-left of the screen. It does not go into the hand.
+   printf("[tt] loadfile: '%s' loaded — arriving on the floor\n", path); fflush(stdout);
    tt_add_sprite_when_on_floor = loaded;
    tt_add_sprite_when_on_floor_but_wait_a_frame = TRUE;
    return 1;

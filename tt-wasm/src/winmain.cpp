@@ -11506,6 +11506,93 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_save_city() {
 	return(ok ? 1 : 0);
 };
 
+/* Saving to a file the player can keep. The engine already knows how to write both kinds of
+ * file -- ask_continue_or_quit's case 4 for the city, case 7 for whatever is in the hand --
+ * but natively the result just appears in My Documents, which a browser tab has no equivalent
+ * of. So the port writes into /toontalk/save/ and hands the bytes to the page (pre.js's
+ * TT_saveHeld / TT_saveCity), which downloads them under the player's chosen name. Loading
+ * back is the path that already exists: sprite_from_file_name (tt_load_pending_file).
+ *
+ * This is case 7's core, minus what only makes sense on Windows: the My Old Programs rotation
+ * (a download cannot clobber anything), the RunAfterSaving executable, and the dialogs. Media
+ * saving is deliberately off -- the snapshot rides along, which is what makes a .tt show its
+ * picture, and the media variants are case 8's. */
+static void tt_report_saved(const char *path, const char *kind) {
+	EM_ASM({ globalThis.TT_savedPath = UTF8ToString($0); globalThis.TT_savedKind = UTF8ToString($1); },
+	       path, kind);
+};
+
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_save_in_hand() {
+	Sprite *in_hand = (tt_programmer == NULL) ? NULL : tt_programmer->pointer_to_tool_in_hand();
+	if (in_hand == NULL) {
+		printf("[tt] savehand: nothing in hand\n"); fflush(stdout);
+		return(0);
+	};
+	char base[96];
+	if (!EM_ASM_INT({
+			var n = globalThis.TT_saveName;
+			if (!n || !(new RegExp('^[A-Za-z0-9 _.-]+$')).test(n)) return 0;
+			stringToUTF8(n, $0, 90);
+			return 1;
+		}, base)) return(0);
+	EM_ASM({ try { FS.mkdirTree('/toontalk/save'); } catch (e) {} });
+	dump_started();
+	UnwindProtect<xml_element *> set1(tt_zip_description_archive_element,NULL);
+	UnwindProtect<boolean> set2(tt_saving_media,FALSE);
+	UnwindProtect<Sprites *> set3(tt_sprites_with_media_to_save,NULL);
+	UnwindProtect<DumpReason> set4(tt_dump_reason,DUMPING_TO_CLIPBOARD);
+	char snapshot_file_name[MAX_PATH];
+	strcpy(snapshot_file_name,"/toontalk/save/snapshot.png");
+	create_snapshot(in_hand,snapshot_file_name,FALSE);
+	xml_document *document = in_hand->xml_create_document();
+	if (document == NULL) {
+		dump_ended();
+		printf("[tt] savehand: no document\n"); fflush(stdout);
+		return(0);
+	};
+	char file_name[MAX_PATH];
+	sprintf(file_name,"/toontalk/save/%s.tt",base);
+	boolean ok = xml_save_document(document,file_name,snapshot_file_name);
+	xml_release_document(document);
+	dump_ended();
+	printf("[tt] savehand: '%s' -> %d\n",file_name,(int) ok); fflush(stdout);
+	if (ok) tt_report_saved(file_name,"object");
+	return(ok ? 1 : 0);
+};
+
+/* The city, written where the page can reach it rather than into the user's folder. Same
+ * dump_to_new_file the paused dialog's Save Everything uses; compute_full_file_name appends
+ * the .xml.cty the loader expects. */
+extern "C" EMSCRIPTEN_KEEPALIVE int tt_save_city_to_file() {
+	if (tt_city == NULL) {
+		printf("[tt] savecityfile: no city\n"); fflush(stdout);
+		return(0);
+	};
+	char base[96];
+	if (!EM_ASM_INT({
+			var n = globalThis.TT_saveName;
+			if (!n || !(new RegExp('^[A-Za-z0-9 _.-]+$')).test(n)) return 0;
+			stringToUTF8(n, $0, 90);
+			return 1;
+		}, base)) return(0);
+	EM_ASM({ try { FS.mkdirTree('/toontalk/save'); } catch (e) {} });
+	// WITH the extension: City::compute_full_file_name takes a name that already ends in .cty
+	// verbatim ("already full enough if it has extension") and otherwise resolves it against
+	// the user's folder -- which turned an absolute path into <user dir>//toontalk/save/... and
+	// wrote nothing, while still reporting success.
+	char file_name[MAX_PATH];
+	sprintf(file_name,"/toontalk/save/%s.xml.cty",base);
+	wait_cursor();
+	boolean ok = tt_city->dump_to_new_file(file_name);
+	restore_cursor();
+	boolean written = file_exists(file_name,FALSE);
+	printf("[tt] savecityfile: '%s' -> %d exists=%d\n",file_name,(int) ok,(int) written);
+	fflush(stdout);
+	if (!ok || !written) return(0);
+	tt_report_saved(file_name,"city");
+	return(1);
+};
+
 extern "C" EMSCRIPTEN_KEEPALIVE void tt_demo_pause_choice(int button_number) {
 	printf("[tt] demopause: choice %d\n",button_number); fflush(stdout);
 	waiting_for_user_dialog = FALSE;

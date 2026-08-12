@@ -32,6 +32,32 @@ if (process.env.TT_PAUSEKEY) setTimeout(function () {
 if (process.env.TT_CTX) setInterval(function () {
   try { if (globalThis.TT_martyContext) console.log('[ctx] ' + globalThis.TT_martyContext()); } catch (e) {}
 }, 5000);
+// TT_SAVETEST=N: at N seconds, exercise the save/load round trip the way the pause chooser
+// does -- put a staged object in the hand, write it out as a .tt, then read that very file
+// back in. The browser half (a download, a file picker) cannot run here, so this checks the
+// half that is engine code: TT_saveHeld's writer and TT_loadUserFile's reader.
+if (process.env.TT_SAVETEST) setTimeout(function () {
+  var say = function (s) { console.log('[savetest] ' + s); };
+  var size = function (p) { return globalThis.TT_fileSize ? globalThis.TT_fileSize(p) : -1; };
+  try {
+    say('load a staged object -> ' + globalThis.TT_loadMaterial('Cardinality1to8.tt'));
+    setTimeout(function () {
+      // Saving what is HELD needs something in the hand, and a loaded object arrives on the
+      // FLOOR (Toolbox::add_sprite). Synthetic clicks do not pick it up -- the engine reads
+      // its own cursor, which is where the player left it -- so for that half run:
+      //   TT_COPYROBOTS=1 TT_ROBOTPAGE=2 node -e "require('./run.js'); ...TT_writeSave('held')"
+      // which uses the engine's real pick_up. Verified 2026-08-12: 662-byte .tt, reloads.
+      var ctx = globalThis.TT_martyContext ? globalThis.TT_martyContext() : '';
+      say('hand: ' + (/hand: /.test(ctx) ? ctx.slice(ctx.indexOf('hand:'), ctx.indexOf('hand:') + 60)
+                                         : 'empty (see note in run.js for the held-object test)'));
+      var path = globalThis.TT_writeSave('held', 'harness object');
+      say('save held -> ' + path + ' (' + size(path) + ' bytes)');
+      if (path) say('reload that file -> ' + globalThis.TT_loadMaterial(path));
+      var cpath = globalThis.TT_writeSave('city', 'harness city');
+      say('save city -> ' + cpath + ' (' + size(cpath) + ' bytes)');
+    }, 5000);
+  } catch (e) { say('failed: ' + e); }
+}, parseInt(process.env.TT_SAVETEST) * 1000);
 // TT_MAXSEC=N: self-terminate after N seconds (Windows `timeout` hard-kills node, losing exit hooks)
 if (process.env.TT_MAXSEC) setTimeout(function () {
   console.log('[harness] TT_MAXSEC reached — exiting');
