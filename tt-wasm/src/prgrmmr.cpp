@@ -2335,6 +2335,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE int tt_load_pending_file() {
    sprintf(path, "/toontalk/infinity/%s.tt", name);
    boolean aborted = FALSE;
    Sprite *loaded = sprite_from_file_name(path, aborted, NULL, NULL);
+   // sprite_from_file_name raises the "Loading, please wait." subtitle (loading_wait) and
+   // leaves taking it down to its caller; without this the caption stays up forever and the
+   // room's dirty-region redraws punch holes through the stale band (Ken, 2026-08-12).
+   done_waiting_for_load();
    printf("[tt] loadfile: '%s' sprite=%p aborted=%d\n", path, (void*)loaded, (int)aborted);
    fflush(stdout);
    if (loaded == NULL) return 0;
@@ -2501,6 +2505,7 @@ void Programmer::em_enter_bootstrap_house() {
       if (got) {
          boolean aborted = FALSE;
          Sprite *loaded = sprite_from_file_name(tt_name, aborted, NULL, NULL);
+         done_waiting_for_load();   // sprite_from_file_name raises the wait, caller lowers it
          printf("[tt] ttfile: '%s' sprite=%p kind=%d aborted=%d\n", tt_name, (void*)loaded,
                 loaded ? (int)loaded->kind_of() : -1, (int)aborted); fflush(stdout);
          if (loaded != NULL) {
