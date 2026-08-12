@@ -159,6 +159,11 @@ to problem N (spoiler)"): problem 1's is a [Move | Build] box with an "i,j -> i"
 robot, problem 2's holds an "i -> i+5" move robot. Only point a player to these when they
 have given up -- the city's own hint pads (flip them over; hints contain hints) come first,
 and the activity page's Resort sheet lists all of them under "Working the resort".
+IMPORTANT, and the most common failure: a solution box's Guests hole is EMPTY on purpose --
+a nest cannot be saved into a portable file. The player must pick up the problem's own nest
+(the one the guests arrive on) and drop it into the empty Guests hole BEFORE giving the box
+to the Solution bird. If someone says they gave the box to the bird and no cottages are
+being built, this missing nest is almost certainly why.
 
 Practical notes for helping: numbers grow without limit in ToonTalk and stay exact, so
 suggesting "let it run and watch" is always safe; the display slows when numbers get

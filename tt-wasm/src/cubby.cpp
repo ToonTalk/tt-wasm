@@ -2799,14 +2799,10 @@ MatchStatus Cubby::match(Cubby *other_cubby, SpritePointerPointer &suspension_ce
 				  };
 				  */
 				  if (submatch_status != MATCH_GOOD) {
-#ifdef __EMSCRIPTEN__
-					  { // Pong debugging: which hole kills the match (Ken 2026-07-19)
-						  static int hm_log = 0;
-						  if (hm_log < 160) { hm_log++;
-							  printf("[tt] holefail: i=%d type=%d status=%d\n", i, (int)contents_type, (int)submatch_status); fflush(stdout);
-						  }
-					  }
-#endif
+					  // The port's which-hole-killed-the-match trace lived here (Pong,
+					  // 2026-07-19). Removed 2026-08-12: mismatches are ROUTINE -- Resort
+					  // Infinity's machinery robots probe an incomplete solution box every
+					  // cycle -- and "fail" in its name held the quiet console filter open.
 					  // condition below added on 210300 since at least
 					  // if original_other_component is a container like object (e.g. Cubby)
 					  // then should leave the binding alone

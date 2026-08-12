@@ -311,7 +311,12 @@ function loadMaterial(name, label) {
     if (current) show(current);
   } else if (ret === 1) {   // an object: pending for the hand
     loaded[name] = true;
-    note.textContent = (label || name) + ' is in your hand — drop it on the floor';
+    // The canned resort answers ship with an EMPTY Guests hole (a nest cannot ride in a
+    // file) -- giving one to the Solution bird unchanged builds nothing (Ken, 2026-08-12).
+    note.textContent = /^resort_infinity_task/.test(name)
+      ? (label || name) + ' is in your hand — put the problem’s nest in its empty ' +
+        'Guests hole, then give it to the Solution bird'
+      : (label || name) + ' is in your hand — drop it on the floor';
     if (current) show(current);
   } else {
     note.textContent = 'ToonTalk is still starting up — try again in a moment';
