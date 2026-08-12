@@ -48,7 +48,9 @@
     font: inherit; text-align: left; width: 100%; cursor: pointer;
     color: #d7d7e4; background: #191924; border: 1px solid #33334a;
     border-radius: 6px; padding: 6px 9px; margin-bottom: 4px; display: block;
+    text-decoration: none;
   }
+  a.item b { font-weight: 500; font-size: 12.5px; }
   .item:hover { background: #2f2f44; border-color: #55556e; }
   .item[aria-current="true"] { background: #2c2c3e; border-color: #AB0519; }
   .item b { display: block; font-size: 13px; color: #ececf4; font-weight: 600; }
@@ -106,6 +108,12 @@
     <section class="pane" id="sheetpane">
       <div class="panehead">
         <strong id="sheettitle">Overview</strong>
+        <div class="seg" id="fmt" role="group" aria-label="Sheet format">
+          <button type="button" data-fmt="pdf" aria-pressed="true"
+                  title="The worksheet exactly as it was written">Page</button>
+          <button type="button" data-fmt="html"
+                  title="Reflows to fit the pane; some pictures move">Text</button>
+        </div>
         <span class="spacer"></span>
         <button type="button" id="openraw" title="Open this sheet in its own tab">Open in a tab ↗</button>
       </div>
@@ -196,6 +204,20 @@ var sheet = document.getElementById('sheet');
 var tt = document.getElementById('tt');
 var current = null;          // the activity showing in the sheet pane
 var ttLoaded = null;         // which resource ToonTalk was last started with
+var fmt = 'pdf';             // 'pdf' (as written) or 'html' (reflows)
+
+// The worksheets exist in both forms. Word's PDF keeps the page they were written on --
+// which matters, because these sheets position speech balloons over the Martys saying them,
+// and Word's HTML export turns those pictures into page-coordinate absolutes that land
+// somewhere else entirely once the pane reflows. The site's own pages were HTML to begin
+// with and have no PDF; for those the toggle is hidden.
+function sheetURL(a) {
+  if (fmt === 'pdf' && a.file.slice(-4) === '.htm' && a.kind !== 'tool' && a.kind !== 'teach') {
+    return SHEETS + 'pdf/' + encodeURIComponent(a.file.slice(0, -4) + '.pdf') + '#view=FitH';
+  }
+  return SHEETS + encodeURIComponent(a.file);
+}
+function hasPDF(a) { return a.kind !== 'tool' && a.kind !== 'teach'; }
 
 function ttURL(res) {
   // ?floor=1 puts the programmer straight on a house floor with the toolbox and notebook --
@@ -205,7 +227,8 @@ function ttURL(res) {
 
 function show(a) {
   current = a;
-  sheet.src = SHEETS + encodeURIComponent(a.file);
+  sheet.src = sheetURL(a);
+  document.getElementById('fmt').style.visibility = hasPDF(a) ? '' : 'hidden';
   document.getElementById('sheettitle').textContent =
     (a.kind === 'act' && a.n ? 'Activity ' + a.n + ' — ' : '') + a.title;
   Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
@@ -241,10 +264,27 @@ GROUPS.forEach(function (g) {
             a.blurb + '</span></button>';
   });
 });
+// The programs themselves, as files. They are preloaded into the engine's filesystem for the
+// buttons above, but they are also served here so they can be downloaded and opened in a
+// desktop ToonTalk, mailed to someone, or kept.
+var FILES = [
+  ['Cardinality1to8.tt', 'robots for all eight activities'],
+  ['Diagonal.tt', "Cantor's diagonal team"],
+  ['NoCopies.tt', 'drop duplicate fractions'],
+  ['no_box_copies.tt', 'the same, for boxes'],
+  ['resort_infinity_task1.tt', 'hotel task 1'],
+  ['resort_infinity_task2.tt', 'hotel task 2'],
+  ['resort_infinity.xml.cty', 'the hotel city']
+];
+html += '<h2>ToonTalk files</h2>';
+FILES.forEach(function (f) {
+  html += '<a class="item" href="tt/' + f[0] + '" download><b>' + f[0] +
+          '</b><span>' + f[1] + '</span></a>';
+});
 nav.innerHTML = html;
 nav.addEventListener('click', function (e) {
   var b = e.target.closest('.item');
-  if (b) show(ACTIVITIES.filter(function (a) { return a.id === b.dataset.id; })[0]);
+  if (b && b.dataset.id) show(ACTIVITIES.filter(function (a) { return a.id === b.dataset.id; })[0]);
 });
 
 // ---- view toggle -----------------------------------------------------------
@@ -263,7 +303,16 @@ document.getElementById('ttreload').addEventListener('click', function () {
   loadMaterials((current && current.res) || 'Cardinality1to8');
 });
 document.getElementById('openraw').addEventListener('click', function () {
-  if (current) window.open(SHEETS + encodeURIComponent(current.file), '_blank');
+  if (current) window.open(sheetURL(current), '_blank');
+});
+document.getElementById('fmt').addEventListener('click', function (e) {
+  var b = e.target.closest('button');
+  if (!b) return;
+  fmt = b.dataset.fmt;
+  Array.prototype.forEach.call(this.querySelectorAll('button'), function (x) {
+    x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+  });
+  if (current) show(current);
 });
 
 // A .tt link inside one of the original site pages became a load button; the sheet iframe is

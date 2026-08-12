@@ -1,6 +1,7 @@
-/* Applied to the ToonTalk-website pages whose own stylesheet and navigation lived at paths
-   that no longer exist. Deliberately plain: these are reading panes inside the activities
-   page, so they should look like paper, not like the dark chrome around them. */
+/* Copied into sheets/ by build-sheets.py. Applied to the ToonTalk-website pages whose own
+   stylesheet and navigation lived at paths that no longer exist, and to the text version of
+   the worksheets. Deliberately plain: these are reading panes inside the activities page, so
+   they should look like paper, not like the dark chrome around them. */
 body {
   margin: 0; padding: 20px 26px;
   font: 15px/1.6 Georgia, "Times New Roman", serif;
@@ -12,10 +13,15 @@ h2 { font-size: 18px; margin: 22px 0 8px; }
 img { max-width: 100%; height: auto; }
 table { max-width: 100%; }
 a { color: #7a1020; }
-/* .tt links in the original pages became load buttons */
-a[data-load] {
+
+/* .tt links in the original pages became load buttons -- but several of those links wrap a
+   screenshot of the program rather than text, and a picture inside a red button reads as a
+   broken image (Ken, 2026-08-11). Those keep the picture and just get a hover cue. */
+a[data-load]:not(.imgload) {
   display: inline-block; font-family: system-ui, sans-serif; font-size: 13px;
   text-decoration: none; color: #fff; background: #7a1020;
   border-radius: 5px; padding: 3px 10px;
 }
-a[data-load]:hover { background: #99162a; }
+a[data-load]:not(.imgload):hover { background: #99162a; }
+a.imgload { display: inline-block; border: 2px solid transparent; border-radius: 4px; }
+a.imgload:hover { border-color: #7a1020; }
