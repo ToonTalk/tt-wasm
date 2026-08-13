@@ -4,6 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToonTalk in the browser</title>
+<!-- The page had a title but nothing else in its head, so link-preview crawlers (Google Docs
+     among them) had no icon, no summary and no image to offer, and declined to make a chip
+     of the URL at all. Favicon is ToonTalk's own application icon, lifted from the retail
+     executable; the card and the large icons are the photographed Marty from the ToonTalk
+     website. Absolute URLs because crawlers do not resolve relative ones. -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="canonical" href="https://toontalk.github.io/tt-wasm/">
+<meta name="description" content="ToonTalk — the animated world where children build real programs by training robots — running in your browser. The faithful 2004 original, compiled to WebAssembly.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ToonTalk">
+<meta property="og:url" content="https://toontalk.github.io/tt-wasm/">
+<meta property="og:title" content="ToonTalk in the browser">
+<meta property="og:description" content="The animated world where children build real programs by training robots — the 2004 original, running in your browser.">
+<meta property="og:image" content="https://toontalk.github.io/tt-wasm/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Marty the Martian in his flying saucer, beside the word ToonTalk">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ToonTalk in the browser">
+<meta name="twitter:description" content="The animated world where children build real programs by training robots — the 2004 original, running in your browser.">
+<meta name="twitter:image" content="https://toontalk.github.io/tt-wasm/og-card.png">
 <style>
   body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
          justify-content:center; gap:18px; font:17px/1.5 system-ui,sans-serif; color:#e6e6f0;
