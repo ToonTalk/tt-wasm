@@ -302,8 +302,226 @@
          keyboards no longer have. Ctrl+Z does the same (time travel IS ToonTalk's
          undo), and this button is the discoverable route. -->
     <button id="ttbtn" type="button" title="Rewind and replay what just happened (Pause/Break or Ctrl+Z)">⏱ Time travel</button>
+    <!-- only shown after "Don't ask again" on an error-report notice: the way to undo it -->
+    <button id="reportagain" type="button" hidden>Offer error reports again</button>
   </div>
 </div>
+<script>
+  // ERROR REPORTS, ASKED FOR FIRST (Ken, 8 Nov 2026; the same design as Ani and ToonTalk 3D).
+  // When ToonTalk crashes -- the engine aborts, a page script throws, or the engine gives up
+  // (TT_engineFailed) -- a small notice asks whether to send Ken a report. Nothing is sent
+  // unless the visitor presses Send: Sentry's script is not even fetched before then. A report
+  // has the error, where in the code it happened (wasm-function numbers; tt.js.symbols of the
+  // build named in it turns them into names), the engine's last trace lines and the browser --
+  // with every value this page keeps in the browser (the name, Marty's keys and settings) and
+  // whatever is typed on the page taken out. On only on toontalk.github.io, with a DSN.
+  var SENTRY_DSN = '';   // Ken's tt-wasm project in Sentry: paste its DSN here
+  var SENTRY_SDK = { src: 'https://browser.sentry-cdn.com/10.50.0/bundle.min.js',
+                     integrity: 'sha384-9cVKNfUSoIRWDL3QQHe0fgJboGyb51IyiAv8x+KeuylA5GArkSaqyGFFm14hqajd' };
+  var REPORT_KEY = 'TT_report';
+  var TT_BUILD = '1786532087';
+  var report = { sdk: null, consent: new Set(), held: [], open: false, sent: 0 };
+  // the site's own pages only: this one, or this one inside the Infinity activities
+  function reportOn() {
+    if (window.__reportOn) return true;
+    if (!SENTRY_DSN || location.hostname !== 'toontalk.github.io') return false;
+    try { return window.top === window || window.top.location.hostname === location.hostname; }
+    catch (e) { return false; }
+  }
+  function reportNever() { try { return localStorage.getItem(REPORT_KEY) === 'never'; } catch (e) { return false; } }
+  function reportSentry() {
+    if (window.__sentryStub) return Promise.resolve(window.__sentryStub);   // a check's stand-in
+    if (report.sdk) return report.sdk;
+    report.sdk = new Promise(function (resolve) {
+      var sc = document.createElement('script');
+      sc.src = SENTRY_SDK.src; sc.integrity = SENTRY_SDK.integrity; sc.crossOrigin = 'anonymous';
+      sc.onload = function () {
+        var S = window.Sentry;
+        try {
+          S.init({
+            dsn: SENTRY_DSN, sendDefaultPii: false, defaultIntegrations: false, sendClientReports: false,
+            maxBreadcrumbs: 0, integrations: [S.linkedErrorsIntegration()],   // no handlers of its own
+            beforeBreadcrumb: function () { return null; },
+            beforeSend: reportScrubbed,
+            initialScope: { tags: { app: 'tt-wasm', build: TT_BUILD,
+              page: (/tt-ai\.html$/.test(location.pathname) ? 'tt-ai' : 'tt') + (window.top === window ? '' : ' in infinity') } }
+          });
+          resolve(S);
+        } catch (e) { resolve(null); }
+      };
+      sc.onerror = function () { resolve(null); };
+      document.head.appendChild(sc);
+    });
+    return report.sdk;
+  }
+  // keep an error, and ask about it
+  function reportKeep(err, where) {
+    if (!reportOn() || reportNever() || !err) return;
+    var e = err instanceof Error ? err : new Error(typeof err === 'string' ? err : (function () {
+      try { return JSON.stringify(err); } catch (e2) { return String(err); } })());
+    // a browser's own noise, a script of somebody else's with nothing to show, and Emscripten's
+    // own control flow (it throws 'unwind' to leave main and ExitStatus on exit, and catches them)
+    if (/ResizeObserver loop|^Script error\.?$|^unwind$|ExitStatus|^Program terminated with exit\(0\)/.test(e.message || '')) return;
+    if (where) e.__where = where;
+    var trace = (window.TT_log || []).slice(-25);
+    if (trace.length) e.__trace = trace;
+    // the same error twice is one report, and a page in trouble asks about at most ten
+    if (report.held.some(function (x) { return x.message === e.message && x.stack === e.stack; }) || report.held.length >= 10) return;
+    report.held.push(e);
+    reportAsk();
+  }
+  function reportFault(where, e) { try { reportKeep(e, where); } catch (e2) {} }
+  window.addEventListener('error', function (ev) { reportKeep(ev.error || ev.message); });
+  window.addEventListener('unhandledrejection', function (ev) { reportKeep(ev.reason); });
+  // WHAT MUST NEVER LEAVE: every value this browser keeps for the page (and every string inside
+  // one kept as JSON -- Marty's remembered keys are), the name typed at the start, and whatever is
+  // typed in the page's boxes (a key Marty was given but not told to remember); longest first
+  function reportSecrets() {
+    var out = new Set();
+    var add = function (v, least) { if (typeof v === 'string' && v.trim().length >= (least || 12)) out.add(v.trim()); };
+    var leaves = function (x) { if (typeof x === 'string') add(x); else if (x && typeof x === 'object') Object.keys(x).forEach(function (k) { leaves(x[k]); }); };
+    try {
+      for (var k = 0; k < localStorage.length; k++) {
+        var v = localStorage.getItem(localStorage.key(k));
+        add(v);
+        try { leaves(JSON.parse(v)); } catch (e) {}
+      }
+    } catch (e) {}
+    try { add(localStorage.getItem('TT_userName'), 2); } catch (e) {}   // a name is short
+    try { add(document.getElementById('luser').value, 2); } catch (e) {}
+    document.querySelectorAll('textarea, input:not([type]), input[type=text], input[type=password], input[type=search], input[type=url], input[type=email]')
+      .forEach(function (i) { if (i.id !== 'luser' || i.value !== 'No Name') add(i.value, 4); });
+    return Array.from(out).sort(function (a, b) { return b.length - a.length; });
+  }
+  // and anything shaped like an AI key, wherever it came from
+  var KEY_SHAPES = /\b(sk-[A-Za-z0-9_-]{12,}|sk-ant-[A-Za-z0-9_-]{12,}|AIza[0-9A-Za-z_-]{20,})/g;
+  function reportScrubOut(x, hide) {
+    if (typeof x === 'string') return hide.reduce(function (t, h) { return t.split(h).join('[removed]'); }, x).replace(KEY_SHAPES, '[removed]');
+    if (Array.isArray(x)) return x.map(function (y) { return reportScrubOut(y, hide); });
+    if (x && typeof x === 'object') { Object.keys(x).forEach(function (k) { x[k] = reportScrubOut(x[k], hide); }); return x; }
+    return x;
+  }
+  // what a report of an error has in it, as it will be sent (and shown before it is)
+  function reportOf(e) {
+    var r = { error: (e.name || 'Error') + ': ' + e.message };
+    if (e.__where) r.during = e.__where;
+    r.where = String(e.stack || '').split('\n').slice(1, 13).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (e.__trace) r.lastTrace = e.__trace;
+    r.build = TT_BUILD;
+    r.page = location.origin + location.pathname;
+    r.browser = navigator.userAgent;
+    return reportScrubOut(r, reportSecrets());
+  }
+  // Sentry's beforeSend: only what the visitor sent (its consent noted when they pressed Send),
+  // with no user, no breadcrumbs, the page's address without its query, and no kept value
+  // anywhere in it. Anything else is dropped.
+  function reportScrubbed(event) {
+    var ok = event.tags && event.tags.kind === 'error-sent-by-visitor' && event.extra && report.consent.delete(event.extra.consent);
+    if (!ok) return null;
+    delete event.user;
+    delete event.breadcrumbs;
+    delete event.extra.consent;
+    event.request = { url: location.origin + location.pathname, headers: { 'User-Agent': navigator.userAgent } };
+    return reportScrubOut(event, reportSecrets());
+  }
+  // THE NOTICE: small, top right, gone once answered. Built from text nodes, never markup.
+  // Not in full screen: the mouse belongs to the game there (pointer lock), so it waits until
+  // full screen is left.
+  function reportAsk() {
+    if (!report.held.length || reportNever()) return;
+    if (document.fullscreenElement) return;
+    var box = document.getElementById('reportAsk');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'reportAsk';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-label', 'Report an error to Ken');
+      box.style.cssText = 'position:fixed;top:64px;right:14px;width:min(360px,92vw);z-index:60;box-sizing:border-box;'
+        + 'padding:12px 14px;border-radius:12px;background:#21212f;border:1px solid #55557a;color:#ececf4;'
+        + 'box-shadow:0 8px 28px rgba(0,0,0,.5);font:13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;'
+        + 'display:flex;flex-direction:column;gap:8px';
+      (document.body || document.documentElement).appendChild(box);
+    }
+    var n = report.held.length;
+    box.textContent = '';
+    var p = document.createElement('div');
+    p.textContent = (n > 1 ? 'ToonTalk ran into ' + n + ' errors.' : 'ToonTalk ran into an error.')
+      + ' Send a report to Ken, without your work, your name or any key?';
+    var det = document.createElement('details');
+    var sum = document.createElement('summary');
+    sum.textContent = 'What would be sent';
+    sum.style.cursor = 'pointer';
+    var pre = document.createElement('pre');
+    pre.style.cssText = 'max-height:180px;overflow:auto;white-space:pre-wrap;font-size:11px;margin:6px 0 0;color:#c9c9dc';
+    pre.textContent = JSON.stringify(report.held.map(reportOf), null, 2);
+    var note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:#9a9ab2;margin-top:4px';
+    note.textContent = 'Sent to Ken\u2019s error reports (Sentry) only if you press Send: nothing about you, and nothing this page keeps in your browser.';
+    det.append(sum, pre, note);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+    var btn = function (label, what) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = label; b.setAttribute('data-report', what);
+      b.style.cssText = 'font:inherit;cursor:pointer;border-radius:8px;padding:4px 10px;border:1px solid #55557a;'
+        + (what === 'send' ? 'background:#2f6b43;color:#eafff0;border-color:#3f8a57' : 'background:none;color:inherit');
+      b.onclick = function () { reportAnswer(what); };
+      return b;
+    };
+    row.append(btn('Send', 'send'), btn('Don\u2019t send', 'no'), btn('Don\u2019t ask again', 'never'));
+    box.append(p, det, row);
+    box.style.display = 'flex';
+    report.open = true;
+  }
+  document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && report.held.length) reportAsk(); });
+  function reportAgainButton() {
+    var b = document.getElementById('reportagain');
+    if (b) b.hidden = !(reportOn() && reportNever());
+  }
+  function reportAnswer(what) {
+    var box = document.getElementById('reportAsk');
+    var held = report.held.splice(0);
+    report.open = false;
+    if (what === 'never') { try { localStorage.setItem(REPORT_KEY, 'never'); } catch (e) {} reportAgainButton(); }
+    if (what !== 'send') { if (box) box.style.display = 'none'; return Promise.resolve(); }
+    if (box) box.textContent = 'Sending\u2026';
+    return reportSentry().then(function (S) {
+      if (!S) return false;
+      held.forEach(function (err) {
+        var consent = Date.now() + '-' + Math.random().toString(36).slice(2);
+        report.consent.add(consent);
+        S.withScope(function (scope) {
+          scope.setTag('kind', 'error-sent-by-visitor');
+          if (err.__where) scope.setTag('during', err.__where);
+          var extra = { consent: consent };
+          if (err.__trace) extra.lastTrace = err.__trace;
+          scope.setExtras(extra);
+          S.captureException(err);
+        });
+      });
+      return S.flush(5000).catch(function () { return false; });
+    }).then(function (sent) {
+      if (sent) report.sent += held.length;
+      // (unless another error came while it was sent, and is being asked about)
+      if (box && !report.open) {
+        box.textContent = sent ? 'Sent. Thank you \u2014 Ken will see it with ToonTalk\u2019s other reports.' : 'It couldn\u2019t be sent from here just now.';
+        setTimeout(function () { if (!report.open) box.style.display = 'none'; }, 4000);
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.getElementById('reportagain');
+    if (b) b.addEventListener('click', function () {
+      try { localStorage.removeItem(REPORT_KEY); } catch (e) {}
+      reportAgainButton();
+      statusEl.textContent = 'Error reports will be offered again, if ToonTalk runs into one.';
+    });
+    reportAgainButton();
+  });
+  // for checks: what is held, and the scrubbing Sentry would be handed
+  window.TT_report = { state: function () { return { on: reportOn(), held: report.held.length, open: report.open, sent: report.sent }; },
+                       scrub: reportScrubbed, fault: reportFault };
+</script>
 <script>
   var statusEl = document.getElementById('status');
   var Module = {
@@ -342,6 +560,7 @@
     statusEl.style.color = '#ff8a8a';
     statusEl.textContent = 'ToonTalk stopped: ' + msg;
     ttNote('engine failed: ' + msg);
+    reportFault('the engine giving up (TT_engineFailed)', new Error('ToonTalk stopped: ' + msg));
   };
   // Page-side breadcrumbs into the same TT_log ring the engine writes — so a report like
   // "input dead after re-entering full screen" comes with the exact event trail.
